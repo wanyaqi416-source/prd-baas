@@ -399,7 +399,7 @@ function TransferModuleSection({ id, title, type }) {
         badges={['客户视图', 'Admin 执行', '余额影响']}
       />
       {id === 'transfer-in' ? (
-        <GuardrailAlert>转入 / 转出边界：Internal USDT Funding、OTC、tx hash、BaaS address 都必须标记为“仅后台可见 / 严禁客户可见”。</GuardrailAlert>
+        <GuardrailAlert>转入 / 转出边界：信托资金转入美国账户只支持同币种转入，不涉及换汇、数字货币兑换或 OTC；Internal USDT Funding、tx hash、BaaS address 如出现在其他后台流程中，必须标记为“仅后台可见 / 严禁客户可见”。</GuardrailAlert>
       ) : null}
       <div className="grid gap-5">
         {modules.map((module) => (

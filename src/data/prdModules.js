@@ -56,19 +56,24 @@ export const prdModules = [
 export const baasPrototypeEntries = [
   {
     title: '开户流程',
-    description: '客户申请美国账户、确认开户费、Admin 手动开户与账户信息复核。',
+    description: '客户开通美国账户、确认 USD 500 开户费、扣费成功后进入 Admin 手动开户与 accountId 绑定流程。',
+    route: '/admin/product-manual/baas-prototype/opening',
+    buttonLabel: '进入开户原型',
   },
   {
     title: '入金流程',
     description: '外部法币入账、Trust Account 转入、入账匹配和客户可用余额更新。',
+    buttonLabel: '占位入口',
   },
   {
     title: '出金流程',
     description: '客户发起转出、余额冻结、BaaS 手动执行、回单上传和订单完成。',
+    buttonLabel: '占位入口',
   },
   {
     title: '后台审核',
     description: '开户、入金、出金、异常处理和审计日志的 Admin 操作入口。',
+    buttonLabel: '占位入口',
   },
 ]
 

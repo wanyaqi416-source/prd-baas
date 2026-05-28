@@ -6,7 +6,7 @@ import { PrdBackLink } from '../components/portal/PrdBackLink'
 import { Badge } from '../components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 
-export function BaasPrototypeHome({ onBack }) {
+export function BaasPrototypeHome({ onBack, onNavigate }) {
   return (
     <ProductManualLayout>
       <main className="mx-auto min-h-screen max-w-[1160px] px-6 py-10 md:px-10 md:py-14">
@@ -42,10 +42,15 @@ export function BaasPrototypeHome({ onBack }) {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="inline-flex items-center gap-2 rounded-full border bg-secondary px-3 py-1.5 text-xs font-semibold text-secondary-foreground">
-                    占位入口
+                  <button
+                    type="button"
+                    disabled={!entry.route}
+                    onClick={() => entry.route && onNavigate(entry.route)}
+                    className="inline-flex items-center gap-2 rounded-full border bg-secondary px-3 py-1.5 text-xs font-semibold text-secondary-foreground transition-colors hover:bg-secondary/80 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {entry.buttonLabel || '占位入口'}
                     <ArrowRight className="h-3.5 w-3.5" />
-                  </div>
+                  </button>
                 </CardContent>
               </Card>
             ))}

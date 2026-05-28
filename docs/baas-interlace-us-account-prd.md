@@ -302,33 +302,34 @@ flowchart TD
 - Interlace 实际余额。
 - Fidere 毛利。
 
-### Source B：TRUST_ACCOUNT_PREFUNDING
+### Source B：TRUST_ACCOUNT_TO_US_ACCOUNT
 
-适用场景：客户信托账户有法币资金，但美国 BaaS 账户没有实际余额。后台通过内部 USDT funding + OTC + BaaS 法币汇出完成。
+适用场景：客户信托账户已有与美国账户相同币种的法币资金，客户希望将该笔资金转入美国账户余额展示或用于后续同币种汇款。该流程只支持同币种转入，不涉及换汇、数字货币兑换、USDT funding 或 OTC。
 
 ```mermaid
 flowchart TD
-  start[客户发起美国账户转出或信托转入美国账户] --> processing[系统生成订单 Processing]
+  start[客户发起信托资金转入美国账户] --> currencyCheck[系统校验来源币种与美国账户币种一致]
+  currencyCheck --> processing[系统生成订单 Processing]
   processing --> checkTrust[Admin 确认信托账户资金足够]
-  checkTrust --> freezeTrust[冻结客户信托账户资金]
-  freezeTrust --> funding[Fidere 内部钱包转 USDT 到 BaaS 地址]
-  funding --> event[记录 internal_funding_event]
-  event --> confirmFunding[Admin 确认 funding completed]
-  confirmFunding --> otc[OTC 换成法币]
-  otc --> baasPayout[Admin 在 BaaS 手动汇出]
-  baasPayout --> receipt[上传回单]
-  receipt --> complete[Admin 点击完成]
-  complete --> clientDone[客户订单状态 Completed]
+  checkTrust --> freezeTrust[冻结客户信托账户同币种资金]
+  freezeTrust --> review[Admin 审核转入订单]
+  review --> complete[Admin 确认转入完成]
+  complete --> ledger[系统更新客户美国账户可用余额]
+  ledger --> clientDone[客户订单状态 Completed]
 ```
 
 客户不看到：
 
-- USDT。
-- BaaS 地址。
-- tx hash。
-- OTC 成本。
-- 链上记录。
+- 后台审核备注。
+- 内部账务校验记录。
+- Interlace 实际余额。
 - Interlace 成本。
+
+规则：
+
+- 来源信托账户币种、目标美国账户币种、转入订单币种必须一致。
+- 币种不一致时，订单不得进入审核完成流程，应直接失败或退回修改。
+- 不得以 OTC、换汇、数字货币兑换或链上 funding 作为该流程的主执行方式。
 
 ## 九、外部法币入账流程
 
@@ -543,7 +544,7 @@ flowchart TD
 `transfer_source_type`:
 
 - `US_ACCOUNT_ACTUAL_BALANCE`
-- `TRUST_ACCOUNT_PREFUNDING`
+- `TRUST_ACCOUNT_TO_US_ACCOUNT`
 
 ### `baas_manual_entries`
 
@@ -981,7 +982,7 @@ Phase 1 明确不做：
 
 - 客户只能选择 Fidere Beneficiary 发起转账。
 - Admin 维护 BaaS Payee ID、BaaS Payout ID、Interlace Reference ID。
-- 支持 `US_ACCOUNT_ACTUAL_BALANCE` 与 `TRUST_ACCOUNT_PREFUNDING` 两种来源。
+- 支持 `US_ACCOUNT_ACTUAL_BALANCE` 与 `TRUST_ACCOUNT_TO_US_ACCOUNT` 两种来源。
 - 回单上传后客户可查看回单，内部执行字段不可见。
 
 ### Task 6：外部法币入账审核
