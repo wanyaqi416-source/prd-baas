@@ -27,7 +27,7 @@ export function PrdModuleCard({ module, onOpen }) {
           <div>来源：{module.source}</div>
         </div>
         <Button onClick={() => onOpen(module.route)} className="mt-2 w-fit">
-          进入文档
+          {module.buttonLabel || '进入文档'}
           <ArrowRight className="h-4 w-4" />
         </Button>
       </CardContent>

@@ -24,6 +24,7 @@ import {
   TransferOutSection,
 } from './components/prd/ManualSections'
 import { ClientAdminVisibility } from './components/prd/ClientAdminVisibility'
+import { BaasPrototypeHome } from './pages/BaasPrototypeHome'
 import { ProductManualHome } from './pages/ProductManualHome'
 import { PrdInvestPage } from './pages/PrdInvestPage'
 
@@ -81,6 +82,10 @@ function App() {
 
   if (path === '/admin/product-manual/prd-invest') {
     return <PrdInvestPage onBack={() => navigate('/')} />
+  }
+
+  if (path === '/admin/product-manual/baas-prototype') {
+    return <BaasPrototypeHome onBack={() => navigate('/')} />
   }
 
   if (path === '/admin/product-manual/baas-interlace-prd') {

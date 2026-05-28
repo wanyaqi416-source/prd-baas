@@ -1,3 +1,10 @@
+export const moduleTypeFilters = [
+  { id: 'prd', label: '内部 PRD', moduleType: 'prd' },
+  { id: 'all', label: '产品手册中心' },
+  { id: 'independent', label: '模块独立' },
+  { id: 'prototype', label: '原型', moduleType: 'prototype' },
+]
+
 export const prdModules = [
   {
     id: 'baas-interlace',
@@ -11,6 +18,8 @@ export const prdModules = [
     route: '/admin/product-manual/baas-interlace',
     tags: ['BaaS', 'Interlace', '美国账户', '转入转出', 'Admin Manual', 'Phase 1 MVP'],
     source: 'Current Project',
+    moduleType: 'prd',
+    buttonLabel: '进入文档',
   },
   {
     id: 'prd-invest',
@@ -24,6 +33,42 @@ export const prdModules = [
     route: '/admin/product-manual/prd-invest',
     tags: ['Investment', 'Portfolio', 'Trading', 'Product', 'Asset', 'PRD'],
     source: 'https://github.com/ediya204/prd-invest/tree/main',
+    moduleType: 'prd',
+    buttonLabel: '进入文档',
+  },
+  {
+    id: 'baas-prototype',
+    title: 'BaaS 原型',
+    subtitle: 'BaaS / Interlace 产品原型入口',
+    description:
+      'BaaS / Interlace 相关页面原型入口，用于查看开户、入金、出金、审核、后台管理等页面交互方案。',
+    category: '原型',
+    status: 'Prototype',
+    phase: 'Prototype Draft',
+    route: '/admin/product-manual/baas-prototype',
+    tags: ['原型', 'BaaS', 'Interlace', '开户', '入金', '出金', '审核', '后台管理'],
+    source: 'Current Project',
+    moduleType: 'prototype',
+    buttonLabel: '进入原型',
+  },
+]
+
+export const baasPrototypeEntries = [
+  {
+    title: '开户流程',
+    description: '客户申请美国账户、确认开户费、Admin 手动开户与账户信息复核。',
+  },
+  {
+    title: '入金流程',
+    description: '外部法币入账、Trust Account 转入、入账匹配和客户可用余额更新。',
+  },
+  {
+    title: '出金流程',
+    description: '客户发起转出、余额冻结、BaaS 手动执行、回单上传和订单完成。',
+  },
+  {
+    title: '后台审核',
+    description: '开户、入金、出金、异常处理和审计日志的 Admin 操作入口。',
   },
 ]
 
