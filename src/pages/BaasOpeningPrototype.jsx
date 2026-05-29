@@ -48,6 +48,49 @@ const bankAccountRows = [
   ['币种', 'USD'],
 ]
 
+const internalTransferDirections = {
+  'trust-to-us': {
+    title: '转账至美国账户',
+    sourceAccount: '香港信托账户',
+    targetAccount: '美国账户',
+    sourceBalance: 'USD 96,037.39',
+    targetBalance: 'USD 82,430.27',
+  },
+  'us-to-trust': {
+    title: '转账至香港账户',
+    sourceAccount: '美国账户',
+    targetAccount: '香港信托账户',
+    sourceBalance: 'USD 82,430.27',
+    targetBalance: 'USD 96,037.39',
+  },
+}
+
+const transferFeeConfig = {
+  fixedAmount: 15,
+  percentRate: 0.0025,
+}
+
+const formatCurrencyAmount = (currency, amount) => `${currency} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+const feeModes = {
+  fixed: {
+    label: '固定值',
+    description: '按单笔固定手续费展示',
+    ruleDisplay: (currency) => formatCurrencyAmount(currency, transferFeeConfig.fixedAmount),
+  },
+  percent: {
+    label: '百分比',
+    description: '按转账金额比例展示',
+    ruleDisplay: () => '0.25%',
+  },
+}
+
+const formatTransferTime = () => {
+  const now = new Date()
+  const pad = (value) => String(value).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`
+}
+
 function ClickMark() {
   return (
     <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[12px] font-bold leading-none text-white shadow-sm ring-2 ring-white/70">
@@ -125,14 +168,16 @@ function ClientTopNav({ onBack }) {
   )
 }
 
-function AccountHero({ status, onOpenJurisdiction, onOpenIncomingDeposit }) {
+function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdiction, onOpenIncomingDeposit }) {
   const hasUsAccount = status !== 'not_opened'
   const opened = status === 'opened'
   const usMeta = usStatusMeta[status]
+  const showUsAccount = hasUsAccount && activeAccount === 'us'
+  const blocksUsActions = showUsAccount && (status === 'submitted' || status === 'reviewing' || status === 'failed')
   const accountTabs = [
-    [Landmark, '香港信托账户', !hasUsAccount],
-    [WalletCards, '数字资产账户', false],
-    ...(hasUsAccount ? [[Globe2, '美国账户', true]] : []),
+    { id: 'trust', Icon: Landmark, label: '香港信托账户', enabled: true },
+    { id: 'digital', Icon: WalletCards, label: '数字资产账户', enabled: false },
+    ...(hasUsAccount ? [{ id: 'us', Icon: Globe2, label: '美国账户', enabled: true }] : []),
   ]
 
   return (
@@ -141,19 +186,25 @@ function AccountHero({ status, onOpenJurisdiction, onOpenIncomingDeposit }) {
       <div className="relative mx-auto grid max-w-[1280px] gap-8 lg:grid-cols-[1.35fr_0.65fr]">
         <div>
           <div className="inline-flex flex-wrap gap-1 rounded-xl border border-white/10 bg-black/20 p-1">
-            {accountTabs.map(([Icon, label, active]) => (
-              <button
-                key={label}
-                type="button"
-                className={active ? 'rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900' : 'rounded-lg px-4 py-2 text-sm font-semibold text-blue-100 hover:bg-white/10'}
-              >
-                <Icon className="mr-2 inline h-4 w-4" />
-                {label}
-                {label === '美国账户' && usMeta ? <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] text-blue-700">{usMeta.label}</span> : null}
-              </button>
-            ))}
+            {accountTabs.map(({ id, Icon, label, enabled }) => {
+              const active = activeAccount === id
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={enabled ? () => onAccountChange(id) : undefined}
+                  disabled={!enabled}
+                  aria-pressed={active}
+                  className={active ? 'rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900' : enabled ? 'rounded-lg px-4 py-2 text-sm font-semibold text-blue-100 hover:bg-white/10' : 'cursor-default rounded-lg px-4 py-2 text-sm font-semibold text-blue-100/70'}
+                >
+                  <Icon className="mr-2 inline h-4 w-4" />
+                  {label}
+                  {label === '美国账户' && usMeta ? <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] text-blue-700">{usMeta.label}</span> : null}
+                </button>
+              )
+            })}
           </div>
-          {hasUsAccount ? (
+          {showUsAccount ? (
             <>
               <div className="mt-7 flex flex-wrap items-center gap-3">
                 <span className="text-sm font-medium text-blue-100">账户余额：美国账户</span>
@@ -176,9 +227,9 @@ function AccountHero({ status, onOpenJurisdiction, onOpenIncomingDeposit }) {
               </div>
             </>
           )}
-          {status === 'submitted' || status === 'reviewing' || status === 'failed' ? null : (
+          {blocksUsActions ? null : (
             <div className="mt-7 flex flex-wrap gap-3">
-              {opened ? (
+              {showUsAccount && opened ? (
                 <>
                   <button type="button" className="inline-flex h-11 items-center gap-2 rounded-lg bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm">
                     <Banknote className="h-4 w-4" />
@@ -206,14 +257,14 @@ function AccountHero({ status, onOpenJurisdiction, onOpenIncomingDeposit }) {
           )}
         </div>
         <div className="rounded-2xl border border-blue-400/20 bg-blue-900/45 p-6 shadow-inner">
-          <h2 className="text-xl font-bold">{hasUsAccount ? '美国账户服务' : '管理信托资产'}</h2>
+          <h2 className="text-xl font-bold">{showUsAccount ? '美国账户服务' : '管理信托资产'}</h2>
           <p className="mt-3 text-sm leading-6 text-blue-100">
-            {hasUsAccount
+            {showUsAccount
               ? '美国账户用于查看银行收款账户、同币种入金、法币转出和账户信息。'
               : '连接您的全球银行账户，无缝管理您的信托投资组合和分配。'}
           </p>
           <div className="mt-5 grid gap-3 text-sm text-blue-50 sm:grid-cols-2">
-            {(hasUsAccount ? ['银行收款账户', '同币种交易', '账户信息', '账户状态'] : ['财富管理', '法币转出', '信托账单']).map((item) => (
+            {(showUsAccount ? ['银行收款账户', '同币种交易', '账户信息', '账户状态'] : ['财富管理', '法币转出', '信托账单']).map((item) => (
               <div key={item} className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-sky-300" />
                 {item}
@@ -237,20 +288,29 @@ function AccountHero({ status, onOpenJurisdiction, onOpenIncomingDeposit }) {
   )
 }
 
-function QuickActionDock({ status, onOpenAccountInfo, onOpenIncomingDeposit }) {
-  if (status === 'submitted' || status === 'reviewing' || status === 'failed') {
+function QuickActionDock({ status, activeAccount, onOpenAccountInfo, onOpenIncomingDeposit, onOpenInternalTransfer }) {
+  if (activeAccount === 'us' && (status === 'submitted' || status === 'reviewing' || status === 'failed')) {
     return null
   }
 
   const opened = status === 'opened'
-  const actions = opened
+  const actions = activeAccount === 'us' && opened
     ? [
         [Banknote, '存入资金', undefined],
         [Send, '法币转出', onOpenIncomingDeposit],
+        [RefreshCw, '转账至香港账户', () => onOpenInternalTransfer('us-to-trust')],
         [Landmark, '查看账户信息', onOpenAccountInfo],
         [RefreshCw, '兑换', undefined],
       ]
-    : [
+    : activeAccount === 'trust' && opened
+      ? [
+          [Landmark, '银行存入', undefined],
+          [WalletCards, '数字资产存入', undefined],
+          [RefreshCw, '转账至美国账户', () => onOpenInternalTransfer('trust-to-us')],
+          [Send, '转账给受益人', undefined],
+          [RefreshCw, '兑换', undefined],
+        ]
+      : [
         [Landmark, '银行存入', undefined],
         [WalletCards, '数字资产存入', undefined],
         [Send, '转账给受益人', undefined],
@@ -273,7 +333,7 @@ function QuickActionDock({ status, onOpenAccountInfo, onOpenIncomingDeposit }) {
                 <Icon className="h-5 w-5" />
               </span>
               <span className="mt-1 inline-flex items-center justify-center gap-1">
-                {label === '法币转出' || label === '查看账户信息' ? <ClickMark /> : null}
+                {label === '法币转出' || label === '查看账户信息' || label === '转账至美国账户' || label === '转账至香港账户' ? <ClickMark /> : null}
                 {label}
               </span>
             </button>
@@ -433,8 +493,8 @@ function ModalHeader({ eyebrow, title, onClose }) {
   )
 }
 
-function MainContent({ status, onOpenAccountInfo }) {
-  if (status === 'not_opened') {
+function MainContent({ status, activeAccount, onOpenAccountInfo }) {
+  if (activeAccount === 'trust' || status === 'not_opened') {
     return <TrustAccountAssets />
   }
 
@@ -630,14 +690,321 @@ function AccountInfoDrawer({ onClose }) {
   )
 }
 
+function InternalTransferConfirmModal({ draft, onClose, onConfirm }) {
+  const rows = [
+    ['转出账户', draft.sourceAccount],
+    ['转入账户', draft.targetAccount],
+    ['币种', draft.currency],
+    ['金额', `${draft.currency} ${draft.amount}`],
+    ['手续费', `预估 ${draft.feeAmountDisplay}`],
+    ['预估到账金额', draft.arrivalAmountDisplay],
+  ]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-[520px] rounded-3xl bg-white p-6 shadow-2xl">
+        <ModalHeader eyebrow="Transfer confirmation" title="确认提交转账申请" onClose={onClose} />
+        <p className="mt-2 text-sm leading-6 text-slate-500">请确认以下转账信息。确认后记录将进入待后台审核状态，转账金额会冻结并从转出账户可用余额中扣除。</p>
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          {rows.map(([label, value]) => (
+            <div key={label} className="flex items-center justify-between gap-4 border-b border-slate-200 py-3 last:border-b-0">
+              <span className="text-sm text-slate-500">{label}</span>
+              <span className="text-right text-sm font-bold text-slate-950">{value}</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 flex gap-3">
+          <Button type="button" onClick={onConfirm} className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">
+            确认提交
+          </Button>
+          <Button type="button" onClick={onClose} variant="outline" className="rounded-lg">
+            取消
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
+  const config = internalTransferDirections[direction]
+  const [currency, setCurrency] = useState('USD')
+  const [amount, setAmount] = useState('')
+  const [feeMode, setFeeMode] = useState('fixed')
+  const [error, setError] = useState('')
+  const [confirmDraft, setConfirmDraft] = useState(null)
+  const activeFeeMode = feeModes[feeMode]
+  const numericAmount = Number(amount)
+  const hasValidAmount = Number.isFinite(numericAmount) && numericAmount > 0
+  const estimatedFeeAmount = hasValidAmount
+    ? (feeMode === 'fixed' ? transferFeeConfig.fixedAmount : numericAmount * transferFeeConfig.percentRate)
+    : 0
+  const estimatedArrivalAmount = hasValidAmount ? Math.max(numericAmount - estimatedFeeAmount, 0) : 0
+  const feeRuleDisplay = activeFeeMode.ruleDisplay(currency)
+  const feeAmountDisplay = formatCurrencyAmount(currency, hasValidAmount ? estimatedFeeAmount : 0)
+  const arrivalAmountDisplay = formatCurrencyAmount(currency, hasValidAmount ? estimatedArrivalAmount : 0)
+
+  const submitTransfer = () => {
+    const numericAmount = Number(amount)
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setError('请输入大于 0 的转账金额。')
+      return
+    }
+
+    setError('')
+    setConfirmDraft({
+      direction,
+      sourceAccount: config.sourceAccount,
+      targetAccount: config.targetAccount,
+      currency,
+      amount: numericAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      feeMode,
+      feeModeLabel: activeFeeMode.label,
+      feeDisplay: feeRuleDisplay,
+      feeAmountDisplay,
+      arrivalAmountDisplay,
+    })
+  }
+
+  const confirmTransfer = () => {
+    onSubmit({
+      ...confirmDraft,
+      id: `IT-${Date.now()}`,
+      createdAt: formatTransferTime(),
+      status: 'UNDER_REVIEW',
+      statusLabel: '待后台审核',
+    })
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex h-16 max-w-[1180px] items-center justify-between px-5">
+          <button type="button" onClick={onBack} className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-900">
+            返回账户
+          </button>
+          <Button type="button" onClick={onViewRecords} variant="outline" className="rounded-lg">
+            查看转账记录
+          </Button>
+        </div>
+      </header>
+      <main className="mx-auto max-w-[1180px] px-5 py-8">
+        <div className="mb-6">
+          <Badge variant="secondary">内部法币转账</Badge>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">{config.title}</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500">当前为前端原型流程。提交后生成待后台审核记录，实际余额、手续费和审核结果以后台配置与处理为准。</p>
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-[0.72fr_0.28fr]">
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="grid gap-4 md:grid-cols-2">
+              {[
+                ['转出账户', config.sourceAccount, config.sourceBalance],
+                ['转入账户', config.targetAccount, config.targetBalance],
+              ].map(([label, account, balance]) => (
+                <div key={label} className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+                  <div className="text-sm font-semibold text-blue-700">{label}</div>
+                  <div className="mt-2 text-xl font-bold text-slate-950">{account}</div>
+                  <div className="mt-2 text-sm text-slate-500">参考余额：{balance}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 grid gap-5">
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">币种</span>
+                <select
+                  value={currency}
+                  onChange={(event) => setCurrency(event.target.value)}
+                  className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
+                >
+                  <option value="USD">USD 美元</option>
+                  <option value="HKD">HKD 港币</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">金额</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={amount}
+                  onChange={(event) => setAmount(event.target.value)}
+                  placeholder="请输入转账金额"
+                  className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">手续费模式</div>
+                  <p className="mt-1 text-sm text-slate-500">实际手续费以后台配置为准。</p>
+                </div>
+                <div className="flex rounded-xl border border-slate-200 bg-white p-1">
+                  {Object.entries(feeModes).map(([value, item]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setFeeMode(value)}
+                      className={feeMode === value ? 'h-9 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white' : 'h-9 rounded-lg px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100'}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={`mt-4 grid gap-3 ${feeMode === 'percent' ? 'md:grid-cols-2' : ''}`}>
+                <div className="rounded-xl bg-white px-4 py-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-xs font-semibold text-slate-400">手续费规则</div>
+                      <p className="mt-1 text-xs text-slate-500">{activeFeeMode.description}</p>
+                    </div>
+                    <div className="shrink-0 text-right text-lg font-bold text-slate-950">{feeRuleDisplay}</div>
+                  </div>
+                </div>
+                {feeMode === 'percent' ? (
+                  <div className="rounded-xl bg-white px-4 py-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <div className="text-xs font-semibold text-slate-400">预估手续费金额</div>
+                        <p className="mt-1 text-xs text-slate-500">按当前输入金额预估</p>
+                      </div>
+                      <div className="shrink-0 text-right text-lg font-bold text-slate-950">{feeAmountDisplay}</div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-emerald-900">预估到账金额</div>
+                  <p className="mt-1 text-sm text-emerald-700">按转账金额扣除预估手续费后计算，实际到账以后台审核结果为准。</p>
+                </div>
+                <div className="text-2xl font-bold text-emerald-950">{arrivalAmountDisplay}</div>
+              </div>
+            </div>
+
+            {error ? <div className="mt-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div> : null}
+
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
+              <Button type="button" onClick={submitTransfer} className="rounded-lg bg-blue-600 px-6 hover:bg-blue-700">
+                提交审核
+              </Button>
+              <Button type="button" onClick={onBack} variant="outline" className="rounded-lg">
+                取消
+              </Button>
+            </div>
+          </section>
+
+          <aside className="rounded-2xl border border-amber-100 bg-amber-50 p-5">
+            <div className="text-sm font-semibold text-amber-900">审核说明</div>
+            <p className="mt-2 text-sm leading-6 text-amber-800">该记录提交后需要后台审核。提交成功后转账金额会被冻结，并从转出账户可用余额中扣除；审核通过后转入账户增加可用余额，审核拒绝或取消时释放冻结金额。</p>
+            <div className="mt-5 space-y-3 text-sm text-amber-900">
+              <div className="rounded-xl bg-white/70 p-3">状态：UNDER_REVIEW</div>
+              <div className="rounded-xl bg-white/70 p-3">后台动作：审核通过 / 拒绝</div>
+              <div className="rounded-xl bg-white/70 p-3">审计：记录客户提交与确认动作</div>
+            </div>
+          </aside>
+        </div>
+      </main>
+      {confirmDraft ? (
+        <InternalTransferConfirmModal
+          draft={confirmDraft}
+          onClose={() => setConfirmDraft(null)}
+          onConfirm={confirmTransfer}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+function InternalTransferRecordsPage({ records, onBack, onCreate }) {
+  return (
+    <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex h-16 max-w-[1180px] items-center justify-between px-5">
+          <button type="button" onClick={onBack} className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-900">
+            返回账户
+          </button>
+          <Button type="button" onClick={onCreate} className="rounded-lg bg-blue-600 hover:bg-blue-700">
+            新增转账
+          </Button>
+        </div>
+      </header>
+      <main className="mx-auto max-w-[1180px] px-5 py-8">
+        <div className="mb-6">
+          <Badge variant="warning">待后台审核</Badge>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">内部转账记录</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500">客户提交香港信托账户与美国账户之间的法币转账申请后，金额会先冻结并扣减转出账户可用余额，后台审核通过后再入账到转入账户。</p>
+        </div>
+
+        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+            <div>
+              <h2 className="text-lg font-bold text-slate-950">转账申请列表</h2>
+              <p className="mt-1 text-sm text-slate-500">共 {records.length} 条记录</p>
+            </div>
+          </div>
+          {records.length === 0 ? (
+            <div className="px-6 py-14 text-center">
+              <div className="font-semibold text-slate-900">暂无转账记录</div>
+              <p className="mt-2 text-sm text-slate-500">提交转账申请后会在这里展示待审核记录。</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1040px] text-sm">
+                <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-500">
+                  <tr>
+                    {['申请编号', '转出账户', '转入账户', '币种', '金额', '手续费', '预估到账', '状态', '提交时间'].map((item) => (
+                      <th key={item} className="px-6 py-4">{item}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {records.map((record) => (
+                    <tr key={record.id} className="border-t border-slate-100">
+                      <td className="px-6 py-5 font-semibold text-slate-900">{record.id}</td>
+                      <td className="px-6 py-5">{record.sourceAccount}</td>
+                      <td className="px-6 py-5">{record.targetAccount}</td>
+                      <td className="px-6 py-5">{record.currency}</td>
+                      <td className="px-6 py-5 font-semibold">{record.currency} {record.amount}</td>
+                      <td className="px-6 py-5">{record.feeAmountDisplay}</td>
+                      <td className="px-6 py-5 font-semibold">{record.arrivalAmountDisplay}</td>
+                      <td className="px-6 py-5"><Badge variant="warning">{record.statusLabel}</Badge></td>
+                      <td className="px-6 py-5 text-slate-500">{record.createdAt}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+  )
+}
+
 export function BaasOpeningPrototype({ onBack, onOpenApplication, onPrototypeHome }) {
   const [status, setStatus] = useState('not_opened')
+  const [activeAccount, setActiveAccount] = useState('trust')
   const [pickerOpen, setPickerOpen] = useState(false)
   const [feeConfirmOpen, setFeeConfirmOpen] = useState(false)
   const [feeBalanceMode, setFeeBalanceMode] = useState('sufficient')
   const [feeResult, setFeeResult] = useState(null)
   const [accountInfoOpen, setAccountInfoOpen] = useState(false)
   const [activeOpenedPage, setActiveOpenedPage] = useState('account')
+  const [internalTransferDirection, setInternalTransferDirection] = useState('trust-to-us')
+  const [internalTransferRecords, setInternalTransferRecords] = useState([])
+
+  const changeStatus = (nextStatus) => {
+    setStatus(nextStatus)
+    setActiveAccount(nextStatus === 'not_opened' ? 'trust' : 'us')
+  }
 
   const selectUsAccount = () => {
     setPickerOpen(false)
@@ -651,21 +1018,64 @@ export function BaasOpeningPrototype({ onBack, onOpenApplication, onPrototypeHom
 
   const continueAfterFeeSuccess = () => {
     setFeeResult(null)
-    setStatus('submitted')
+    changeStatus('submitted')
+  }
+
+  const openInternalTransfer = (direction) => {
+    setInternalTransferDirection(direction)
+    setActiveOpenedPage('internal-transfer')
+  }
+
+  const submitInternalTransfer = (record) => {
+    setInternalTransferRecords((current) => [record, ...current])
+    setActiveOpenedPage('internal-transfer-records')
   }
 
   if (status === 'opened' && activeOpenedPage === 'external-fiat-transfer-in') {
     return <IncomingFiatDepositPrototype onBack={() => setActiveOpenedPage('account')} />
   }
 
+  if (activeOpenedPage === 'internal-transfer') {
+    return (
+      <InternalTransferPage
+        direction={internalTransferDirection}
+        onBack={() => setActiveOpenedPage('account')}
+        onSubmit={submitInternalTransfer}
+        onViewRecords={() => setActiveOpenedPage('internal-transfer-records')}
+      />
+    )
+  }
+
+  if (activeOpenedPage === 'internal-transfer-records') {
+    return (
+      <InternalTransferRecordsPage
+        records={internalTransferRecords}
+        onBack={() => setActiveOpenedPage('account')}
+        onCreate={() => setActiveOpenedPage('internal-transfer')}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
-      <DemoBar status={status} onStatusChange={setStatus} onPrototypeHome={onPrototypeHome} />
+      <DemoBar status={status} onStatusChange={changeStatus} onPrototypeHome={onPrototypeHome} />
       <ClientTopNav onBack={onBack} />
-      <AccountHero status={status} onOpenJurisdiction={() => setPickerOpen(true)} onOpenIncomingDeposit={() => setActiveOpenedPage('external-fiat-transfer-in')} />
-      <QuickActionDock status={status} onOpenAccountInfo={() => setAccountInfoOpen(true)} onOpenIncomingDeposit={() => setActiveOpenedPage('external-fiat-transfer-in')} />
+      <AccountHero
+        status={status}
+        activeAccount={activeAccount}
+        onAccountChange={setActiveAccount}
+        onOpenJurisdiction={() => setPickerOpen(true)}
+        onOpenIncomingDeposit={() => setActiveOpenedPage('external-fiat-transfer-in')}
+      />
+      <QuickActionDock
+        status={status}
+        activeAccount={activeAccount}
+        onOpenAccountInfo={() => setAccountInfoOpen(true)}
+        onOpenIncomingDeposit={() => setActiveOpenedPage('external-fiat-transfer-in')}
+        onOpenInternalTransfer={openInternalTransfer}
+      />
       <main className="mx-auto max-w-[1280px] px-5 py-8">
-        <MainContent status={status} onOpenAccountInfo={() => setAccountInfoOpen(true)} />
+        <MainContent status={status} activeAccount={activeAccount} onOpenAccountInfo={() => setAccountInfoOpen(true)} />
       </main>
       {pickerOpen ? <JurisdictionPicker onClose={() => setPickerOpen(false)} onSelectUs={selectUsAccount} /> : null}
       {feeConfirmOpen ? (

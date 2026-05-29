@@ -1,0 +1,452 @@
+{
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/tailwind.config.js": {
+    "mtime": 1780043300.1127222,
+    "ast_hash": "cb6e10d3426ab47a0492a44af0868c67",
+    "semantic_hash": "cb6e10d3426ab47a0492a44af0868c67"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/vite.config.js": {
+    "mtime": 1780043300.1128201,
+    "ast_hash": "820cae40a3e6f94111ea426d6a801b5e",
+    "semantic_hash": "820cae40a3e6f94111ea426d6a801b5e"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/package.json": {
+    "mtime": 1780043670.6573763,
+    "ast_hash": "94a089073ff9886a4176f291b5a56fc3",
+    "semantic_hash": "94a089073ff9886a4176f291b5a56fc3"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/postcss.config.js": {
+    "mtime": 1780043300.098892,
+    "ast_hash": "ef3ba2a81ba19f8ea5ddf625521e96f0",
+    "semantic_hash": "ef3ba2a81ba19f8ea5ddf625521e96f0"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/main.jsx": {
+    "mtime": 1780043300.1103935,
+    "ast_hash": "da83a74bce668e140ecce211184f5117",
+    "semantic_hash": "da83a74bce668e140ecce211184f5117"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/App.jsx": {
+    "mtime": 1780043300.1006968,
+    "ast_hash": "8ecf0275b9c84a870d43717706469ae9",
+    "semantic_hash": "8ecf0275b9c84a870d43717706469ae9"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/ui/input.jsx": {
+    "mtime": 1780043300.108605,
+    "ast_hash": "b893852b3fc9d4329784fe71fc1a511a",
+    "semantic_hash": "b893852b3fc9d4329784fe71fc1a511a"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/ui/button.jsx": {
+    "mtime": 1780043300.108418,
+    "ast_hash": "09b09833b3ed90a00e6542348a520cf7",
+    "semantic_hash": "09b09833b3ed90a00e6542348a520cf7"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/ui/separator.jsx": {
+    "mtime": 1780043300.1087906,
+    "ast_hash": "043b21f517a10bac016d4f46ccc4b18c",
+    "semantic_hash": "043b21f517a10bac016d4f46ccc4b18c"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/ui/table.jsx": {
+    "mtime": 1780043300.1089795,
+    "ast_hash": "a2d0ec872187e6af5610fa87b5c12023",
+    "semantic_hash": "a2d0ec872187e6af5610fa87b5c12023"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/ui/badge.jsx": {
+    "mtime": 1780043300.108322,
+    "ast_hash": "d0a6584f18aa55cbfcc820a4e5d047d9",
+    "semantic_hash": "d0a6584f18aa55cbfcc820a4e5d047d9"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/ui/card.jsx": {
+    "mtime": 1780043300.1085098,
+    "ast_hash": "94f360997b183eb2f34416082b1ec352",
+    "semantic_hash": "94f360997b183eb2f34416082b1ec352"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/ui/tabs.jsx": {
+    "mtime": 1780043300.109074,
+    "ast_hash": "ebae547fda855ba54302f52e5135b884",
+    "semantic_hash": "ebae547fda855ba54302f52e5135b884"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/ui/alert.jsx": {
+    "mtime": 1780043300.1082268,
+    "ast_hash": "35f62fab8ff4c59299a39c8e14e1ea36",
+    "semantic_hash": "35f62fab8ff4c59299a39c8e14e1ea36"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/ui/accordion.jsx": {
+    "mtime": 1780043300.1081266,
+    "ast_hash": "008ca917795a6c01d7724b22e3c5bc2c",
+    "semantic_hash": "008ca917795a6c01d7724b22e3c5bc2c"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/ui/scroll-area.jsx": {
+    "mtime": 1780043300.1086981,
+    "ast_hash": "e094cf95a14b86c641c3d6b3539f8bfc",
+    "semantic_hash": "e094cf95a14b86c641c3d6b3539f8bfc"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/ui/sheet.jsx": {
+    "mtime": 1780043300.1088853,
+    "ast_hash": "defa274d9a99461b632d86f5cf4aef68",
+    "semantic_hash": "defa274d9a99461b632d86f5cf4aef68"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/portal/PrdModuleCard.jsx": {
+    "mtime": 1780043300.1015015,
+    "ast_hash": "ee0d7b3e0ec602b4fb181574d86ef586",
+    "semantic_hash": "ee0d7b3e0ec602b4fb181574d86ef586"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/portal/ProductManualLayout.jsx": {
+    "mtime": 1780043300.1017184,
+    "ast_hash": "031fafa6b19451219d4c8df0fef451ed",
+    "semantic_hash": "031fafa6b19451219d4c8df0fef451ed"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/portal/ProductManualHero.jsx": {
+    "mtime": 1780043300.1016135,
+    "ast_hash": "da8e727bfd8a4cdfc4758b2a26b933c7",
+    "semantic_hash": "da8e727bfd8a4cdfc4758b2a26b933c7"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/portal/PrdBackLink.jsx": {
+    "mtime": 1780043300.1013799,
+    "ast_hash": "677c6a4b6d1db396dddf6536c0e1457e",
+    "semantic_hash": "677c6a4b6d1db396dddf6536c0e1457e"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/layout/SidebarNav.jsx": {
+    "mtime": 1780043300.101187,
+    "ast_hash": "c0dc48408985e9e0a049cf03711e866b",
+    "semantic_hash": "c0dc48408985e9e0a049cf03711e866b"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/layout/HeaderBar.jsx": {
+    "mtime": 1780043300.1009557,
+    "ast_hash": "1af762c874d3d283fc92071a7a0f9018",
+    "semantic_hash": "1af762c874d3d283fc92071a7a0f9018"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/layout/PrdLayout.jsx": {
+    "mtime": 1780043300.1010692,
+    "ast_hash": "6fe6cc7674f75e291c13ff77d3d8b895",
+    "semantic_hash": "6fe6cc7674f75e291c13ff77d3d8b895"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/role-permission-matrix.tsx": {
+    "mtime": 1780043300.1045156,
+    "ast_hash": "b75df30081cb67fa9ad637f0ba229062",
+    "semantic_hash": "b75df30081cb67fa9ad637f0ba229062"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/product-overview.tsx": {
+    "mtime": 1780043300.104375,
+    "ast_hash": "d2724d34c586ce18b0c4c354d510e31b",
+    "semantic_hash": "d2724d34c586ce18b0c4c354d510e31b"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/ipo-flow.tsx": {
+    "mtime": 1780043300.1027043,
+    "ast_hash": "51dbbf7381b7c36909cb63a47fbee20a",
+    "semantic_hash": "51dbbf7381b7c36909cb63a47fbee20a"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/ipo-profit-confirmation.tsx": {
+    "mtime": 1780043300.1030114,
+    "ast_hash": "623092bb5ab89c1a516ce079b3c1049a",
+    "semantic_hash": "623092bb5ab89c1a516ce079b3c1049a"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/fixed-income-flow.tsx": {
+    "mtime": 1780043300.1025007,
+    "ast_hash": "7b5f4218829a89242e3153a181d98a51",
+    "semantic_hash": "7b5f4218829a89242e3153a181d98a51"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/core-rule-conclusions.tsx": {
+    "mtime": 1780043300.1020684,
+    "ast_hash": "4714d35b3115fc82868b154939d12758",
+    "semantic_hash": "4714d35b3115fc82868b154939d12758"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/mvp-scope.tsx": {
+    "mtime": 1780043300.1035616,
+    "ast_hash": "ffbcf9acaa2e8b2dd0adb13bb3e54ef2",
+    "semantic_hash": "ffbcf9acaa2e8b2dd0adb13bb3e54ef2"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/maturity-date-rules.tsx": {
+    "mtime": 1780043300.1031923,
+    "ast_hash": "abd8411eeaad910e626d2cea15544a8d",
+    "semantic_hash": "abd8411eeaad910e626d2cea15544a8d"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/development-acceptance-checklist.tsx": {
+    "mtime": 1780043300.1023116,
+    "ast_hash": "75dadd066fe2ca64d50a941370db4e3a",
+    "semantic_hash": "75dadd066fe2ca64d50a941370db4e3a"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/yield-rate-versioning.tsx": {
+    "mtime": 1780043300.1048744,
+    "ast_hash": "9a2a6c877f3aaed654c67fe2fab5f5e1",
+    "semantic_hash": "9a2a6c877f3aaed654c67fe2fab5f5e1"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/module-architecture.tsx": {
+    "mtime": 1780043300.1033907,
+    "ast_hash": "2cb46005db7d9b7941c71b84b625f029",
+    "semantic_hash": "2cb46005db7d9b7941c71b84b625f029"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/comment-board.tsx": {
+    "mtime": 1780043300.1019442,
+    "ast_hash": "15a043bd16d1fee81ba35143fdd60a85",
+    "semantic_hash": "15a043bd16d1fee81ba35143fdd60a85"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/data-model-erd.tsx": {
+    "mtime": 1780043300.1021864,
+    "ast_hash": "caf38447af22cc4dd4539cd74afce88b",
+    "semantic_hash": "caf38447af22cc4dd4539cd74afce88b"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/table-of-contents.tsx": {
+    "mtime": 1780043300.1046426,
+    "ast_hash": "8f966170686b54fd3edf8fe9e0c4889b",
+    "semantic_hash": "8f966170686b54fd3edf8fe9e0c4889b"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/prd-header.tsx": {
+    "mtime": 1780043300.1042008,
+    "ast_hash": "1e24720829497a2517fb2df0eeb83a94",
+    "semantic_hash": "1e24720829497a2517fb2df0eeb83a94"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd-invest-original/position-lot-structure.tsx": {
+    "mtime": 1780043300.1037316,
+    "ast_hash": "c104d64f23be0d4315c9e9d8ba2ae73e",
+    "semantic_hash": "c104d64f23be0d4315c9e9d8ba2ae73e"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/ExceptionHandling.jsx": {
+    "mtime": 1780043300.1058855,
+    "ast_hash": "17755f510e9ed1685044638b72d1c57f",
+    "semantic_hash": "17755f510e9ed1685044638b72d1c57f"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/BalanceModelSection.jsx": {
+    "mtime": 1780043300.105346,
+    "ast_hash": "3013ca8d3639d405785c55b951fd4a3b",
+    "semantic_hash": "3013ca8d3639d405785c55b951fd4a3b"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/RoleCard.jsx": {
+    "mtime": 1780043300.107053,
+    "ast_hash": "92875d6f6bc20eaa24c3363751b0ad6e",
+    "semantic_hash": "92875d6f6bc20eaa24c3363751b0ad6e"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/ScopeCard.jsx": {
+    "mtime": 1780043300.1071596,
+    "ast_hash": "50e18c319966081848af66812ac7accb",
+    "semantic_hash": "50e18c319966081848af66812ac7accb"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/ClientAdminVisibility.jsx": {
+    "mtime": 1780043300.1054664,
+    "ast_hash": "183cfabf432bf4897ea1d83904c6caf4",
+    "semantic_hash": "183cfabf432bf4897ea1d83904c6caf4"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/UserStorySection.jsx": {
+    "mtime": 1780043300.1079564,
+    "ast_hash": "b8f60b3f7d68ff7e596af30ab8e90401",
+    "semantic_hash": "b8f60b3f7d68ff7e596af30ab8e90401"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/TransferInOutSimulator.jsx": {
+    "mtime": 1780043300.107594,
+    "ast_hash": "fa62ca513f6ccf49a1e5f0b751e0a756",
+    "semantic_hash": "fa62ca513f6ccf49a1e5f0b751e0a756"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/SectionHeader.jsx": {
+    "mtime": 1780043300.107255,
+    "ast_hash": "275ecc2c04a5b064ddf3c0233a425c37",
+    "semantic_hash": "275ecc2c04a5b064ddf3c0233a425c37"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/KeyValueTable.jsx": {
+    "mtime": 1780043300.1065557,
+    "ast_hash": "53463f60c259350bef1b5b7abd48f79f",
+    "semantic_hash": "53463f60c259350bef1b5b7abd48f79f"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/AdminDemo.jsx": {
+    "mtime": 1780043300.1051085,
+    "ast_hash": "c03f9a343e77127495440b782e605f20",
+    "semantic_hash": "c03f9a343e77127495440b782e605f20"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/TransferOverviewSection.jsx": {
+    "mtime": 1780043300.1077254,
+    "ast_hash": "7abc94dccda8f5c563bc457ba266a9e6",
+    "semantic_hash": "7abc94dccda8f5c563bc457ba266a9e6"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/FlowDiagram.jsx": {
+    "mtime": 1780043300.1061134,
+    "ast_hash": "6d51cc3624246a47a16db21659393280",
+    "semantic_hash": "6d51cc3624246a47a16db21659393280"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/ManualSections.jsx": {
+    "mtime": 1780043300.1066878,
+    "ast_hash": "2314dad78d07f63ec28b574c8453112b",
+    "semantic_hash": "2314dad78d07f63ec28b574c8453112b"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/TransferTechnicalSection.jsx": {
+    "mtime": 1780043300.1078522,
+    "ast_hash": "87c9ffb10734f9413f94a061c8a924e0",
+    "semantic_hash": "87c9ffb10734f9413f94a061c8a924e0"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/ApiWebhookSection.jsx": {
+    "mtime": 1780043300.1052284,
+    "ast_hash": "f5e1a33c9fe0faee98426dba82d16c20",
+    "semantic_hash": "f5e1a33c9fe0faee98426dba82d16c20"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/StatusStepper.jsx": {
+    "mtime": 1780043300.1074598,
+    "ast_hash": "7e0a2124a2a510c10e36dcbc39eb2eed",
+    "semantic_hash": "7e0a2124a2a510c10e36dcbc39eb2eed"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/OverviewSection.jsx": {
+    "mtime": 1780043300.1069388,
+    "ast_hash": "cf5e95f7a8e53ff30790369e8e0cc0f5",
+    "semantic_hash": "cf5e95f7a8e53ff30790369e8e0cc0f5"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/GuardrailAlert.jsx": {
+    "mtime": 1780043300.1063364,
+    "ast_hash": "f43df10eb15858c177ebeffae34f0937",
+    "semantic_hash": "f43df10eb15858c177ebeffae34f0937"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/DemoControlBar.jsx": {
+    "mtime": 1780043300.105575,
+    "ast_hash": "363ce8d70379dc748f604da839751bfa",
+    "semantic_hash": "363ce8d70379dc748f604da839751bfa"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/DeveloperNotes.jsx": {
+    "mtime": 1780043300.1057696,
+    "ast_hash": "59a5a706fbfa6c1a56a93e538798734b",
+    "semantic_hash": "59a5a706fbfa6c1a56a93e538798734b"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/StatusMachine.jsx": {
+    "mtime": 1780043300.1073549,
+    "ast_hash": "7ee2e33e0cb740638bd3b80a3021f942",
+    "semantic_hash": "7ee2e33e0cb740638bd3b80a3021f942"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/FieldMappingTable.jsx": {
+    "mtime": 1780043300.105999,
+    "ast_hash": "3b635bed37f52835ca4c8bf2a8f129d3",
+    "semantic_hash": "3b635bed37f52835ca4c8bf2a8f129d3"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/components/prd/FlowNodeDetailPanel.jsx": {
+    "mtime": 1780043300.106227,
+    "ast_hash": "713f5b3ed15e2f90de0007234439c09b",
+    "semantic_hash": "713f5b3ed15e2f90de0007234439c09b"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/lib/utils.js": {
+    "mtime": 1780043300.1102233,
+    "ast_hash": "05db395a8d1124c1b45ed96553fc6643",
+    "semantic_hash": "05db395a8d1124c1b45ed96553fc6643"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/data/baasOpeningApplication.js": {
+    "mtime": 1780043300.1095176,
+    "ast_hash": "0e50ea1d5c5aef6156f3ded1d7168c3c",
+    "semantic_hash": "0e50ea1d5c5aef6156f3ded1d7168c3c"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/data/baasEnterpriseOpeningApplication.js": {
+    "mtime": 1780043300.109351,
+    "ast_hash": "a322228eb8075da63affb7d1f5cc4bb0",
+    "semantic_hash": "a322228eb8075da63affb7d1f5cc4bb0"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/data/prdModules.js": {
+    "mtime": 1780043300.1099308,
+    "ast_hash": "b54c6cfd05704475d6156b8e2c51848e",
+    "semantic_hash": "b54c6cfd05704475d6156b8e2c51848e"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/data/prdData.js": {
+    "mtime": 1780043300.1097085,
+    "ast_hash": "f23db0bbdd04aceca52de129b22a249f",
+    "semantic_hash": "f23db0bbdd04aceca52de129b22a249f"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/pages/PrdInvestPage.jsx": {
+    "mtime": 1780043300.112196,
+    "ast_hash": "d8eee64d3ceee58be8b824d47e06c04f",
+    "semantic_hash": "d8eee64d3ceee58be8b824d47e06c04f"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/pages/ProductManualHome.jsx": {
+    "mtime": 1780043300.112557,
+    "ast_hash": "9bf8c4b0f76d779c197f03cf9e520136",
+    "semantic_hash": "9bf8c4b0f76d779c197f03cf9e520136"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/pages/BaasOpeningApplicationPage.jsx": {
+    "mtime": 1780043300.1111455,
+    "ast_hash": "03306a62fc2729a7e42b594a585c4fb1",
+    "semantic_hash": "03306a62fc2729a7e42b594a585c4fb1"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/pages/IncomingFiatDepositPage.tsx": {
+    "mtime": 1780043300.111844,
+    "ast_hash": "141b3501f0f26b32314757a5b3979dec",
+    "semantic_hash": "141b3501f0f26b32314757a5b3979dec"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/pages/BaasOpeningPrototype.jsx": {
+    "mtime": 1780051360.170502,
+    "ast_hash": "0731480db245589c118c1e14c9531f23",
+    "semantic_hash": ""
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/pages/BaasPrototypeHome.jsx": {
+    "mtime": 1780043300.1115541,
+    "ast_hash": "4cd85afa4a4a647f5afac5ac0277b017",
+    "semantic_hash": "4cd85afa4a4a647f5afac5ac0277b017"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/pages/IncomingFiatDepositPrototype.tsx": {
+    "mtime": 1780043300.1120722,
+    "ast_hash": "44091c40901eb611bcfd8f17ae20d7b3",
+    "semantic_hash": "44091c40901eb611bcfd8f17ae20d7b3"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/pages/BaasOpeningApplicationModal.jsx": {
+    "mtime": 1780043300.1108568,
+    "ast_hash": "6efdbd3d973bda94f2d04afca0e75e6a",
+    "semantic_hash": "6efdbd3d973bda94f2d04afca0e75e6a"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/src/pages/BaasEnterpriseOpeningApplication.jsx": {
+    "mtime": 1780043300.1106021,
+    "ast_hash": "c76389bd3444f3843f84f29633c4a7fe",
+    "semantic_hash": "c76389bd3444f3843f84f29633c4a7fe"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/index.html": {
+    "mtime": 1780043300.0982459,
+    "ast_hash": "5be58b760c265cfb649b23bad7669f93",
+    "semantic_hash": "5be58b760c265cfb649b23bad7669f93"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/admin/product-manual/baas-interlace-prd/index.html": {
+    "mtime": 1780043300.0909595,
+    "ast_hash": "5be58b760c265cfb649b23bad7669f93",
+    "semantic_hash": "5be58b760c265cfb649b23bad7669f93"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/docs/baas-interlace-us-account-prd.md": {
+    "mtime": 1780043300.0978894,
+    "ast_hash": "1088a9193088be43d3d218e75a9dbfb6",
+    "semantic_hash": "1088a9193088be43d3d218e75a9dbfb6"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/docs/baas-requirement-prototypes.md": {
+    "mtime": 1780043300.0981305,
+    "ast_hash": "91c44cdc45a36d8ca95dfca95e34c60f",
+    "semantic_hash": "91c44cdc45a36d8ca95dfca95e34c60f"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/client/zhuanchu.png": {
+    "mtime": 1780043300.0962024,
+    "ast_hash": "049bf27ba7284fd344dd13e7dd8c53da",
+    "semantic_hash": "049bf27ba7284fd344dd13e7dd8c53da"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/client/home.png": {
+    "mtime": 1780043300.0955086,
+    "ast_hash": "a4cf6ba5cf96413e9b8da74c39cf5cfd",
+    "semantic_hash": "a4cf6ba5cf96413e9b8da74c39cf5cfd"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/client/account.png": {
+    "mtime": 1780043300.0916846,
+    "ast_hash": "e7773a8614306c69e32bebdee2fabf5c",
+    "semantic_hash": "e7773a8614306c69e32bebdee2fabf5c"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/client/fbzc.webp": {
+    "mtime": 1780043300.0939474,
+    "ast_hash": "a862e6565203db467831153d5d401f62",
+    "semantic_hash": "a862e6565203db467831153d5d401f62"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/client/detail.png": {
+    "mtime": 1780043300.0932896,
+    "ast_hash": "462cfad8c8ba6b2d63b195f409a2fc9d",
+    "semantic_hash": "462cfad8c8ba6b2d63b195f409a2fc9d"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/console/shenhe.png": {
+    "mtime": 1780043300.097262,
+    "ast_hash": "069a55b0783b0b66cf31f9eddba4bcc5",
+    "semantic_hash": "069a55b0783b0b66cf31f9eddba4bcc5"
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/.codex/hooks.json": {
+    "mtime": 1780048156.216396,
+    "ast_hash": "04674187105125f397fbf1e62cc21433",
+    "semantic_hash": ""
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/AGENTS.md": {
+    "mtime": 1780048043.9842236,
+    "ast_hash": "bc8045609c72ed924f72db852dcb1a91",
+    "semantic_hash": ""
+  },
+  "/Users/xieyuan/Project_Management/fidere_trust_prd/docs/plans/2026-05-29-baas-account-internal-transfer.md": {
+    "mtime": 1780047750.8514762,
+    "ast_hash": "6b02bec987cddab1e198049da389b290",
+    "semantic_hash": ""
+  }
+}
