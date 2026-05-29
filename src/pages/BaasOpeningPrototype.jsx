@@ -23,7 +23,6 @@ import { useState } from 'react'
 
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
-import { BaasOpeningApplicationModal } from './BaasOpeningApplicationModal'
 import { IncomingFiatDepositPrototype } from './IncomingFiatDepositPrototype'
 
 const demoStatuses = [
@@ -299,7 +298,7 @@ function JurisdictionPicker({ onClose, onSelectUs }) {
               </span>
               <span>
                 <span className="font-bold text-slate-950">美国账户</span>
-                <span className="mt-1 block text-sm text-slate-500">开户费 USD 500，扣费成功后进入后台开户流程。</span>
+                <span className="mt-1 block text-sm text-slate-500">创建/继续填写开户申请，提交后进入开户费扣费流程。</span>
               </span>
             </div>
           </button>
@@ -631,10 +630,9 @@ function AccountInfoDrawer({ onClose }) {
   )
 }
 
-export function BaasOpeningPrototype({ onBack, onPrototypeHome }) {
+export function BaasOpeningPrototype({ onBack, onOpenApplication, onPrototypeHome }) {
   const [status, setStatus] = useState('not_opened')
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [applicationOpen, setApplicationOpen] = useState(false)
   const [feeConfirmOpen, setFeeConfirmOpen] = useState(false)
   const [feeBalanceMode, setFeeBalanceMode] = useState('sufficient')
   const [feeResult, setFeeResult] = useState(null)
@@ -643,12 +641,7 @@ export function BaasOpeningPrototype({ onBack, onPrototypeHome }) {
 
   const selectUsAccount = () => {
     setPickerOpen(false)
-    setApplicationOpen(true)
-  }
-
-  const continueAfterApplication = () => {
-    setApplicationOpen(false)
-    setFeeConfirmOpen(true)
+    onOpenApplication()
   }
 
   const confirmFee = () => {
@@ -675,7 +668,6 @@ export function BaasOpeningPrototype({ onBack, onPrototypeHome }) {
         <MainContent status={status} onOpenAccountInfo={() => setAccountInfoOpen(true)} />
       </main>
       {pickerOpen ? <JurisdictionPicker onClose={() => setPickerOpen(false)} onSelectUs={selectUsAccount} /> : null}
-      {applicationOpen ? <BaasOpeningApplicationModal onClose={() => setApplicationOpen(false)} onProceedToFee={continueAfterApplication} /> : null}
       {feeConfirmOpen ? (
         <FeeConfirmModal
           balanceMode={feeBalanceMode}

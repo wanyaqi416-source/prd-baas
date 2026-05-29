@@ -24,6 +24,7 @@ import {
   TransferOutSection,
 } from './components/prd/ManualSections'
 import { ClientAdminVisibility } from './components/prd/ClientAdminVisibility'
+import { BaasOpeningApplicationPage } from './pages/BaasOpeningApplicationPage'
 import { BaasOpeningPrototype } from './pages/BaasOpeningPrototype'
 import { BaasPrototypeHome } from './pages/BaasPrototypeHome'
 import { ProductManualHome } from './pages/ProductManualHome'
@@ -90,7 +91,22 @@ function App() {
   }
 
   if (path === '/admin/product-manual/baas-prototype/opening') {
-    return <BaasOpeningPrototype onBack={() => navigate('/')} onPrototypeHome={() => navigate('/admin/product-manual/baas-prototype')} />
+    return (
+      <BaasOpeningPrototype
+        onBack={() => navigate('/')}
+        onOpenApplication={() => navigate('/admin/product-manual/baas-prototype/account-opening/create')}
+        onPrototypeHome={() => navigate('/admin/product-manual/baas-prototype')}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/baas-prototype/account-opening/create') {
+    return (
+      <BaasOpeningApplicationPage
+        onBack={() => navigate('/admin/product-manual/baas-prototype/opening')}
+        onProceedToOpeningStatus={() => navigate('/admin/product-manual/baas-prototype/opening')}
+      />
+    )
   }
 
   if (path === '/admin/product-manual/baas-interlace-prd') {

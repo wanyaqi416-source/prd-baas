@@ -20,6 +20,19 @@ export const attachmentFields = [
   { key: 'attachmentSourceOfFunds', label: '资金来源证明 attachmentSourceOfFunds.fileId', required: true },
 ]
 
+const sampleUploadedImageUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAx0lEQVR4Xu3XMQqAMAxE0fz/n7l0EEvBGlLZkgdOUOMtYmBm9kC/7z0A/E8EwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAL3u2wH45B9JVAeObK+9uAAAAABJRU5ErkJggg=='
+
+export function createMockUploadedImage(fileId, name) {
+  return {
+    fileId,
+    name,
+    size: 245760,
+    type: 'image/png',
+    status: '已上传',
+    downloadUrl: sampleUploadedImageUrl,
+  }
+}
+
 export const mockBaasOpeningProfile = {
   firstName: 'Wanyara',
   lastName: 'Wan',
@@ -40,10 +53,10 @@ const cityPattern = /^[A-Za-z\s]+$/
 
 export function createEmptyBaasApplication() {
   return {
-    attachmentAddress: null,
-    attachmentIdentity: null,
-    attachmentFatca: null,
-    attachmentSourceOfFunds: null,
+    attachmentAddress: createMockUploadedImage('mock_personal_address_001', 'Address Proof.png'),
+    attachmentIdentity: createMockUploadedImage('mock_personal_identity_001', 'Passport.png'),
+    attachmentFatca: createMockUploadedImage('mock_personal_fatca_001', 'W8Ben Form.png'),
+    attachmentSourceOfFunds: createMockUploadedImage('mock_personal_sof_001', 'Source of Funds.png'),
   }
 }
 
@@ -133,5 +146,7 @@ export function createMockFile(file) {
     name: file.name,
     size: file.size,
     type: file.type,
+    status: '已上传',
+    downloadUrl: typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function' ? URL.createObjectURL(file) : sampleUploadedImageUrl,
   }
 }

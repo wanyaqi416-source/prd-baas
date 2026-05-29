@@ -1,4 +1,4 @@
-import { AlertTriangle, Building2, CheckCircle2, FileUp, UserRound } from 'lucide-react'
+import { Building2, CheckCircle2, Download, FileUp, UserRound } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { Badge } from '../components/ui/badge'
@@ -12,6 +12,7 @@ import {
   validateBaasApplication,
   validatePersonalField,
 } from '../data/baasOpeningApplication'
+import { BaasEnterpriseOpeningApplication } from './BaasEnterpriseOpeningApplication'
 
 const fileLimit = 8 * 1024 * 1024
 const acceptedTypes = ['application/pdf', 'image/jpeg', 'image/png']
@@ -44,6 +45,21 @@ function TextInput({ field, value, error, onChange }) {
   )
 }
 
+function DownloadButton({ file }) {
+  if (!file?.downloadUrl) return null
+
+  return (
+    <a
+      href={file.downloadUrl}
+      download={file.name || 'attachment'}
+      className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg bg-emerald-50 px-3 text-xs font-bold text-emerald-700 hover:bg-emerald-100"
+    >
+      <Download className="h-4 w-4" />
+      下载
+    </a>
+  )
+}
+
 function FileUploadInput({ field, file, error, onFileChange }) {
   return (
     <div className={error ? 'rounded-xl border border-red-200 bg-red-50 p-4' : 'rounded-xl border border-slate-200 bg-white p-4'}>
@@ -54,24 +70,27 @@ function FileUploadInput({ field, file, error, onFileChange }) {
             {field.hint ? `${field.hint}；` : ''}支持 pdf / jpeg / png，单个文件大小限制 8M。
           </div>
           {file ? (
-            <div className="mt-2 text-xs font-semibold text-blue-700">{file.name} · {Math.max(file.size / 1024, 1).toFixed(0)} KB</div>
+            <div className="mt-2 text-xs font-semibold text-blue-700">{file.name} · {file.status || '已上传'} · {Math.max(file.size / 1024, 1).toFixed(0)} KB</div>
           ) : null}
           {error ? <div className="mt-2 text-xs leading-5 text-red-600">{error}</div> : null}
         </div>
-        <label className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-lg bg-blue-50 px-3 text-xs font-bold text-blue-700 hover:bg-blue-100">
-          <FileUp className="h-4 w-4" />
-          上传
-          <input
-            type="file"
-            accept=".pdf,.jpeg,.jpg,.png,application/pdf,image/jpeg,image/png"
-            className="hidden"
-            onChange={(event) => {
-              const nextFile = event.target.files?.[0]
-              onFileChange(field.key, nextFile)
-              event.target.value = ''
-            }}
-          />
-        </label>
+        <div className="flex shrink-0 flex-wrap justify-end gap-2">
+          <DownloadButton file={file} />
+          <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg bg-blue-50 px-3 text-xs font-bold text-blue-700 hover:bg-blue-100">
+            <FileUp className="h-4 w-4" />
+            上传
+            <input
+              type="file"
+              accept=".pdf,.jpeg,.jpg,.png,application/pdf,image/jpeg,image/png"
+              className="hidden"
+              onChange={(event) => {
+                const nextFile = event.target.files?.[0]
+                onFileChange(field.key, nextFile)
+                event.target.value = ''
+              }}
+            />
+          </label>
+        </div>
       </div>
     </div>
   )
@@ -96,11 +115,16 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
   const [errors, setErrors] = useState({})
   const [notice, setNotice] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [enterpriseStats, setEnterpriseStats] = useState({ acquired: 0, missing: 0, revision: 0 })
+  const [enterpriseActions, setEnterpriseActions] = useState(null)
 
   const sections = useMemo(() => getBaasApplicationSections(profileValues), [profileValues])
 
   const pendingAttachmentCount = attachmentFields.filter((field) => !supplementValues[field.key]?.fileId).length
   const pendingCount = sections.missing.length + pendingAttachmentCount
+  const activeStats = accountType === 'enterprise'
+    ? enterpriseStats
+    : { acquired: sections.acquired.length, missing: pendingCount, revision: 0 }
 
   const changeProfileValue = (key, value) => {
     setProfileValues((current) => ({ ...current, [key]: value }))
@@ -122,12 +146,16 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
   }
 
   const saveDraft = () => {
+    if (accountType === 'enterprise') {
+      enterpriseActions?.saveDraft?.()
+      return
+    }
     setNotice('草稿已保存。本阶段为前端原型模拟，不会写入数据库。')
   }
 
   const submitApplication = () => {
     if (accountType === 'enterprise') {
-      setNotice('企业开户资料补充流程暂未开放，请后续完善。')
+      enterpriseActions?.submit?.()
       return
     }
 
@@ -143,16 +171,29 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
   }
 
   const footer = (
-    <div className="flex flex-wrap justify-end gap-3 border-t border-slate-200 bg-white px-6 py-4">
-      <Button type="button" onClick={onClose} variant="outline" className="rounded-lg">
-        取消
-      </Button>
-      <Button type="button" onClick={saveDraft} variant="outline" className="rounded-lg">
-        保存草稿
-      </Button>
-      <Button type="button" onClick={submitApplication} className="rounded-lg bg-blue-600 hover:bg-blue-700">
-        提交开户申请
-      </Button>
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-6 py-4">
+      {accountType === 'enterprise' ? (
+        <div className="flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-600">
+          <span>还有 {activeStats.missing} 项待补充 / {activeStats.revision} 项需修正</span>
+          <Button type="button" onClick={() => enterpriseActions?.nextItem?.()} variant="outline" size="sm" className="rounded-lg">
+            下一项
+          </Button>
+          <Button type="button" onClick={() => enterpriseActions?.openChecklist?.()} variant="outline" size="sm" className="rounded-lg">
+            查看清单
+          </Button>
+        </div>
+      ) : <div />}
+      <div className="flex flex-wrap justify-end gap-3">
+        <Button type="button" onClick={onClose} variant="outline" className="rounded-lg">
+          取消
+        </Button>
+        <Button type="button" onClick={saveDraft} variant="outline" className="rounded-lg">
+          保存草稿
+        </Button>
+        <Button type="button" onClick={submitApplication} className="rounded-lg bg-blue-600 hover:bg-blue-700">
+          提交开户申请
+        </Button>
+      </div>
     </div>
   )
 
@@ -164,7 +205,7 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
             <CheckCircle2 className="h-7 w-7" />
           </div>
           <h3 className="mt-5 text-2xl font-bold text-slate-950">开户申请已提交</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-500">个人开户资料校验通过。本阶段为前端模拟提交，下一步进入开户费扣费确认。</p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">{accountType === 'enterprise' ? '企业开户资料校验通过。本阶段为前端模拟提交，下一步进入开户费扣费确认。' : '个人开户资料校验通过。本阶段为前端模拟提交，下一步进入开户费扣费确认。'}</p>
           <div className="mt-6 flex gap-3">
             <Button type="button" onClick={onProceedToFee} className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">
               继续扣费流程
@@ -192,27 +233,43 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
               ×
             </button>
           </div>
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
             <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
               <div className="text-xs font-semibold text-emerald-700">已获取资料</div>
-              <div className="mt-1 text-2xl font-bold text-emerald-900">{sections.acquired.length} 项</div>
+              <div className="mt-1 text-2xl font-bold text-emerald-900">{activeStats.acquired} 项</div>
             </div>
             <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
-              <div className="text-xs font-semibold text-amber-700">待补充资料</div>
-              <div className="mt-1 text-2xl font-bold text-amber-900">{pendingCount} 项</div>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-xs font-semibold text-amber-700">待补充资料</div>
+                  <div className="mt-1 text-2xl font-bold text-amber-900">{activeStats.missing} 项</div>
+                </div>
+                {accountType === 'enterprise' ? (
+                  <Button type="button" onClick={() => enterpriseActions?.openChecklist?.()} size="sm" className="rounded-lg bg-amber-600 hover:bg-amber-700">
+                    查看清单
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+            <div className="rounded-xl border border-red-100 bg-red-50 p-4">
+              <div className="text-xs font-semibold text-red-700">需修正资料</div>
+              <div className="mt-1 text-2xl font-bold text-red-900">{activeStats.revision} 项</div>
             </div>
           </div>
         </div>
 
         <div className="overflow-auto bg-[#f8fafc] px-6 py-5">
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <SectionHeader title="开户类型选择" badge={accountType === 'personal' ? '个人开户' : '企业占位'}>
-              企业开户入口保留，但本次只实现个人用户开户资料补充流程。
+            <SectionHeader title="开户类型选择" badge={accountType === 'personal' ? '个人开户' : '企业开户'}>
+              默认进入个人开户；切换企业开户后可查看企业 KYB 资料带出、补充和修正流程。
             </SectionHeader>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <button
                 type="button"
-                onClick={() => setAccountType('personal')}
+                onClick={() => {
+                  setAccountType('personal')
+                  setNotice('')
+                }}
                 className={accountType === 'personal' ? 'flex items-center gap-3 rounded-2xl border border-blue-300 bg-blue-50 p-4 text-left' : 'flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left hover:border-blue-200'}
               >
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm">
@@ -227,7 +284,7 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
                 type="button"
                 onClick={() => {
                   setAccountType('enterprise')
-                  setNotice('企业开户资料补充流程暂未开放，请后续完善。')
+                  setNotice('')
                 }}
                 className={accountType === 'enterprise' ? 'flex items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-left' : 'flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left hover:border-amber-200'}
               >
@@ -236,7 +293,7 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
                 </span>
                 <span>
                   <span className="block font-bold text-slate-950">企业开户</span>
-                  <span className="mt-1 block text-sm text-slate-500">企业开户资料补充流程暂未开放，请后续完善。</span>
+                  <span className="mt-1 block text-sm text-slate-500">复用企业 KYB 资料，补充缺失文件、股东和授权代表信息。</span>
                 </span>
               </button>
             </div>
@@ -247,15 +304,13 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
           ) : null}
 
           {accountType === 'enterprise' ? (
-            <section className="mt-5 rounded-2xl border border-amber-100 bg-amber-50 p-6">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-700" />
-                <div>
-                  <h4 className="font-bold text-amber-950">企业开户资料补充流程暂未开放，请后续完善。</h4>
-                  <p className="mt-2 text-sm leading-6 text-amber-800">该入口先保留，用于后续补充 UBO、董事、公司注册文件、营业地址和企业 FATCA 等资料。</p>
-                </div>
-              </div>
-            </section>
+            <div className="mt-5">
+              <BaasEnterpriseOpeningApplication
+                onRegisterActions={setEnterpriseActions}
+                onStatsChange={setEnterpriseStats}
+                onSubmitSuccess={() => setSubmitted(true)}
+              />
+            </div>
           ) : (
             <div className="mt-5 grid gap-5">
               <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
