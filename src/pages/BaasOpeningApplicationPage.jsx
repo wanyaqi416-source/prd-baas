@@ -323,28 +323,6 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
       </header>
 
       <main className="mx-auto grid max-w-[1280px] gap-5 px-5 py-6">
-        {accountType === 'enterprise' ? (
-          <section className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
-              <div className="text-xs font-semibold text-emerald-700">已获取资料</div>
-              <div className="mt-1 text-2xl font-bold text-emerald-900">{activeStats.acquired} 项</div>
-            </div>
-            <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-xs font-semibold text-amber-700">待补充资料</div>
-                  <div className="mt-1 text-2xl font-bold text-amber-900">{activeStats.missing} 项</div>
-                </div>
-                <Button type="button" onClick={() => enterpriseActions?.openChecklist?.()} size="sm" className="rounded-lg bg-amber-600 hover:bg-amber-700">查看清单</Button>
-              </div>
-            </div>
-            <div className="rounded-xl border border-red-100 bg-red-50 p-4">
-              <div className="text-xs font-semibold text-red-700">需修正资料</div>
-              <div className="mt-1 text-2xl font-bold text-red-900">{activeStats.revision} 项</div>
-            </div>
-          </section>
-        ) : null}
-
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -389,7 +367,6 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
                   <h2 className="text-base font-bold text-slate-950">已获取资料</h2>
                   <p className="mt-1 text-sm leading-6 text-slate-500">当前系统已有字段自动带出，只读展示，供用户确认。</p>
                 </div>
-                <Badge variant="success">{sections.acquired.length} 项</Badge>
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {sections.acquired.map((field) => <FieldValue key={field.id} field={field} value={field.value} />)}
@@ -401,7 +378,6 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
                   <h2 className="text-base font-bold text-slate-950">待补充资料</h2>
                   <p className="mt-1 text-sm leading-6 text-slate-500">当前系统缺失的 BaaS 必填字段在这里填写或上传；证件类型仅允许 PASSPORT。</p>
                 </div>
-                <Badge variant="warning">{pendingCount} 项</Badge>
               </div>
               <div className="mt-5 grid gap-3 lg:grid-cols-2">
                 {sections.missing.map((field) => (
@@ -418,11 +394,10 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
       <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-5 py-4 shadow-2xl backdrop-blur">
         <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-600">
-            <span>{accountType === 'enterprise' ? `还有 ${activeStats.missing} 项待补充 / ${activeStats.revision} 项需修正` : `还有 ${activeStats.missing} 项待补充`}</span>
+            <span>{accountType === 'enterprise' ? `还有 ${activeStats.missing} 项待补充` : '还有数据待补充'}</span>
             {accountType === 'enterprise' ? (
               <>
                 <Button type="button" onClick={() => enterpriseActions?.nextItem?.()} variant="outline" size="sm" className="rounded-lg">下一项</Button>
-                <Button type="button" onClick={() => enterpriseActions?.openChecklist?.()} variant="outline" size="sm" className="rounded-lg">查看清单</Button>
               </>
             ) : null}
           </div>

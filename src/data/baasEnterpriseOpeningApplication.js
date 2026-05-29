@@ -1,62 +1,97 @@
 export const companyBaseFields = [
-  { path: 'personType', label: 'personType', required: true, readOnly: true, hint: '固定为 COMPANY' },
-  { path: 'businessNameEn', label: '企业英文名称 businessNameEn', required: true, hint: '对应我们系统的主体名称字段' },
-  { path: 'registrationDate', label: '注册日期 registrationDate', required: true, hint: 'BaaS 需要格式：yyyy-MM-dd' },
-  { path: 'email', label: '电子邮件 email', required: true, hint: 'BaaS 需要格式：name@example.com' },
-  { path: 'phonePrefix', label: '电话前缀 phonePrefix', required: true, hint: '例如 +852、+1' },
-  { path: 'phone', label: '手机号码 phone', required: true },
-  { path: 'taxId', label: '税号 taxId', required: true },
-  { path: 'industry', label: '行业代码 industry', required: true, hint: 'BaaS 需要 6 位 NAICS 行业代码' },
-  { path: 'businessNumber', label: '商务电话 businessNumber', required: true, hint: '需要用户补充填写' },
+  { path: 'registrationPlace', label: '企业注册地', required: true, section: '企业主体信息', readOnly: true },
+  { path: 'businessNameEn', label: '企业英文名称', required: true, section: '企业主体信息', readOnly: true },
+  { path: 'isListedCompany', label: '是否为上市公司', required: true, section: '企业主体信息', inputType: 'segmented', options: ['是', '否'], supplement: true },
+  { path: 'stockExchangeName', label: '交易所名称', required: true, section: '企业主体信息', dependsOn: { path: 'isListedCompany', value: '是' }, placeholder: '请输入交易所名称' },
+  { path: 'stockCode', label: '股票代码', required: true, section: '企业主体信息', dependsOn: { path: 'isListedCompany', value: '是' }, placeholder: '请输入股票代码' },
+  { path: 'authorizedCapital', label: '法定股本数', required: true, section: '企业主体信息', dependsOn: { path: 'isListedCompany', value: '是' }, sanitize: 'digits', placeholder: '请输入法定股本数' },
+  { path: 'issuedCapital', label: '已发行股本数', required: true, section: '企业主体信息', dependsOn: { path: 'isListedCompany', value: '是' }, sanitize: 'digits', placeholder: '请输入已发行股本数' },
+  { path: 'capitalCurrency', label: '股本币种', required: true, section: '企业主体信息', dependsOn: { path: 'isListedCompany', value: '是' }, sanitize: 'currency', placeholder: '请输入股本币种英文，如USD' },
+  {
+    path: 'companyType',
+    label: '企业类型',
+    required: true,
+    section: '企业主体信息',
+    inputType: 'select',
+    placeholder: '请选择企业类型',
+    supplement: true,
+    tooltip: '请确保与公司文件中登记的企业类型一致',
+    options: ['私人股份有限公司', '公众股份有限公司', '有股本的公众无限公司', '有股本的私人无限公司'],
+  },
+  { path: 'businessRegistrationNumber', label: '商业登记号码', required: true, section: '企业主体信息', placeholder: '请输入商业登记号码', supplement: true },
+  { path: 'companyRegistrationNumber', label: '公司注册编号', required: true, section: '企业主体信息', placeholder: '请输入公司注册编号', supplement: true },
+  {
+    path: 'employeeCount',
+    label: '雇员人数',
+    required: true,
+    section: '经营规模与场所',
+    inputType: 'select',
+    placeholder: '请选择雇员人数',
+    supplement: true,
+    options: ['员工人数超过200人', '员工人数50人~200人', '员工人数少于50人'],
+  },
+  {
+    path: 'premisesType',
+    label: '经营场所类型',
+    required: true,
+    section: '经营规模与场所',
+    inputType: 'select',
+    placeholder: '请选择经营场所类型',
+    supplement: true,
+    options: ['自有办公场所', '较大租用办公场所(大于500平方)', '较小租用办公场所(小于500平方)', '无固定办公场所'],
+  },
 ]
 
 export const registrationAddressFields = [
-  { path: 'registrationAddress.addressLine1', label: '银行地址第一行 addressLine1', required: true, hint: '必需。主要地址栏（街道地址/邮政信箱/公司名称）。仅限英文字母，允许使用数字和常用符号。' },
-  { path: 'registrationAddress.addressLine2', label: '地址线2 addressLine2', required: false, hint: '辅助地址行（公寓/套房/单元/楼栋）。仅限英文字母，允许使用数字和常用符号。' },
-  { path: 'registrationAddress.city', label: '城市 city', required: true, hint: '必需。城市。仅限英文字母和空格。' },
-  { path: 'registrationAddress.state', label: '州/省 state', required: true, hint: '必需。州/省/地区；所有国家/地区均需填写。美国和加拿大必须使用两位字母代码；无州/省国家可重复国家名称。' },
-  { path: 'registrationAddress.country', label: '国家 country', required: true, hint: '必需。两位字母国家代码，符合 ISO 3166-1 alpha-2 标准。' },
-  { path: 'registrationAddress.postalCode', label: '邮政编码 postalCode', required: true, hint: '必需。地址的邮政编码。' },
+  { path: 'registrationAddress.state', label: '州/State/Province/Region', required: true, section: '注册地址', readOnly: true },
+  { path: 'registrationAddress.city', label: '市/city', required: true, section: '注册地址', readOnly: true },
+  { path: 'registrationAddress.addressLine1', label: '具体地址(如区、街道、建筑、门牌号)/Address Line', required: true, section: '注册地址', readOnly: true },
+  { path: 'registrationAddress.postalCode', label: '邮政编码/Postal Code', required: true, section: '注册地址', readOnly: true },
+  { path: 'operatingAddress.country', label: '国家/地区', required: true, section: '实际经营地址', placeholder: '请输入国家/地区', supplement: true },
+  { path: 'operatingAddress.state', label: '州/State/Province/Region', required: true, section: '实际经营地址', placeholder: '请输入州/省/地区', supplement: true },
+  { path: 'operatingAddress.city', label: '市/city', required: true, section: '实际经营地址', placeholder: '请输入市', supplement: true },
+  { path: 'operatingAddress.addressLine1', label: '具体地址(如区、街道、建筑、门牌号)/Address Line', required: true, section: '实际经营地址', placeholder: '实际经营地址请具体至门牌号', supplement: true },
+  { path: 'operatingAddress.postalCode', label: '邮政编码/Postal Code', required: true, section: '实际经营地址', placeholder: '请输入邮政编码', supplement: true },
 ]
 
 export const companyAttachmentFields = [
-  { path: 'attachments.attachmentLicense', label: '公司营业执照 attachmentLicense', hint: 'pdf / jpeg / png，限 8M。对应我们系统的公司注册证书和商业登记证字段。' },
-  { path: 'attachments.attachmentAddress', label: '地址证明 attachmentAddress', hint: 'pdf / jpeg / png，限 8M。' },
-  { path: 'attachments.attachmentCorporateRecords', label: '公司章程或组织大纲 attachmentCorporateRecords', hint: 'pdf / jpeg / png，限 8M。对应我们系统的公司章程字段。' },
-  { path: 'attachments.attachmentCorporateResolution', label: '公司/企业决议 attachmentCorporateResolution', hint: 'pdf / jpeg / png，限 8M。对应我们的董事会决议。' },
-  { path: 'attachments.attachmentFiscalCertificate', label: '公司财务登记证明 attachmentFiscalCertificate', hint: 'pdf / jpeg / png，限 8M。' },
-  { path: 'attachments.attachmentFatca', label: 'FATCA – W8Ben 或 W9 表格 attachmentFatca', hint: 'pdf / jpeg / png，限 8M。' },
-  { path: 'attachments.attachmentFinancialStatement', label: '财务报表 attachmentFinancialStatement', hint: 'pdf / jpeg / png，限 8M。' },
-  { path: 'attachments.attachmentRegistrationNumber', label: '政府颁发的公司注册号证明文件 attachmentRegistrationNumber', hint: 'pdf / jpeg / png，限 8M。' },
-  { path: 'attachments.attachmentSourceOfFunds', label: '资金来源证明 attachmentSourceOfFunds', hint: 'pdf / jpeg / png，限 8M。' },
-  { path: 'attachments.attachmentTaxIdentificationNumber', label: '税务识别号或同等文件 attachmentTaxIdentificationNumber', hint: 'pdf / jpeg / png，限 8M。' },
+  { path: 'attachments.attachmentLicense', label: '公司营业执照', hint: 'pdf / jpeg / png，限 8M。对应我们系统的公司注册证书和商业登记证字段。' },
+  { path: 'attachments.attachmentAddress', label: '地址证明', hint: 'pdf / jpeg / png，限 8M。' },
+  { path: 'attachments.attachmentCorporateRecords', label: '公司章程或组织大纲', hint: 'pdf / jpeg / png，限 8M。对应我们系统的公司章程字段。' },
+  { path: 'attachments.attachmentCorporateResolution', label: '公司/企业决议', hint: 'pdf / jpeg / png，限 8M。对应我们的董事会决议。' },
+  { path: 'attachments.attachmentFiscalCertificate', label: '公司财务登记证明', hint: 'pdf / jpeg / png，限 8M。' },
+  { path: 'attachments.attachmentFatca', label: 'FATCA – W8Ben 或 W9 表格', hint: 'pdf / jpeg / png，限 8M。' },
+  { path: 'attachments.attachmentFinancialStatement', label: '财务报表', hint: 'pdf / jpeg / png，限 8M。' },
+  { path: 'attachments.attachmentRegistrationNumber', label: '政府颁发的公司注册号证明文件', hint: 'pdf / jpeg / png，限 8M。' },
+  { path: 'attachments.attachmentSourceOfFunds', label: '资金来源证明', hint: 'pdf / jpeg / png，限 8M。' },
+  { path: 'attachments.attachmentTaxIdentificationNumber', label: '税务识别号或同等文件', hint: 'pdf / jpeg / png，限 8M。' },
 ]
 
 export const personFields = [
-  { path: 'firstName', label: '名 firstName', required: true },
-  { path: 'lastName', label: '姓 lastName', required: true },
-  { path: 'birthday', label: '生日 birthday', required: true, hint: 'BaaS 需要格式：yyyy-MM-dd' },
-  { path: 'gender', label: '性别 gender', required: true, hint: 'MALE / FEMALE' },
-  { path: 'address.addressLine1', label: '地址第一行 addressLine1', required: true, hint: '仅允许英文字母、数字和常用符号' },
-  { path: 'address.addressLine2', label: '地址第二行 addressLine2', required: false },
-  { path: 'address.city', label: '城市 city', required: true, hint: '仅允许英文字母和空格' },
-  { path: 'address.state', label: '州/省/地区 state', required: true },
-  { path: 'address.country', label: '国家 country', required: true, hint: '两位 ISO 国家码' },
-  { path: 'address.postalCode', label: '邮政编码 postalCode', required: true },
-  { path: 'identityType', label: '证件类型 identityType', required: true, hint: 'CN-RIC / PASSPORT' },
-  { path: 'region', label: '地区 region', required: true },
-  { path: 'number', label: '身份证件号码 number', required: true },
+  { path: 'firstName', label: '名', required: true },
+  { path: 'lastName', label: '姓', required: true },
+  { path: 'birthday', label: '生日', required: true, hint: 'BaaS 需要格式：yyyy-MM-dd' },
+  { path: 'gender', label: '性别', required: true, hint: 'MALE / FEMALE' },
+  { path: 'address.addressLine1', label: '地址第一行', required: true, hint: '仅允许英文字母、数字和常用符号' },
+  { path: 'address.addressLine2', label: '地址第二行', required: false },
+  { path: 'address.city', label: '城市', required: true, hint: '仅允许英文字母和空格' },
+  { path: 'address.state', label: '州/省/地区', required: true },
+  { path: 'address.country', label: '国家', required: true, hint: '两位 ISO 国家码' },
+  { path: 'address.postalCode', label: '邮政编码', required: true },
+  { path: 'identityType', label: '证件类型', required: true, hint: 'CN-RIC / PASSPORT' },
+  { path: 'region', label: '地区', required: true },
+  { path: 'number', label: '身份证件号码', required: true },
 ]
 
 export const shareholderExtraFields = [
-  { path: 'ratio', label: '持股比例 ratio', required: true, hint: '0-100，必填' },
+  { path: 'ratio', label: '持股比例', required: true, hint: '0-100，必填' },
 ]
 
 export const personAttachmentFields = [
-  { path: 'attachments.attachmentAddress', label: '地址证明 attachmentAddress' },
-  { path: 'attachments.attachmentIdentity', label: '身份证明文件 attachmentIdentity' },
-  { path: 'attachments.attachmentFatca', label: 'FATCA 表格 attachmentFatca', hint: 'W8Ben 或 W9' },
-  { path: 'attachments.attachmentSourceOfFunds', label: '资金来源证明 attachmentSourceOfFunds' },
+  { path: 'attachments.attachmentAddress', label: '地址证明' },
+  { path: 'attachments.attachmentIdentity', label: '身份证明文件' },
+  { path: 'attachments.attachmentFatca', label: 'FATCA 表格', hint: 'W8Ben 或 W9' },
+  { path: 'attachments.attachmentSourceOfFunds', label: '资金来源证明' },
 ]
 
 const sampleUploadedImageUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAx0lEQVR4Xu3XMQqAMAxE0fz/n7l0EEvBGlLZkgdOUOMtYmBm9kC/7z0A/E8EwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAL3u2wH45B9JVAeObK+9uAAAAABJRU5ErkJggg=='
@@ -73,22 +108,37 @@ function createMockUploadedImage(fileId, name) {
 }
 
 export const mockEnterpriseApplication = {
-  personType: 'COMPANY',
+  currentApplicant: {
+    userId: 'user_demo_001',
+    personId: 'dir_001',
+    role: 'director',
+    matchStatus: 'matched',
+  },
+  registrationPlace: 'Hong Kong',
   businessNameEn: 'FIDERE GLOBAL HOLDINGS LIMITED',
-  registrationDate: '2021-08-12',
-  email: 'ops@fidere-demo.com',
-  phonePrefix: '+852',
-  phone: '29881234',
-  taxId: '',
-  industry: '',
-  businessNumber: '',
+  isListedCompany: '否',
+  stockExchangeName: '',
+  stockCode: '',
+  authorizedCapital: '',
+  issuedCapital: '',
+  capitalCurrency: '',
+  companyType: '私人股份有限公司',
+  businessRegistrationNumber: '',
+  companyRegistrationNumber: '',
+  employeeCount: '',
+  premisesType: '',
   registrationAddress: {
     addressLine1: 'Unit 1808, 18/F, Central Plaza',
-    addressLine2: '18 Harbour Road',
     city: 'Hong Kong',
     state: 'Hong Kong',
-    country: 'HKG',
     postalCode: '999077',
+  },
+  operatingAddress: {
+    country: '',
+    addressLine1: '',
+    city: '',
+    state: '',
+    postalCode: '',
   },
   attachments: {
     attachmentLicense: createMockUploadedImage('kyb_license_001', 'Certificate of Incorporation.png'),
@@ -132,7 +182,8 @@ export const mockEnterpriseApplication = {
   directors: [
     {
       id: 'dir_001',
-      role: '董事 / 授权代表',
+      userId: 'user_demo_001',
+      roles: ['director'],
       firstName: 'Michael',
       lastName: 'Chan',
       birthday: '1979-11-03',
@@ -151,6 +202,32 @@ export const mockEnterpriseApplication = {
       attachments: {
         attachmentAddress: null,
         attachmentIdentity: createMockUploadedImage('dir_id_001', 'Director Passport.png'),
+        attachmentFatca: null,
+        attachmentSourceOfFunds: null,
+      },
+    },
+    {
+      id: 'auth_001',
+      userId: 'user_demo_002',
+      roles: ['authorizedRepresentative'],
+      firstName: 'Sophia',
+      lastName: 'Lee',
+      birthday: '1983-06-22',
+      gender: 'FEMALE',
+      address: {
+        addressLine1: '9 Queen\'s Road Central',
+        addressLine2: '15/F',
+        city: 'Hong Kong',
+        state: 'Hong Kong',
+        country: 'HK',
+        postalCode: '',
+      },
+      identityType: 'PASSPORT',
+      region: 'HK',
+      number: '',
+      attachments: {
+        attachmentAddress: null,
+        attachmentIdentity: createMockUploadedImage('auth_id_001', 'Authorized Representative Passport.png'),
         attachmentFatca: null,
         attachmentSourceOfFunds: null,
       },
@@ -182,20 +259,11 @@ export function setByPath(target, path, value) {
 
 function validateCommon(path, value, owner) {
   const text = String(value || '').trim()
-  if (path.includes('registrationDate') || path === 'birthday') {
+  if (path === 'birthday') {
     return /^\d{4}-\d{2}-\d{2}$/.test(text) ? '' : '日期格式必须为 yyyy-MM-dd。'
   }
-  if (path === 'email') {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text) ? '' : 'email 格式不正确。'
-  }
-  if (path === 'phonePrefix') {
-    return /^\+\d{1,4}$/.test(text) ? '' : '电话前缀需要类似 +852。'
-  }
-  if (path === 'industry') {
-    return /^\d{6}$/.test(text) ? '' : 'industry 必须是 6 位 NAICS 行业代码。'
-  }
   if (path.endsWith('country')) {
-    return /^[A-Z]{2}$/.test(text) ? '' : '国家目前不是两位码，需转换为 ISO 3166-1 alpha-2。'
+    return ''
   }
   if (path.endsWith('state')) {
     const country = String(owner?.country || getByPath(owner, path.replace(/state$/, 'country')) || '').trim().toUpperCase()
@@ -215,7 +283,7 @@ function validateCommon(path, value, owner) {
     return ['MALE', 'FEMALE'].includes(text) ? '' : 'gender 必须是 MALE / FEMALE。'
   }
   if (path === 'identityType') {
-    return ['CN-RIC', 'PASSPORT'].includes(text) ? '' : '证件类型无法映射为 BaaS 枚举，请重新选择 CN-RIC 或 PASSPORT。'
+    return ''
   }
   if (path === 'ratio') {
     const number = Number(text)
@@ -224,7 +292,15 @@ function validateCommon(path, value, owner) {
   return ''
 }
 
+function isFieldActive(source, field) {
+  if (!field.dependsOn) return true
+  return getByPath(source, field.dependsOn.path) === field.dependsOn.value
+}
+
 function classifyField(sections, source, field, group, owner = source) {
+  if (!isFieldActive(source, field)) {
+    return
+  }
   const value = getByPath(source, field.path)
   const text = String(value || '').trim()
   const item = {
@@ -240,6 +316,21 @@ function classifyField(sections, source, field, group, owner = source) {
   }
 
   if (!text) {
+    return
+  }
+
+  if (field.sanitize === 'digits' && !/^\d+$/.test(text)) {
+    sections.revision.push({ ...item, error: '仅允许输入数字。' })
+    return
+  }
+
+  if (field.sanitize === 'currency' && !/^[A-Z]{1,3}$/.test(text)) {
+    sections.revision.push({ ...item, error: '只支持大写英文字母，最多 3 位。' })
+    return
+  }
+
+  if (field.options?.length && !field.options.includes(text)) {
+    sections.revision.push({ ...item, error: '请选择有效选项。' })
     return
   }
 
@@ -280,13 +371,24 @@ function classifyPerson(sections, data, collectionKey, personType, index, includ
   })
 }
 
+function isCurrentApplicantPerson(data, person) {
+  return data.currentApplicant?.matchStatus === 'matched' && data.currentApplicant.personId === person.id
+}
+
 export function getEnterpriseSections(data) {
   const sections = { acquired: [], missing: [], revision: [] }
   companyBaseFields.forEach((field) => classifyField(sections, data, field, '企业基础资料', data))
-  registrationAddressFields.forEach((field) => classifyField(sections, data, field, '企业基础资料', data.registrationAddress))
+  registrationAddressFields.forEach((field) => {
+    const owner = field.path.startsWith('operatingAddress.') ? data.operatingAddress : data.registrationAddress
+    classifyField(sections, data, field, '企业基础资料', owner)
+  })
   companyAttachmentFields.forEach((field) => classifyAttachment(sections, data, field, '企业基础资料'))
   data.shareholders.forEach((person, index) => classifyPerson(sections, data, 'shareholders', '股东', index, true))
-  data.directors.forEach((person, index) => classifyPerson(sections, data, 'directors', '董事/授权代表', index, false))
+  data.directors.forEach((person, index) => {
+    if (isCurrentApplicantPerson(data, person)) {
+      classifyPerson(sections, data, 'directors', '董事/授权代表', index, false)
+    }
+  })
   return sections
 }
 
