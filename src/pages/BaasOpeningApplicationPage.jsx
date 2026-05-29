@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import {
-  attachmentFields,
   createEmptyBaasApplication,
   createMockFile,
   getBaasApplicationSections,
@@ -134,14 +133,24 @@ function FeeResultModal({ type, onClose, onContinue }) {
 }
 
 function FieldValue({ field, value }) {
+  const sourceValue = field.sourceValue ?? value
+  const baasValue = field.convertedValue ?? field.value ?? value
+  const simpleValue = sourceValue || baasValue
+  const simpleDisplay = simpleValue?.name ? `${simpleValue.name} · ${simpleValue.status || '已上传'}` : simpleValue
+
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-semibold text-slate-500">{field.label}</span>
         {field.note ? <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700">{field.note}</span> : null}
+        {field.conversionStatus ? <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700">{field.conversionStatus}</span> : null}
       </div>
-      <div className="mt-1 min-h-6 text-sm font-bold text-slate-950">{value || '-'}</div>
+      <div className="mt-2 min-h-6 text-sm font-bold text-slate-950">{simpleDisplay || '-'}</div>
+      {field.error ? <div className="mt-2 text-xs leading-5 text-amber-700">{field.error}</div> : null}
       {field.hint ? <div className="mt-1 text-xs leading-5 text-slate-400">{field.hint}</div> : null}
+      <div className="mt-3">
+        <DownloadButton file={field.value} />
+      </div>
     </div>
   )
 }
@@ -192,6 +201,42 @@ function PersonalFileUpload({ field, file, error, onFileChange }) {
   )
 }
 
+function PersonalTextInput({ field, value, error, onChange }) {
+  const isPassportType = field.key === 'identityType'
+
+  return (
+    <label className={error ? 'block rounded-xl border border-red-200 bg-red-50 p-4' : 'block rounded-xl border border-slate-200 bg-white p-4'}>
+      <span className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-bold text-slate-950">{field.label}</span>
+      </span>
+      {field.note ? <span className="mt-2 block text-xs leading-5 text-amber-700">{field.note}</span> : null}
+      {isPassportType ? (
+        <select
+          value={value || ''}
+          onChange={(event) => onChange(field.key, event.target.value)}
+          className={error ? 'mt-3 h-11 w-full rounded-lg border border-red-300 bg-white px-3 text-sm font-semibold text-slate-950 outline-none focus:border-red-400' : 'mt-3 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-950 outline-none focus:border-blue-400'}
+        >
+          <option value="">请选择</option>
+          <option value="PASSPORT">PASSPORT</option>
+        </select>
+      ) : (
+        <input
+          value={value || ''}
+          onChange={(event) => onChange(field.key, event.target.value)}
+          placeholder={field.hint || '请输入'}
+          className={error ? 'mt-3 h-11 w-full rounded-lg border border-red-300 bg-white px-3 text-sm font-semibold text-slate-950 outline-none focus:border-red-400' : 'mt-3 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-950 outline-none focus:border-blue-400'}
+        />
+      )}
+      {field.requirements?.length ? (
+        <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-500">
+          {field.requirements.map((requirement) => <span key={requirement}>{requirement}</span>)}
+        </div>
+      ) : field.hint ? <span className="mt-1 block text-xs leading-5 text-slate-500">{field.hint}</span> : null}
+      {error ? <span className="mt-2 block text-xs leading-5 text-red-600">{error}</span> : null}
+    </label>
+  )
+}
+
 export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, defaultAccountType = 'personal' }) {
   const [accountType, setAccountType] = useState(defaultAccountType)
   const [profileValues] = useState(mockBaasOpeningProfile)
@@ -206,9 +251,8 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
   const [enterpriseStats, setEnterpriseStats] = useState({ acquired: 0, missing: 0, revision: 0 })
   const [enterpriseActions, setEnterpriseActions] = useState(null)
 
-  const sections = useMemo(() => getBaasApplicationSections(profileValues), [profileValues])
-  const pendingAttachmentCount = attachmentFields.filter((field) => !supplementValues[field.key]?.fileId).length
-  const pendingCount = sections.missing.length + pendingAttachmentCount
+  const sections = useMemo(() => getBaasApplicationSections(profileValues, supplementValues), [profileValues, supplementValues])
+  const pendingCount = sections.missing.length
   const personalStats = { acquired: sections.acquired.length, missing: pendingCount, revision: 0 }
   const activeStats = accountType === 'enterprise' ? enterpriseStats : personalStats
 
@@ -223,6 +267,11 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
       return
     }
     setSupplementValues((current) => ({ ...current, [key]: createMockFile(file) }))
+    setErrors((current) => ({ ...current, [key]: '' }))
+  }
+
+  const changePersonalValue = (key, value) => {
+    setSupplementValues((current) => ({ ...current, [key]: value }))
     setErrors((current) => ({ ...current, [key]: '' }))
   }
 
@@ -274,33 +323,33 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
       </header>
 
       <main className="mx-auto grid max-w-[1280px] gap-5 px-5 py-6">
-        <section className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
-            <div className="text-xs font-semibold text-emerald-700">已获取资料</div>
-            <div className="mt-1 text-2xl font-bold text-emerald-900">{activeStats.acquired} 项</div>
-          </div>
-          <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-xs font-semibold text-amber-700">待补充资料</div>
-                <div className="mt-1 text-2xl font-bold text-amber-900">{activeStats.missing} 项</div>
-              </div>
-              {accountType === 'enterprise' ? (
-                <Button type="button" onClick={() => enterpriseActions?.openChecklist?.()} size="sm" className="rounded-lg bg-amber-600 hover:bg-amber-700">查看清单</Button>
-              ) : null}
+        {accountType === 'enterprise' ? (
+          <section className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+              <div className="text-xs font-semibold text-emerald-700">已获取资料</div>
+              <div className="mt-1 text-2xl font-bold text-emerald-900">{activeStats.acquired} 项</div>
             </div>
-          </div>
-          <div className="rounded-xl border border-red-100 bg-red-50 p-4">
-            <div className="text-xs font-semibold text-red-700">需修正资料</div>
-            <div className="mt-1 text-2xl font-bold text-red-900">{activeStats.revision} 项</div>
-          </div>
-        </section>
+            <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-xs font-semibold text-amber-700">待补充资料</div>
+                  <div className="mt-1 text-2xl font-bold text-amber-900">{activeStats.missing} 项</div>
+                </div>
+                <Button type="button" onClick={() => enterpriseActions?.openChecklist?.()} size="sm" className="rounded-lg bg-amber-600 hover:bg-amber-700">查看清单</Button>
+              </div>
+            </div>
+            <div className="rounded-xl border border-red-100 bg-red-50 p-4">
+              <div className="text-xs font-semibold text-red-700">需修正资料</div>
+              <div className="mt-1 text-2xl font-bold text-red-900">{activeStats.revision} 项</div>
+            </div>
+          </section>
+        ) : null}
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-base font-bold text-slate-950">开户类型选择</h2>
-              <p className="mt-1 text-sm leading-6 text-slate-500">根据当前用户账户类型默认选中，可在页面内切换查看。</p>
+              <h2 className="text-base font-bold text-slate-950">原型开户类型切换</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-500">仅用于原型演示切换。真实用户会根据账户类型自动进入个人或企业开户资料页面。</p>
             </div>
             <Badge variant={accountType === 'enterprise' ? 'warning' : 'secondary'}>{accountType === 'enterprise' ? '企业开户' : '个人开户'}</Badge>
           </div>
@@ -338,25 +387,27 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-base font-bold text-slate-950">已获取资料</h2>
-                  <p className="mt-1 text-sm leading-6 text-slate-500">系统已有资料默认只读展示。</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">当前系统已有字段自动带出，只读展示，供用户确认。</p>
                 </div>
                 <Badge variant="success">{sections.acquired.length} 项</Badge>
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {sections.acquired.map((field) => <FieldValue key={field.key} field={field} value={profileValues[field.key]} />)}
+                {sections.acquired.map((field) => <FieldValue key={field.id} field={field} value={field.value} />)}
               </div>
             </section>
             <section className="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-base font-bold text-slate-950">待补充资料</h2>
-                  <p className="mt-1 text-sm leading-6 text-slate-500">当前个人资料、证件类型、证件号码和地区已带出；这里只补充 BaaS 需要的附件。</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">当前系统缺失的 BaaS 必填字段在这里填写或上传；证件类型仅允许 PASSPORT。</p>
                 </div>
                 <Badge variant="warning">{pendingCount} 项</Badge>
               </div>
               <div className="mt-5 grid gap-3 lg:grid-cols-2">
-                {attachmentFields.map((field) => (
-                  <PersonalFileUpload key={field.key} field={field} file={supplementValues[field.key]} error={errors[field.key]} onFileChange={changePersonalFile} />
+                {sections.missing.map((field) => (
+                  field.inputType === 'file'
+                    ? <PersonalFileUpload key={field.id} field={field} file={supplementValues[field.key]} error={errors[field.key]} onFileChange={changePersonalFile} />
+                    : <PersonalTextInput key={field.id} field={field} value={supplementValues[field.key]} error={errors[field.key]} onChange={changePersonalValue} />
                 ))}
               </div>
             </section>
@@ -367,7 +418,7 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
       <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-5 py-4 shadow-2xl backdrop-blur">
         <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-600">
-            <span>还有 {activeStats.missing} 项待补充 / {activeStats.revision} 项需修正</span>
+            <span>{accountType === 'enterprise' ? `还有 ${activeStats.missing} 项待补充 / ${activeStats.revision} 项需修正` : `还有 ${activeStats.missing} 项待补充`}</span>
             {accountType === 'enterprise' ? (
               <>
                 <Button type="button" onClick={() => enterpriseActions?.nextItem?.()} variant="outline" size="sm" className="rounded-lg">下一项</Button>

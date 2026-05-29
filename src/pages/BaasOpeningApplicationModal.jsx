@@ -4,13 +4,11 @@ import { useMemo, useState } from 'react'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import {
-  attachmentFields,
   createEmptyBaasApplication,
   createMockFile,
   getBaasApplicationSections,
   mockBaasOpeningProfile,
   validateBaasApplication,
-  validatePersonalField,
 } from '../data/baasOpeningApplication'
 import { BaasEnterpriseOpeningApplication } from './BaasEnterpriseOpeningApplication'
 
@@ -18,28 +16,54 @@ const fileLimit = 8 * 1024 * 1024
 const acceptedTypes = ['application/pdf', 'image/jpeg', 'image/png']
 
 function FieldValue({ field, value }) {
+  const sourceValue = field.sourceValue ?? value
+  const baasValue = field.convertedValue ?? field.value ?? value
+  const simpleValue = sourceValue || baasValue
+  const simpleDisplay = simpleValue?.name ? `${simpleValue.name} · ${simpleValue.status || '已上传'}` : simpleValue
+
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-semibold text-slate-500">{field.label}</span>
         {field.note ? <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700">{field.note}</span> : null}
+        {field.conversionStatus ? <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700">{field.conversionStatus}</span> : null}
       </div>
-      <div className="mt-1 min-h-6 text-sm font-bold text-slate-950">{value || '—'}</div>
+      <div className="mt-1 min-h-6 text-sm font-bold text-slate-950">{simpleDisplay || '—'}</div>
+      {field.error ? <div className="mt-1 text-xs leading-5 text-amber-700">{field.error}</div> : null}
       {field.hint ? <div className="mt-1 text-xs leading-5 text-slate-400">{field.hint}</div> : null}
     </div>
   )
 }
 
 function TextInput({ field, value, error, onChange }) {
+  const isPassportType = field.key === 'identityType'
+
   return (
-    <label className="block">
+    <label className="block rounded-xl border border-slate-200 bg-white p-4">
       <span className="text-xs font-semibold text-slate-500">{field.label}</span>
-      <input
-        value={value || ''}
-        onChange={(event) => onChange(field.key, event.target.value)}
-        placeholder={field.hint || '请输入'}
-        className={error ? 'mt-2 h-11 w-full rounded-lg border border-red-300 bg-red-50 px-3 text-sm font-semibold text-slate-950 outline-none focus:border-red-400' : 'mt-2 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-950 outline-none focus:border-blue-400'}
-      />
+      {field.note ? <span className="mt-1 block text-xs leading-5 text-amber-700">{field.note}</span> : null}
+      {isPassportType ? (
+        <select
+          value={value || ''}
+          onChange={(event) => onChange(field.key, event.target.value)}
+          className={error ? 'mt-2 h-11 w-full rounded-lg border border-red-300 bg-red-50 px-3 text-sm font-semibold text-slate-950 outline-none focus:border-red-400' : 'mt-2 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-950 outline-none focus:border-blue-400'}
+        >
+          <option value="">请选择</option>
+          <option value="PASSPORT">PASSPORT</option>
+        </select>
+      ) : (
+        <input
+          value={value || ''}
+          onChange={(event) => onChange(field.key, event.target.value)}
+          placeholder={field.hint || '请输入'}
+          className={error ? 'mt-2 h-11 w-full rounded-lg border border-red-300 bg-red-50 px-3 text-sm font-semibold text-slate-950 outline-none focus:border-red-400' : 'mt-2 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-950 outline-none focus:border-blue-400'}
+        />
+      )}
+      {field.requirements?.length ? (
+        <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-500">
+          {field.requirements.map((requirement) => <span key={requirement}>{requirement}</span>)}
+        </div>
+      ) : field.hint ? <span className="mt-1 block text-xs leading-5 text-slate-500">{field.hint}</span> : null}
       {error ? <span className="mt-1 block text-xs leading-5 text-red-600">{error}</span> : null}
     </label>
   )
@@ -110,7 +134,7 @@ function SectionHeader({ title, badge, tone = 'secondary', children }) {
 
 export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
   const [accountType, setAccountType] = useState('personal')
-  const [profileValues, setProfileValues] = useState(mockBaasOpeningProfile)
+  const [profileValues] = useState(mockBaasOpeningProfile)
   const [supplementValues, setSupplementValues] = useState(createEmptyBaasApplication)
   const [errors, setErrors] = useState({})
   const [notice, setNotice] = useState('')
@@ -118,17 +142,16 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
   const [enterpriseStats, setEnterpriseStats] = useState({ acquired: 0, missing: 0, revision: 0 })
   const [enterpriseActions, setEnterpriseActions] = useState(null)
 
-  const sections = useMemo(() => getBaasApplicationSections(profileValues), [profileValues])
+  const sections = useMemo(() => getBaasApplicationSections(profileValues, supplementValues), [profileValues, supplementValues])
 
-  const pendingAttachmentCount = attachmentFields.filter((field) => !supplementValues[field.key]?.fileId).length
-  const pendingCount = sections.missing.length + pendingAttachmentCount
+  const pendingCount = sections.missing.length
   const activeStats = accountType === 'enterprise'
     ? enterpriseStats
     : { acquired: sections.acquired.length, missing: pendingCount, revision: 0 }
 
-  const changeProfileValue = (key, value) => {
-    setProfileValues((current) => ({ ...current, [key]: value }))
-    setErrors((current) => ({ ...current, [key]: validatePersonalField(key, value, { ...profileValues, [key]: value }) }))
+  const changeSupplementValue = (key, value) => {
+    setSupplementValues((current) => ({ ...current, [key]: value }))
+    setErrors((current) => ({ ...current, [key]: '' }))
   }
 
   const changeFile = (key, file) => {
@@ -233,35 +256,35 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
               ×
             </button>
           </div>
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
-              <div className="text-xs font-semibold text-emerald-700">已获取资料</div>
-              <div className="mt-1 text-2xl font-bold text-emerald-900">{activeStats.acquired} 项</div>
-            </div>
-            <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-xs font-semibold text-amber-700">待补充资料</div>
-                  <div className="mt-1 text-2xl font-bold text-amber-900">{activeStats.missing} 项</div>
-                </div>
-                {accountType === 'enterprise' ? (
+          {accountType === 'enterprise' ? (
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+                <div className="text-xs font-semibold text-emerald-700">已获取资料</div>
+                <div className="mt-1 text-2xl font-bold text-emerald-900">{activeStats.acquired} 项</div>
+              </div>
+              <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-semibold text-amber-700">待补充资料</div>
+                    <div className="mt-1 text-2xl font-bold text-amber-900">{activeStats.missing} 项</div>
+                  </div>
                   <Button type="button" onClick={() => enterpriseActions?.openChecklist?.()} size="sm" className="rounded-lg bg-amber-600 hover:bg-amber-700">
                     查看清单
                   </Button>
-                ) : null}
+                </div>
+              </div>
+              <div className="rounded-xl border border-red-100 bg-red-50 p-4">
+                <div className="text-xs font-semibold text-red-700">需修正资料</div>
+                <div className="mt-1 text-2xl font-bold text-red-900">{activeStats.revision} 项</div>
               </div>
             </div>
-            <div className="rounded-xl border border-red-100 bg-red-50 p-4">
-              <div className="text-xs font-semibold text-red-700">需修正资料</div>
-              <div className="mt-1 text-2xl font-bold text-red-900">{activeStats.revision} 项</div>
-            </div>
-          </div>
+          ) : null}
         </div>
 
         <div className="overflow-auto bg-[#f8fafc] px-6 py-5">
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <SectionHeader title="开户类型选择" badge={accountType === 'personal' ? '个人开户' : '企业开户'}>
-              默认进入个人开户；切换企业开户后可查看企业 KYB 资料带出、补充和修正流程。
+            <SectionHeader title="原型开户类型切换" badge={accountType === 'personal' ? '个人开户' : '企业开户'}>
+              仅用于原型演示切换。真实用户会根据账户类型自动进入个人或企业开户资料页面。
             </SectionHeader>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <button
@@ -315,27 +338,24 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
             <div className="mt-5 grid gap-5">
               <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <SectionHeader title="已获取资料" badge={`${sections.acquired.length} 项`} tone="success">
-                  系统已有资料默认只读展示；带出数据需要符合 BaaS API 格式要求，关键格式已备注在字段旁。
+                  系统已有资料默认只读展示，页面直接展示已自动带出的模拟资料。
                 </SectionHeader>
                 <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {sections.acquired.map((field) => (
-                    <FieldValue key={field.key} field={field} value={profileValues[field.key]} />
+                    <FieldValue key={field.id} field={field} value={field.value} />
                   ))}
                 </div>
               </section>
 
               <section className="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm">
                 <SectionHeader title="待补充资料" badge={`${pendingCount} 项`} tone="warning">
-                  当前个人资料、证件类型、证件号码和地区已带出；这里只补充 BaaS 需要的附件。附件为前端 mock 上传，不调用真实文件服务。
+                  当前系统缺失的 BaaS 必填字段在这里填写或上传；证件类型仅允许 PASSPORT。
                 </SectionHeader>
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
                   {sections.missing.map((field) => (
-                    <TextInput key={field.key} field={field} value={profileValues[field.key]} error={errors[field.key]} onChange={changeProfileValue} />
-                  ))}
-                </div>
-                <div className="mt-5 grid gap-3 lg:grid-cols-2">
-                  {attachmentFields.map((field) => (
-                    <FileUploadInput key={field.key} field={field} file={supplementValues[field.key]} error={errors[field.key]} onFileChange={changeFile} />
+                    field.inputType === 'file'
+                      ? <FileUploadInput key={field.id} field={field} file={supplementValues[field.key]} error={errors[field.key]} onFileChange={changeFile} />
+                      : <TextInput key={field.id} field={field} value={supplementValues[field.key]} error={errors[field.key]} onChange={changeSupplementValue} />
                   ))}
                 </div>
               </section>

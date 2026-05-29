@@ -1,23 +1,46 @@
 export const personalProfileFields = [
-  { key: 'firstName', label: '名 firstName', required: true },
-  { key: 'lastName', label: '姓 lastName', required: true },
-  { key: 'birthday', label: '出生日期 birthday', required: true, hint: 'BaaS 需要格式：yyyy-MM-dd' },
-  { key: 'gender', label: '性别 gender', required: true, hint: 'BaaS 需要格式：MALE / FEMALE' },
-  { key: 'addressLine1', label: '居住地街道地址 addressLine1', required: true, hint: 'BaaS 需要格式：英文字母、数字和常用符号' },
-  { key: 'addressLine2', label: '居住地详细地址 addressLine2', required: false },
-  { key: 'city', label: '城市 city', required: true },
-  { key: 'country', label: '国家 country', required: true, hint: 'BaaS 需要格式：ISO 3166-1 alpha-2，例如 US、CN、HK' },
-  { key: 'postalCode', label: '邮政编码 postalCode', required: true },
-  { key: 'identityType', label: '证件类型 identityType', required: true, hint: 'BaaS 需要枚举：CN-RIC / PASSPORT', note: '读取自 Sumsub KYC' },
-  { key: 'number', label: '证件号码 number', required: true, note: '读取自 Sumsub KYC' },
-  { key: 'region', label: '地区 region', required: true },
+  { key: 'firstName', sourceKey: 'firstName', label: '名', systemLabel: '名', baasKey: 'firstName' },
+  { key: 'lastName', sourceKey: 'lastName', label: '姓', systemLabel: '姓', baasKey: 'lastName' },
+  { key: 'birthday', sourceKey: 'dateOfBirth', label: '出生日期', systemLabel: '出生日期', baasKey: 'birthday' },
+  { key: 'gender', sourceKey: 'gender', label: '性别', systemLabel: '性别', baasKey: 'gender', conversion: '男/女 → KYC M/F → BaaS MALE/FEMALE' },
+  { key: 'nationality', sourceKey: 'nationality', label: '国籍', systemLabel: '国籍', baasKey: 'nationality', conversion: '三位国家码 → ISO alpha-2 两位国家码' },
+  { key: 'phoneNumber', sourceKey: 'phoneNumber', label: '手机号', systemLabel: '手机号', baasKey: 'phone' },
+  { key: 'addressLine1', sourceKey: 'addressLine1', label: '居住地街道地址', systemLabel: '居住地街道地址', baasKey: 'address.addressLine1' },
+  { key: 'city', sourceKey: 'city', label: '居住地城市', systemLabel: '居住地城市', baasKey: 'address.city' },
+  {
+    key: 'state',
+    sourceKey: 'state',
+    label: '居住地州/地区',
+    systemLabel: '居住地州/地区',
+    baasKey: 'address.state',
+    hint: '对于美国和加拿大：必须使用两位字母代码提供细分区域（例如，WA 代表华盛顿州）。对于没有州/省的其他国家，请重复国家名称。允许使用的字符：英文字母、数字和常用符号',
+  },
+  { key: 'country', sourceKey: 'country', label: '居住地所在国家', systemLabel: '居住地所在国家', baasKey: 'address.country', conversion: '三位国家码 → ISO alpha-2 两位国家码' },
+  { key: 'postalCode', sourceKey: 'postalCode', label: '居住地邮编', systemLabel: '居住地邮编', baasKey: 'address.postalCode' },
+]
+
+export const personalSupplementFields = [
+  {
+    key: 'phoneCountryCode',
+    label: '电话国家代码',
+    baasKey: 'phoneCountryCode',
+    hint: '用户手机号码的国际拨号代码，仅包含数字，不包含“+”号，长度≤3。例如：86',
+    requirements: ['必需的', '长度≤3', '用户手机号码的国际拨号代码，仅包含数字，不包含“+”号，长度≤3。例如：86'],
+  },
+  { key: 'identityType', label: '证件类型', baasKey: 'identityType', inputType: 'select', options: ['PASSPORT'], hint: '页面只允许选择 PASSPORT。' },
+  { key: 'number', label: '证件号码', baasKey: 'number', hint: '如果 Sumsub 已有护照号码，可由后端自动带出。' },
+  { key: 'issueDate', label: '证件签发日期', baasKey: 'issueDate', hint: '格式：yyyy-MM-dd。' },
+  { key: 'expiryDate', label: '证件到期日', baasKey: 'expiryDate', hint: '格式：yyyy-MM-dd。' },
+  { key: 'region', label: '地区', baasKey: 'region', hint: '两位地区/国家代码，例如 HK、US。' },
 ]
 
 export const attachmentFields = [
-  { key: 'attachmentAddress', label: '地址证明 attachmentAddress.fileId', required: true },
-  { key: 'attachmentIdentity', label: '身份证明文件 attachmentIdentity.fileId', required: true },
-  { key: 'attachmentFatca', label: 'FATCA 表格 attachmentFatca.fileId', required: true, hint: 'W8Ben 或 W9' },
-  { key: 'attachmentSourceOfFunds', label: '资金来源证明 attachmentSourceOfFunds.fileId', required: true },
+  { key: 'attachmentIdentity', label: '护照文件', baasKey: 'attachmentIdentity.fileId', required: true, hint: '仅允许上传护照文件。' },
+  { key: 'attachmentIdProof', label: '身份证明文件', baasKey: 'attachmentIdProof.fileId', required: true, hint: 'pdf / jpeg / png 格式，单个文件大小限制 8M。' },
+  { key: 'selfie', label: '自拍照', baasKey: 'selfie.fileId', required: true },
+  { key: 'attachmentAddress', label: '地址证明', baasKey: 'attachmentAddress.fileId', required: true },
+  { key: 'attachmentFatca', label: 'FATCA 表格', baasKey: 'attachmentFatca.fileId', required: true, hint: 'W8Ben 或 W9。' },
+  { key: 'attachmentSourceOfFunds', label: '资金来源证明', baasKey: 'attachmentSourceOfFunds.fileId', required: true },
 ]
 
 const sampleUploadedImageUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAx0lEQVR4Xu3XMQqAMAxE0fz/n7l0EEvBGlLZkgdOUOMtYmBm9kC/7z0A/E8EwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAL3u2wH45B9JVAeObK+9uAAAAABJRU5ErkJggg=='
@@ -36,60 +59,107 @@ export function createMockUploadedImage(fileId, name) {
 export const mockBaasOpeningProfile = {
   firstName: 'Wanyara',
   lastName: 'Wan',
+  dateOfBirth: '1990-03-18',
   birthday: '1990-03-18',
-  gender: 'FEMALE',
+  gender: '女',
+  nationality: 'HKG',
+  phoneNumber: '91234567',
   addressLine1: '88 Queens Road Central',
-  addressLine2: 'Suite 1208',
   city: 'Hong Kong',
-  country: 'HK',
+  state: 'Hong Kong',
+  country: 'HKG',
   postalCode: '999077',
-  identityType: 'PASSPORT',
-  number: 'P1234567',
-  region: 'HK',
+  sumsubKycDocumentType: 'HK-HKID',
+  sumsubPassport: null,
 }
-
-const commonAddressPattern = /^[A-Za-z0-9\s.,#'/-]+$/
-const cityPattern = /^[A-Za-z\s]+$/
 
 export function createEmptyBaasApplication() {
   return {
+    phoneCountryCode: '',
+    identityType: '',
+    number: '',
+    issueDate: '',
+    expiryDate: '',
+    region: '',
+    attachmentIdentity: createMockUploadedImage('mock_personal_passport_001', 'Passport.png'),
+    attachmentIdProof: createMockUploadedImage('mock_personal_id_proof_001', 'Identity Proof.png'),
+    selfie: createMockUploadedImage('mock_personal_selfie_001', 'Selfie.png'),
     attachmentAddress: createMockUploadedImage('mock_personal_address_001', 'Address Proof.png'),
-    attachmentIdentity: createMockUploadedImage('mock_personal_identity_001', 'Passport.png'),
     attachmentFatca: createMockUploadedImage('mock_personal_fatca_001', 'W8Ben Form.png'),
     attachmentSourceOfFunds: createMockUploadedImage('mock_personal_sof_001', 'Source of Funds.png'),
   }
 }
 
+const commonAddressPattern = /^[A-Za-z0-9\s.,#'/-]+$/
+const cityPattern = /^[A-Za-z\s]+$/
+const countryMap = {
+  AFG: 'AF',
+  AGO: 'AO',
+  CHN: 'CN',
+  HKG: 'HK',
+  USA: 'US',
+}
+
 export function normalizeGender(value) {
   const normalized = String(value || '').trim().toUpperCase()
-  if (['MALE', 'M'].includes(normalized)) return 'MALE'
-  if (['FEMALE', 'F'].includes(normalized)) return 'FEMALE'
+  if (['男', 'MALE', 'M'].includes(normalized)) return 'MALE'
+  if (['女', 'FEMALE', 'F'].includes(normalized)) return 'FEMALE'
   return ''
 }
 
-export function validatePersonalField(key, value, values) {
+export function normalizeKycGender(value) {
+  const normalized = normalizeGender(value)
+  if (normalized === 'MALE') return 'M'
+  if (normalized === 'FEMALE') return 'F'
+  return ''
+}
+
+export function normalizeCountryCode(value) {
+  const text = String(value || '').trim().toUpperCase()
+  if (/^[A-Z]{2}$/.test(text)) return text
+  return countryMap[text] || ''
+}
+
+function getSystemValue(profileValues, field) {
+  return profileValues[field.sourceKey] ?? profileValues[field.key]
+}
+
+function getBaasValue(profileValues, field) {
+  const value = getSystemValue(profileValues, field)
+  if (field.key === 'gender') return normalizeGender(value)
+  if (field.key === 'nationality' || field.key === 'country') return normalizeCountryCode(value)
+  return value
+}
+
+export function validatePersonalField(key, value) {
   const text = String(value || '').trim()
-  if (!text && key !== 'addressLine2') {
-    return '该字段为 BaaS 开户必填项。'
+  if (!text) return '该字段为 BaaS 开户必填项。'
+
+  if (key === 'phoneCountryCode' && !/^\d{1,3}$/.test(text)) {
+    return '电话国家代码仅包含数字，不包含“+”号，长度≤3。例如：86。'
   }
 
-  if (!text) {
-    return ''
+  if (key === 'identityType' && text !== 'PASSPORT') {
+    return '证件类型只能选择 PASSPORT。'
   }
 
-  if (key === 'birthday' && !/^\d{4}-\d{2}-\d{2}$/.test(text)) {
-    return 'birthday 格式必须为 yyyy-MM-dd。'
+  if (['issueDate', 'expiryDate', 'birthday'].includes(key) && !/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    return '日期格式必须为 yyyy-MM-dd。'
   }
 
-  if (key === 'country' && !/^[A-Z]{2}$/.test(text)) {
-    return 'country 必须是 ISO 3166-1 alpha-2 两位国家码，例如 US、CN、HK。'
+  if (key === 'region' && !/^[A-Z]{2}$/.test(text)) {
+    return 'region 必须是两位地区/国家代码。'
   }
 
-  if (key === 'gender' && !['MALE', 'FEMALE'].includes(text.toUpperCase())) {
-    return 'gender 需要映射为 MALE / FEMALE。'
+  if (key === 'country' && !normalizeCountryCode(text)) {
+    return '国家码需可转换为 ISO alpha-2 两位国家码。'
   }
 
-  if ((key === 'addressLine1' || key === 'addressLine2') && !commonAddressPattern.test(text)) {
+  if (key === 'gender' && !normalizeGender(text)) {
+    return '性别需可转换为 MALE / FEMALE。'
+  }
+
+  if ((key === 'addressLine1') && !commonAddressPattern.test(text)) {
     return `${key} 仅允许英文字母、数字和常用符号。`
   }
 
@@ -97,46 +167,97 @@ export function validatePersonalField(key, value, values) {
     return 'city 仅允许英文字母和空格。'
   }
 
-  if (key === 'identityType' && !['CN-RIC', 'PASSPORT'].includes(text)) {
-    return 'identityType 只能是 CN-RIC 或 PASSPORT。'
-  }
-
   return ''
 }
 
-export function validateBaasApplication(profileValues, supplementValues) {
-  const errors = {}
+function makeComparisonItem(field, profileValues) {
+  const sourceValue = getSystemValue(profileValues, field)
+  const baasValue = getBaasValue(profileValues, field)
+  return {
+    ...field,
+    id: `profile:${field.key}`,
+    sourceValue,
+    value: baasValue,
+    displayValue: sourceValue,
+    convertedValue: baasValue,
+  }
+}
+
+export function getBaasApplicationSections(profileValues, supplementValues = createEmptyBaasApplication()) {
+  const sections = { acquired: [], missing: [], revision: [] }
 
   personalProfileFields.forEach((field) => {
-    const error = validatePersonalField(field.key, profileValues[field.key], profileValues)
-    if (error) {
-      errors[field.key] = error
+    const item = makeComparisonItem(field, profileValues)
+    const sourceText = String(item.sourceValue || '').trim()
+    if (!sourceText) {
+      sections.missing.push({ ...item, error: '当前系统未提供该字段，提交前必须补充。' })
+      return
     }
+
+    const error = validatePersonalField(field.key, item.value || item.sourceValue)
+    if (error) {
+      sections.revision.push({ ...item, error })
+      return
+    }
+
+    sections.acquired.push(item)
+  })
+
+  personalSupplementFields.forEach((field) => {
+    const value = supplementValues[field.key]
+    const item = {
+      ...field,
+      id: `supplement:${field.key}`,
+      sourceValue: '',
+      value,
+      displayValue: value,
+      note: profileValues.sumsubKycDocumentType && field.key === 'identityType'
+        ? `Sumsub 当前证件类型为 ${profileValues.sumsubKycDocumentType}，不是 PASSPORT，需补充护照资料。`
+        : field.hint,
+    }
+    const error = validatePersonalField(field.key, value)
+    if (error) {
+      sections.missing.push({ ...item, error })
+      return
+    }
+    sections.acquired.push(item)
   })
 
   attachmentFields.forEach((field) => {
-    if (!supplementValues[field.key]?.fileId) {
-      errors[field.key] = '请上传该附件。'
+    const value = supplementValues[field.key]
+    const item = {
+      ...field,
+      id: `attachment:${field.key}`,
+      sourceValue: '',
+      value,
+      displayValue: value?.name,
+      inputType: 'file',
     }
+    if (!value?.fileId) {
+      sections.missing.push({ ...item, error: '请上传该附件。' })
+      return
+    }
+    sections.missing.push(item)
   })
 
-  return errors
+  return sections
 }
 
-export function getBaasApplicationSections(profileValues) {
-  return personalProfileFields.reduce((sections, field) => {
-    const value = profileValues[field.key]
-    const text = String(value || '').trim()
+export function validateBaasApplication(profileValues, supplementValues) {
+  const sections = getBaasApplicationSections(profileValues, supplementValues)
+  const errors = {}
 
-    if (!text) {
-      sections.missing.push(field)
-      return sections
-    }
+  sections.missing.filter((item) => item.error).forEach((item) => {
+    errors[item.key] = item.error
+  })
 
-    sections.acquired.push(field)
+  sections.revision
+    .filter((item) => !item.conversionStatus)
+    .forEach((item) => {
+      errors[item.key] = item.error
+    })
 
-    return sections
-  }, { acquired: [], missing: [] })
+  return errors
 }
 
 export function createMockFile(file) {
