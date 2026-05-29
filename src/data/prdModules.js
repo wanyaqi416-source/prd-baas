@@ -63,7 +63,8 @@ export const baasPrototypeEntries = [
   {
     title: '入金流程',
     description: '外部法币入账、Trust Account 转入、入账匹配和客户可用余额更新。',
-    buttonLabel: '占位入口',
+    route: '/admin/product-manual/baas-prototype/incoming-fiat-deposit',
+    buttonLabel: '进入入金原型',
   },
   {
     title: '出金流程',

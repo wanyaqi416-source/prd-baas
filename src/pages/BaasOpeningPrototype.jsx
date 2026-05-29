@@ -1,10 +1,7 @@
 import {
-  ArrowLeft,
-  ArrowRight,
   Banknote,
   Building2,
   Check,
-  ChevronDown,
   CircleAlert,
   Clock3,
   Copy,
@@ -26,6 +23,7 @@ import { useState } from 'react'
 
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
+import { IncomingFiatDepositPrototype } from './IncomingFiatDepositPrototype'
 
 const demoStatuses = [
   { id: 'not_opened', label: '未开通' },
@@ -50,12 +48,19 @@ const bankAccountRows = [
   ['币种', 'USD'],
 ]
 
+function ClickMark() {
+  return (
+    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[12px] font-bold leading-none text-white shadow-sm ring-2 ring-white/70">
+      ?
+    </span>
+  )
+}
+
 function DemoBar({ status, onStatusChange, onPrototypeHome }) {
   return (
     <div className="border-b border-blue-100 bg-blue-50/95 px-5 py-3">
       <div className="mx-auto flex max-w-[1380px] flex-wrap items-center justify-between gap-3">
         <button type="button" onClick={onPrototypeHome} className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-900">
-          <ArrowLeft className="h-4 w-4" />
           返回 BaaS 原型
         </button>
         <div className="flex flex-wrap items-center gap-2">
@@ -102,7 +107,6 @@ function ClientTopNav({ onBack }) {
               >
                 <Icon className="h-4 w-4" />
                 {label}
-                {label === '投资' ? <ChevronDown className="h-3.5 w-3.5" /> : null}
               </button>
             ))}
           </nav>
@@ -121,7 +125,7 @@ function ClientTopNav({ onBack }) {
   )
 }
 
-function AccountHero({ status, onOpenJurisdiction }) {
+function AccountHero({ status, onOpenJurisdiction, onOpenIncomingDeposit }) {
   const hasUsAccount = status !== 'not_opened'
   const opened = status === 'opened'
   const usMeta = usStatusMeta[status]
@@ -178,22 +182,22 @@ function AccountHero({ status, onOpenJurisdiction }) {
                 <>
                   <button type="button" className="inline-flex h-11 items-center gap-2 rounded-lg bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm">
                     <Banknote className="h-4 w-4" />
-                    ↗ 存入资金
+                    存入资金
                   </button>
-                  <button type="button" className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#083861] px-5 text-sm font-semibold text-white hover:bg-[#0a4776]">
+                  <button type="button" onClick={onOpenIncomingDeposit} className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#083861] px-5 text-sm font-semibold text-white hover:bg-[#0a4776]">
                     <Send className="h-4 w-4" />
-                    ↗ 法币转出
+                    法币转出
                   </button>
                 </>
               ) : (
                 <>
                   <button type="button" className="inline-flex h-11 items-center gap-2 rounded-lg bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm">
                     <Banknote className="h-4 w-4" />
-                    ↗ 存入资金
+                    存入资金
                   </button>
                   <button type="button" className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#083861] px-5 text-sm font-semibold text-white hover:bg-[#0a4776]">
                     <Send className="h-4 w-4" />
-                    ↗ 法币转出
+                    法币转出
                   </button>
                 </>
               )}
@@ -222,7 +226,8 @@ function AccountHero({ status, onOpenJurisdiction }) {
               className="mt-6 inline-flex h-11 items-center gap-2 rounded-lg bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm hover:bg-sky-400"
             >
               <Globe2 className="h-4 w-4" />
-              ↗ 开设其他法域账户
+              <ClickMark />
+              开设其他法域账户
             </button>
           ) : null}
         </div>
@@ -231,7 +236,7 @@ function AccountHero({ status, onOpenJurisdiction }) {
   )
 }
 
-function QuickActionDock({ status, onOpenAccountInfo }) {
+function QuickActionDock({ status, onOpenAccountInfo, onOpenIncomingDeposit }) {
   if (status === 'submitted' || status === 'reviewing' || status === 'failed') {
     return null
   }
@@ -240,7 +245,7 @@ function QuickActionDock({ status, onOpenAccountInfo }) {
   const actions = opened
     ? [
         [Banknote, '存入资金', undefined],
-        [Send, '法币转出', undefined],
+        [Send, '法币转出', onOpenIncomingDeposit],
         [Landmark, '查看账户信息', onOpenAccountInfo],
         [RefreshCw, '兑换', undefined],
       ]
@@ -266,7 +271,10 @@ function QuickActionDock({ status, onOpenAccountInfo }) {
               <span className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-white text-blue-500 shadow-sm">
                 <Icon className="h-5 w-5" />
               </span>
-              ↗ {label}
+              <span className="mt-1 inline-flex items-center justify-center gap-1">
+                {label === '查看账户信息' ? <ClickMark /> : null}
+                {label}
+              </span>
             </button>
           ))}
         </div>
@@ -288,11 +296,10 @@ function JurisdictionPicker({ onClose, onSelectUs }) {
                 <Landmark className="h-5 w-5" />
               </span>
               <span>
-                <span className="block font-bold text-slate-950">↗ 美国账户</span>
+                <span className="font-bold text-slate-950">美国账户</span>
                 <span className="mt-1 block text-sm text-slate-500">开户费 USD 500，扣费成功后进入后台开户流程。</span>
               </span>
             </div>
-            <ArrowRight className="h-5 w-5 text-blue-600" />
           </button>
           <button type="button" disabled className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left opacity-70">
             <div className="flex items-center gap-3">
@@ -312,12 +319,13 @@ function JurisdictionPicker({ onClose, onSelectUs }) {
   )
 }
 
-function FeeConfirmModal({ onClose, onConfirm }) {
+function FeeConfirmModal({ balanceMode, onBalanceModeChange, onClose, onConfirm }) {
+  const currentBalance = balanceMode === 'sufficient' ? 'USD 1,200.00' : 'USD 120.00'
   const rows = [
     ['扣费账户', '香港信托账户'],
     ['扣费币种', 'USD'],
     ['扣费金额', 'USD 500.00'],
-    ['当前可用余额', 'USD 1,200.00'],
+    ['当前可用余额', currentBalance],
   ]
 
   return (
@@ -325,6 +333,31 @@ function FeeConfirmModal({ onClose, onConfirm }) {
       <div className="w-full max-w-[480px] rounded-3xl bg-white p-6 shadow-2xl">
         <ModalHeader eyebrow="Opening fee" title="确认开通并扣费" onClose={onClose} />
         <p className="mt-2 text-sm leading-6 text-slate-500">开通美国账户将扣除 USD 500 开户费。扣费成功后，系统生成开户申请记录并进入待审核状态。</p>
+        <div className="mt-5 rounded-2xl border border-amber-100 bg-amber-50 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm font-semibold text-amber-900">开户费用支付状态</span>
+            <Badge variant="warning">PENDING_PAYMENT · 待支付</Badge>
+          </div>
+          <p className="mt-2 text-sm leading-6 text-amber-800">客户尚未确认或费用尚未入账。确认扣费后，系统会根据余额判断进入 PAID 或 FAILED。</p>
+        </div>
+        <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+          <div className="text-xs font-semibold text-blue-700">仅原型演示使用：扣费余额判断</div>
+          <div className="mt-3 flex gap-2">
+            {[
+              ['sufficient', '余额充足'],
+              ['insufficient', '余额不足'],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onBalanceModeChange(value)}
+                className={balanceMode === value ? 'inline-flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white' : 'inline-flex h-9 items-center gap-2 rounded-lg bg-white px-3 text-sm font-semibold text-slate-600'}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
           {rows.map(([label, value]) => (
             <div key={label} className="flex items-center justify-between border-b border-slate-200 py-3 last:border-b-0">
@@ -335,10 +368,49 @@ function FeeConfirmModal({ onClose, onConfirm }) {
         </div>
         <div className="mt-6 flex gap-3">
           <Button type="button" onClick={onConfirm} className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">
-            ↗ 确认开通并扣费
+            确认开通并扣费
           </Button>
           <Button type="button" onClick={onClose} variant="outline" className="rounded-lg">
             取消
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FeeResultModal({ type, onClose, onContinue }) {
+  const success = type === 'success'
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-[480px] rounded-3xl bg-white p-6 shadow-2xl">
+        <ModalHeader eyebrow="Opening fee result" title={success ? '扣费成功' : '扣费失败'} onClose={onClose} />
+        <div className="mt-5 flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <span className="text-sm font-semibold text-slate-700">开户费用支付状态</span>
+          <Badge variant={success ? 'success' : 'danger'}>{success ? 'PAID · 已支付' : 'FAILED · 失败'}</Badge>
+        </div>
+        <div className={success ? 'mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-5' : 'mt-6 rounded-2xl border border-red-100 bg-red-50 p-5'}>
+          <div className={success ? 'text-sm font-semibold text-emerald-900' : 'text-sm font-semibold text-red-900'}>
+            {success ? 'USD 500 开户费已扣除' : 'USD 余额不足，扣费未完成'}
+          </div>
+          <p className={success ? 'mt-2 text-sm leading-6 text-emerald-800' : 'mt-2 text-sm leading-6 text-red-800'}>
+            {success
+              ? '系统已生成美国账户开户申请记录。下一步进入待审核状态，等待 Fidere Admin 后台处理。'
+              : '当前可用余额为 USD 120.00，低于 USD 500 开户费。扣费失败时不会生成开户申请记录。'}
+          </p>
+        </div>
+        <div className="mt-6 flex gap-3">
+          {success ? (
+            <Button type="button" onClick={onContinue} className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">
+              查看待审核状态
+            </Button>
+          ) : (
+            <Button type="button" className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">
+              去充值
+            </Button>
+          )}
+          <Button type="button" onClick={onClose} variant="outline" className="rounded-lg">
+            关闭
           </Button>
         </div>
       </div>
@@ -381,8 +453,8 @@ function UsAccountStatusPanel({ status }) {
   const meta = usStatusMeta[status]
   const Icon = meta.icon
   const descriptions = {
-    submitted: '开户费用已扣除，申请已进入 Fidere 后台处理队列。Fidere Admin 将在外部 BaaS 后台手动提交开户申请。',
-    reviewing: '开户申请正在由外部机构审核。用户端只展示审核状态，不展示 BaaS / Interlace 内部操作细节。',
+    submitted: '开户费用已支付，开户申请已创建，当前等待 Fidere Admin 在后台处理。此时美国账户暂不可用，也不会展示银行收款账户信息。',
+    reviewing: 'Fidere Admin 已提交开户申请，当前由外部机构审核。审核完成且 accountId 绑定前，美国账户仍不可用。',
     failed: '外部机构审核未通过。请查看失败原因，并联系客服或重新申请。',
   }
 
@@ -409,10 +481,10 @@ function UsAccountStatusPanel({ status }) {
             <p className="mt-2 text-sm leading-6 text-amber-800">开户失败后 USD 500 开户费是否退回、自动退回还是人工处理，当前 PRD 未明确，标注为待确认。</p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button type="button" className="rounded-lg bg-blue-600 hover:bg-blue-700">↗ 重新申请</Button>
+            <Button type="button" className="rounded-lg bg-blue-600 hover:bg-blue-700">重新申请</Button>
             <Button type="button" variant="outline" className="rounded-lg">
               <HelpCircle className="h-4 w-4" />
-              ↗ 联系客服
+              联系客服
             </Button>
           </div>
         </div>
@@ -448,7 +520,7 @@ function TrustAccountAssets() {
               <td className="px-6 py-5">201.00 HKD</td>
               <td className="px-6 py-5 font-bold">79806.95</td>
               <td className="px-6 py-5">1 HKD = 0.12 USD</td>
-              <td className="px-6 py-5 text-slate-400">↗ ↙ ⇆</td>
+              <td className="px-6 py-5 text-slate-400">—</td>
             </tr>
           </tbody>
         </table>
@@ -485,7 +557,7 @@ function AssetDistribution({ status }) {
               <td className="px-6 py-5">{opened ? '200.00 USD' : '0.00 USD'}</td>
               <td className="px-6 py-5 font-bold">{opened ? '82430.27' : '0.00'}</td>
               <td className="px-6 py-5">— 0%</td>
-              <td className="px-6 py-5 text-slate-400">{opened ? '↗ ↙ ⇆' : '—'}</td>
+              <td className="px-6 py-5 text-slate-400">—</td>
             </tr>
             {!opened ? (
               <tr className="border-t border-slate-100">
@@ -540,8 +612,8 @@ function AccountInfoDrawer({ onClose }) {
                   <span className="text-sm text-slate-500">{label}</span>
                   <span className="flex items-center gap-2 text-right text-sm font-bold text-slate-950">
                     {value}
-                    <button type="button" className="text-slate-400 hover:text-blue-600" aria-label={`复制${label}`}>
-                      <Copy className="h-3.5 w-3.5" />
+                    <button type="button" className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" aria-label={`复制${label}`}>
+                      <Copy className="h-4 w-4" />
                     </button>
                   </span>
                 </div>
@@ -561,7 +633,10 @@ export function BaasOpeningPrototype({ onBack, onPrototypeHome }) {
   const [status, setStatus] = useState('not_opened')
   const [pickerOpen, setPickerOpen] = useState(false)
   const [feeConfirmOpen, setFeeConfirmOpen] = useState(false)
+  const [feeBalanceMode, setFeeBalanceMode] = useState('sufficient')
+  const [feeResult, setFeeResult] = useState(null)
   const [accountInfoOpen, setAccountInfoOpen] = useState(false)
+  const [activeOpenedPage, setActiveOpenedPage] = useState('account')
 
   const selectUsAccount = () => {
     setPickerOpen(false)
@@ -570,20 +645,43 @@ export function BaasOpeningPrototype({ onBack, onPrototypeHome }) {
 
   const confirmFee = () => {
     setFeeConfirmOpen(false)
+    setFeeResult(feeBalanceMode === 'sufficient' ? 'success' : 'failed')
+  }
+
+  const continueAfterFeeSuccess = () => {
+    setFeeResult(null)
     setStatus('submitted')
+  }
+
+  if (status === 'opened' && activeOpenedPage === 'incoming-fiat-deposit') {
+    return <IncomingFiatDepositPrototype onBack={() => setActiveOpenedPage('account')} />
   }
 
   return (
     <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
       <DemoBar status={status} onStatusChange={setStatus} onPrototypeHome={onPrototypeHome} />
       <ClientTopNav onBack={onBack} />
-      <AccountHero status={status} onOpenJurisdiction={() => setPickerOpen(true)} />
-      <QuickActionDock status={status} onOpenAccountInfo={() => setAccountInfoOpen(true)} />
+      <AccountHero status={status} onOpenJurisdiction={() => setPickerOpen(true)} onOpenIncomingDeposit={() => setActiveOpenedPage('incoming-fiat-deposit')} />
+      <QuickActionDock status={status} onOpenAccountInfo={() => setAccountInfoOpen(true)} onOpenIncomingDeposit={() => setActiveOpenedPage('incoming-fiat-deposit')} />
       <main className="mx-auto max-w-[1280px] px-5 py-8">
         <MainContent status={status} onOpenAccountInfo={() => setAccountInfoOpen(true)} />
       </main>
       {pickerOpen ? <JurisdictionPicker onClose={() => setPickerOpen(false)} onSelectUs={selectUsAccount} /> : null}
-      {feeConfirmOpen ? <FeeConfirmModal onClose={() => setFeeConfirmOpen(false)} onConfirm={confirmFee} /> : null}
+      {feeConfirmOpen ? (
+        <FeeConfirmModal
+          balanceMode={feeBalanceMode}
+          onBalanceModeChange={setFeeBalanceMode}
+          onClose={() => setFeeConfirmOpen(false)}
+          onConfirm={confirmFee}
+        />
+      ) : null}
+      {feeResult ? (
+        <FeeResultModal
+          type={feeResult}
+          onClose={() => setFeeResult(null)}
+          onContinue={continueAfterFeeSuccess}
+        />
+      ) : null}
       {accountInfoOpen ? <AccountInfoDrawer onClose={() => setAccountInfoOpen(false)} /> : null}
     </div>
   )
