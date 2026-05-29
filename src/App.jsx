@@ -26,7 +26,6 @@ import {
 import { ClientAdminVisibility } from './components/prd/ClientAdminVisibility'
 import { BaasOpeningPrototype } from './pages/BaasOpeningPrototype'
 import { BaasPrototypeHome } from './pages/BaasPrototypeHome'
-import { IncomingFiatDepositPage } from './pages/IncomingFiatDepositPage'
 import { ProductManualHome } from './pages/ProductManualHome'
 import { PrdInvestPage } from './pages/PrdInvestPage'
 
@@ -92,10 +91,6 @@ function App() {
 
   if (path === '/admin/product-manual/baas-prototype/opening') {
     return <BaasOpeningPrototype onBack={() => navigate('/')} onPrototypeHome={() => navigate('/admin/product-manual/baas-prototype')} />
-  }
-
-  if (path === '/admin/product-manual/baas-prototype/incoming-fiat-deposit') {
-    return <IncomingFiatDepositPage onBack={() => navigate('/admin/product-manual/baas-prototype')} />
   }
 
   if (path === '/admin/product-manual/baas-interlace-prd') {

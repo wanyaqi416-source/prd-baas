@@ -204,7 +204,7 @@ export function IncomingFiatDepositPrototype({ onBack }: { onBack: () => void })
           <Button type="text" icon={<ArrowLeftOutlined />} onClick={onBack}>返回</Button>
           <div>
             <Typography.Title level={5} style={{ margin: 0 }}>银行电汇入金</Typography.Title>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>通过银行转账将资金存入您的账户</Typography.Text>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>通过外部银行转账将法币转入您的美国账户</Typography.Text>
           </div>
         </div>
       </div>

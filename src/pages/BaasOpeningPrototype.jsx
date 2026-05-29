@@ -23,6 +23,7 @@ import { useState } from 'react'
 
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
+import { BaasOpeningApplicationModal } from './BaasOpeningApplicationModal'
 import { IncomingFiatDepositPrototype } from './IncomingFiatDepositPrototype'
 
 const demoStatuses = [
@@ -186,6 +187,7 @@ function AccountHero({ status, onOpenJurisdiction, onOpenIncomingDeposit }) {
                   </button>
                   <button type="button" onClick={onOpenIncomingDeposit} className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#083861] px-5 text-sm font-semibold text-white hover:bg-[#0a4776]">
                     <Send className="h-4 w-4" />
+                    <ClickMark />
                     法币转出
                   </button>
                 </>
@@ -272,7 +274,7 @@ function QuickActionDock({ status, onOpenAccountInfo, onOpenIncomingDeposit }) {
                 <Icon className="h-5 w-5" />
               </span>
               <span className="mt-1 inline-flex items-center justify-center gap-1">
-                {label === '查看账户信息' ? <ClickMark /> : null}
+                {label === '法币转出' || label === '查看账户信息' ? <ClickMark /> : null}
                 {label}
               </span>
             </button>
@@ -632,6 +634,7 @@ function AccountInfoDrawer({ onClose }) {
 export function BaasOpeningPrototype({ onBack, onPrototypeHome }) {
   const [status, setStatus] = useState('not_opened')
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [applicationOpen, setApplicationOpen] = useState(false)
   const [feeConfirmOpen, setFeeConfirmOpen] = useState(false)
   const [feeBalanceMode, setFeeBalanceMode] = useState('sufficient')
   const [feeResult, setFeeResult] = useState(null)
@@ -640,6 +643,11 @@ export function BaasOpeningPrototype({ onBack, onPrototypeHome }) {
 
   const selectUsAccount = () => {
     setPickerOpen(false)
+    setApplicationOpen(true)
+  }
+
+  const continueAfterApplication = () => {
+    setApplicationOpen(false)
     setFeeConfirmOpen(true)
   }
 
@@ -653,7 +661,7 @@ export function BaasOpeningPrototype({ onBack, onPrototypeHome }) {
     setStatus('submitted')
   }
 
-  if (status === 'opened' && activeOpenedPage === 'incoming-fiat-deposit') {
+  if (status === 'opened' && activeOpenedPage === 'external-fiat-transfer-in') {
     return <IncomingFiatDepositPrototype onBack={() => setActiveOpenedPage('account')} />
   }
 
@@ -661,12 +669,13 @@ export function BaasOpeningPrototype({ onBack, onPrototypeHome }) {
     <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
       <DemoBar status={status} onStatusChange={setStatus} onPrototypeHome={onPrototypeHome} />
       <ClientTopNav onBack={onBack} />
-      <AccountHero status={status} onOpenJurisdiction={() => setPickerOpen(true)} onOpenIncomingDeposit={() => setActiveOpenedPage('incoming-fiat-deposit')} />
-      <QuickActionDock status={status} onOpenAccountInfo={() => setAccountInfoOpen(true)} onOpenIncomingDeposit={() => setActiveOpenedPage('incoming-fiat-deposit')} />
+      <AccountHero status={status} onOpenJurisdiction={() => setPickerOpen(true)} onOpenIncomingDeposit={() => setActiveOpenedPage('external-fiat-transfer-in')} />
+      <QuickActionDock status={status} onOpenAccountInfo={() => setAccountInfoOpen(true)} onOpenIncomingDeposit={() => setActiveOpenedPage('external-fiat-transfer-in')} />
       <main className="mx-auto max-w-[1280px] px-5 py-8">
         <MainContent status={status} onOpenAccountInfo={() => setAccountInfoOpen(true)} />
       </main>
       {pickerOpen ? <JurisdictionPicker onClose={() => setPickerOpen(false)} onSelectUs={selectUsAccount} /> : null}
+      {applicationOpen ? <BaasOpeningApplicationModal onClose={() => setApplicationOpen(false)} onProceedToFee={continueAfterApplication} /> : null}
       {feeConfirmOpen ? (
         <FeeConfirmModal
           balanceMode={feeBalanceMode}
