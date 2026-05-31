@@ -15,6 +15,40 @@ import { BaasEnterpriseOpeningApplication } from './BaasEnterpriseOpeningApplica
 const fileLimit = 8 * 1024 * 1024
 const acceptedTypes = ['application/pdf', 'image/jpeg', 'image/png']
 
+const formatOpeningFeeTime = () => {
+  const now = new Date()
+  const pad = (value) => String(value).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`
+}
+
+const makeOpeningFeeTransactionId = () => {
+  const now = new Date()
+  const pad = (value) => String(value).padStart(2, '0')
+  return `TXN-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${Date.now().toString(16).slice(-8)}`
+}
+
+const createOpeningFeeRecord = () => {
+  const createdAt = formatOpeningFeeTime()
+  return {
+    id: makeOpeningFeeTransactionId(),
+    type: '开户费扣款',
+    statusLabel: '已完成',
+    amount: '500.00',
+    currency: 'USD',
+    feeAmount: '0.00',
+    customerName: 'Wanyara Wan',
+    customerId: '154',
+    customerEmail: 'xr3kes66@123mails.org',
+    applicationName: '个人 BaaS 开户申请',
+    debitAccount: '信托账户',
+    accountType: '美国账户开户申请',
+    createdAt,
+    chargedAt: createdAt,
+    nextStatus: '开户审核中',
+    description: '开户资料提交后，开户费扣款成功，申请进入后台审核流程。',
+  }
+}
+
 function ModalShell({ children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
@@ -150,10 +184,104 @@ function FeeResultModal({ type, onClose, onContinue }) {
         {success ? 'USD 500 开户费已扣除，并生成开户交易记录。' : '当前余额不足，扣费未完成。'}
       </p>
       <div className="mt-6 flex gap-3">
-        {success ? <Button type="button" onClick={onContinue} className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">查看待审核状态</Button> : null}
+        {success ? <Button type="button" onClick={onContinue} className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">查看开户费交易记录</Button> : null}
         <Button type="button" onClick={onClose} variant="outline" className="rounded-lg">关闭</Button>
       </div>
     </ModalShell>
+  )
+}
+
+function TransactionDetailRow({ label, value, strong = false }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 py-3 last:border-b-0">
+      <span className="text-sm text-slate-500">{label}</span>
+      <span className={strong ? 'max-w-[220px] text-right text-sm font-bold text-slate-950' : 'max-w-[220px] text-right text-sm font-semibold text-slate-700'}>{value}</span>
+    </div>
+  )
+}
+
+function OpeningFeeTransactionDetailPage({ record, onBack, onProceedToOpeningStatus }) {
+  return (
+    <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
+      <main className="mx-auto min-h-screen max-w-[460px] bg-[#f7faff] shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <FileText className="h-5 w-5" />
+            </span>
+            <div>
+              <h1 className="text-base font-bold text-slate-950">开户费 详情</h1>
+              <div className="text-xs font-bold uppercase tracking-wide text-slate-400">TRANSACTION DETAIL</div>
+            </div>
+          </div>
+          <button type="button" onClick={onBack} className="rounded-full p-2 text-slate-400 hover:bg-slate-100">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-6 px-6 py-6">
+          <section className="rounded-3xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-emerald-100 bg-emerald-50 text-emerald-600">
+              <CheckCircle2 className="h-6 w-6" />
+            </div>
+            <div className="mt-5 text-sm text-slate-500">{record.statusLabel}</div>
+            <div className="mt-3 text-3xl font-bold text-red-500">
+              - {record.amount}
+              <span className="ml-2 text-base font-semibold text-slate-500">{record.currency}</span>
+            </div>
+            <div className="mt-3 text-sm text-slate-500">手续费: {record.feeAmount} {record.currency}</div>
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-sm font-bold text-slate-700">客户</h2>
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-4">
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-slate-500">
+                  <UserRound className="h-6 w-6" />
+                </span>
+                <div>
+                  <div className="font-bold text-slate-950">{record.customerName}</div>
+                  <div className="mt-1 text-sm text-slate-500">ID: {record.customerId}</div>
+                  <div className="mt-1 text-sm text-slate-500">{record.customerEmail}</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-sm font-bold text-slate-700">业务信息</h2>
+            <div className="rounded-3xl border border-slate-200 bg-white px-5 py-3 shadow-sm">
+              <TransactionDetailRow label="交易类型" value={record.type} strong />
+              <TransactionDetailRow label="业务申请" value={record.applicationName} />
+              <TransactionDetailRow label="扣费账户" value={record.debitAccount} />
+              <TransactionDetailRow label="账户类型" value={record.accountType} />
+              <TransactionDetailRow label="后续状态" value={record.nextStatus} strong />
+            </div>
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-sm font-bold text-slate-700">指示详情</h2>
+            <div className="rounded-3xl border border-slate-200 bg-white px-5 py-3 shadow-sm">
+              <TransactionDetailRow label="交易编号" value={record.id} strong />
+              <TransactionDetailRow label="创建日期" value={record.createdAt} />
+              <TransactionDetailRow label="扣费时间" value={record.chargedAt} />
+            </div>
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-sm font-bold text-slate-700">说明</h2>
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-600 shadow-sm">
+              {record.description}
+            </div>
+          </section>
+
+          <div className="grid grid-cols-2 gap-3 pb-8">
+            <Button type="button" onClick={onBack} variant="outline" className="rounded-lg">返回开户申请</Button>
+            <Button type="button" onClick={onProceedToOpeningStatus} className="rounded-lg bg-blue-600 hover:bg-blue-700">返回开户状态</Button>
+          </div>
+        </div>
+      </main>
+    </div>
   )
 }
 
@@ -298,6 +426,8 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
   const [feeConfirmOpen, setFeeConfirmOpen] = useState(false)
   const [feeBalanceMode, setFeeBalanceMode] = useState('sufficient')
   const [feeResult, setFeeResult] = useState(null)
+  const [openingFeeRecord, setOpeningFeeRecord] = useState(null)
+  const [openingFeeDetailOpen, setOpeningFeeDetailOpen] = useState(false)
   const [fatcaSigned, setFatcaSigned] = useState(false)
   const [fatcaSignOpen, setFatcaSignOpen] = useState(false)
   const [enterpriseStats, setEnterpriseStats] = useState({ acquired: 0, missing: 0, revision: 0 })
@@ -364,7 +494,33 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
 
   const confirmFee = () => {
     setFeeConfirmOpen(false)
-    setFeeResult(feeBalanceMode === 'sufficient' ? 'success' : 'failed')
+    if (feeBalanceMode === 'sufficient') {
+      setOpeningFeeRecord(createOpeningFeeRecord())
+      setFeeResult('success')
+      return
+    }
+    setOpeningFeeRecord(null)
+    setFeeResult('failed')
+  }
+
+  const openOpeningFeeDetail = () => {
+    setFeeResult(null)
+    setOpeningFeeDetailOpen(true)
+  }
+
+  const proceedToOpeningStatus = () => {
+    setOpeningFeeDetailOpen(false)
+    onProceedToOpeningStatus()
+  }
+
+  if (openingFeeDetailOpen && openingFeeRecord) {
+    return (
+      <OpeningFeeTransactionDetailPage
+        record={openingFeeRecord}
+        onBack={() => setOpeningFeeDetailOpen(false)}
+        onProceedToOpeningStatus={proceedToOpeningStatus}
+      />
+    )
   }
 
   return (
@@ -471,7 +627,7 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
       {fatcaSignOpen ? <FatcaSigningModal onCancel={() => setFatcaSignOpen(false)} onConfirm={() => { setFatcaSigned(true); setErrors((current) => ({ ...current, fatcaSigning: '' })); setFatcaSignOpen(false) }} /> : null}
       {submitted ? <SuccessModal onClose={() => setSubmitted(false)} onProceedToFee={continueToFee} /> : null}
       {feeConfirmOpen ? <FeeConfirmModal balanceMode={feeBalanceMode} onBalanceModeChange={setFeeBalanceMode} onClose={() => setFeeConfirmOpen(false)} onConfirm={confirmFee} /> : null}
-      {feeResult ? <FeeResultModal type={feeResult} onClose={() => setFeeResult(null)} onContinue={onProceedToOpeningStatus} /> : null}
+      {feeResult ? <FeeResultModal type={feeResult} onClose={() => setFeeResult(null)} onContinue={openOpeningFeeDetail} /> : null}
     </div>
   )
 }

@@ -3,17 +3,14 @@ import {
   Building2,
   Check,
   CircleAlert,
-  Clock3,
   Copy,
   FileText,
   Globe2,
-  HelpCircle,
   Landmark,
   Languages,
   LayoutDashboard,
   RefreshCw,
   Send,
-  ShieldCheck,
   Sun,
   UserRound,
   WalletCards,
@@ -27,17 +24,37 @@ import { IncomingFiatDepositPrototype } from './IncomingFiatDepositPrototype'
 
 const demoStatuses = [
   { id: 'not_opened', label: '未开通' },
-  { id: 'submitted', label: '扣费成功 / 待审核' },
   { id: 'reviewing', label: '审核中' },
   { id: 'failed', label: '审核拒绝' },
-  { id: 'opened', label: '开户成功' },
+  { id: 'opened', label: '审核通过' },
 ]
 
 const usStatusMeta = {
-  submitted: { label: '待审核', badge: 'warning', title: '开户申请已提交', icon: Clock3 },
-  reviewing: { label: '审核中', badge: 'secondary', title: '开户审核中', icon: ShieldCheck },
-  failed: { label: '开户失败', badge: 'danger', title: '开户失败', icon: CircleAlert },
-  opened: { label: '已开通', badge: 'success' },
+  not_opened: {
+    label: '未开通',
+    badge: 'secondary',
+    title: '美国账户未开通',
+    description: '美国账户尚未提交开户申请，当前不展示金额数据。',
+  },
+  reviewing: {
+    label: '审核中',
+    badge: 'warning',
+    title: '美国账户审核中',
+    description: '开户申请已进入后台与外部机构审核流程，审核完成前不展示金额和账户收款信息。',
+  },
+  failed: {
+    label: '审核拒绝',
+    badge: 'danger',
+    title: '美国账户审核拒绝',
+    description: '外部机构审核未通过，该申请不可在当前原型中重新申请。',
+    reason: '护照资料与 KYC 信息存在差异，需由运营人员线下确认后再处理。',
+  },
+  opened: {
+    label: '审核通过',
+    badge: 'success',
+    title: '美国账户审核通过',
+    description: '美国账户已作为信托账户下的资产分类开通，可在信托账户资产分布中查看。',
+  },
 }
 
 const bankAccountRows = [
@@ -120,7 +137,7 @@ function DemoBar({ status, onStatusChange, onPrototypeHome }) {
         </button>
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-blue-700 shadow-sm">仅原型演示使用</span>
-          <span className="text-xs text-slate-500">快速切换美国账户状态，不属于真实客户端功能</span>
+          <span className="text-xs text-slate-500">快速切换开户流程状态，不属于真实客户端功能</span>
           <select
             value={status}
             onChange={(event) => onStatusChange(event.target.value)}
@@ -185,11 +202,9 @@ function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdictio
   const opened = status === 'opened'
   const usMeta = usStatusMeta[status]
   const showUsAccount = hasUsAccount && activeAccount === 'us'
-  const blocksUsActions = showUsAccount && (status === 'submitted' || status === 'reviewing' || status === 'failed')
   const accountTabs = [
     { id: 'trust', Icon: Landmark, label: '信托账户', enabled: true },
     { id: 'digital', Icon: WalletCards, label: '数字资产账户', enabled: false },
-    ...(hasUsAccount && !opened ? [{ id: 'us', Icon: Globe2, label: '美国账户', enabled: true }] : []),
   ]
 
   return (
@@ -211,7 +226,6 @@ function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdictio
                 >
                   <Icon className="mr-2 inline h-4 w-4" />
                   {label}
-                  {label === '美国账户' && usMeta ? <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] text-blue-700">{usMeta.label}</span> : null}
                 </button>
               )
             })}
@@ -239,36 +253,18 @@ function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdictio
               </div>
             </>
           )}
-          {blocksUsActions ? null : (
-            <div className="mt-7 flex flex-wrap gap-3">
-              {showUsAccount && opened ? (
-                <>
-                  <button type="button" className="inline-flex h-11 items-center gap-2 rounded-lg bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm">
-                    <Banknote className="h-4 w-4" />
-                    存入资金
-                  </button>
-                  <button type="button" onClick={onOpenFiatTransferOut} className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#083861] px-5 text-sm font-semibold text-white hover:bg-[#0a4776]">
-                    <Send className="h-4 w-4" />
-                    <ClickMark />
-                    法币转出
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button type="button" onClick={opened ? onOpenIncomingDeposit : undefined} className="inline-flex h-11 items-center gap-2 rounded-lg bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm">
-                    <Banknote className="h-4 w-4" />
-                    {opened ? <ClickMark /> : null}
-                    存入资金
-                  </button>
-                  <button type="button" onClick={opened ? onOpenFiatTransferOut : undefined} className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#083861] px-5 text-sm font-semibold text-white hover:bg-[#0a4776]">
-                    <Send className="h-4 w-4" />
-                    {opened ? <ClickMark /> : null}
-                    法币转出
-                  </button>
-                </>
-              )}
-            </div>
-          )}
+          <div className="mt-7 flex flex-wrap gap-3">
+            <button type="button" onClick={opened ? onOpenIncomingDeposit : undefined} className="inline-flex h-11 items-center gap-2 rounded-lg bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm">
+              <Banknote className="h-4 w-4" />
+              {opened ? <ClickMark /> : null}
+              存入资金
+            </button>
+            <button type="button" onClick={opened ? onOpenFiatTransferOut : undefined} className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#083861] px-5 text-sm font-semibold text-white hover:bg-[#0a4776]">
+              <Send className="h-4 w-4" />
+              {opened ? <ClickMark /> : null}
+              法币转出
+            </button>
+          </div>
         </div>
         <div className="rounded-2xl border border-blue-400/20 bg-blue-900/45 p-6 shadow-inner">
           <h2 className="text-xl font-bold">{showUsAccount ? '美国账户服务' : '管理信托资产'}</h2>
@@ -303,7 +299,7 @@ function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdictio
 }
 
 function QuickActionDock({ status, activeAccount, onOpenAccountInfo, onOpenIncomingDeposit, onOpenFiatTransferOut, onOpenInternalTransfer }) {
-  if (activeAccount === 'us' && (status === 'submitted' || status === 'reviewing' || status === 'failed')) {
+  if (activeAccount === 'us' && (status === 'reviewing' || status === 'failed')) {
     return null
   }
 
@@ -406,7 +402,7 @@ function FeeConfirmModal({ balanceMode, onBalanceModeChange, onClose, onConfirm 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
       <div className="w-full max-w-[480px] rounded-3xl bg-white p-6 shadow-2xl">
         <ModalHeader eyebrow="Opening fee" title="确认开通并扣费" onClose={onClose} />
-        <p className="mt-2 text-sm leading-6 text-slate-500">开通美国账户将扣除 USD 500 开户费。扣费成功后，系统生成开户申请记录并进入待审核状态。</p>
+        <p className="mt-2 text-sm leading-6 text-slate-500">开通美国账户将扣除 USD 500 开户费。扣费成功后，系统生成开户申请记录并进入审核中状态。</p>
         <div className="mt-5 rounded-2xl border border-amber-100 bg-amber-50 p-4">
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm font-semibold text-amber-900">开户费用支付状态</span>
@@ -469,14 +465,14 @@ function FeeResultModal({ type, onClose, onContinue }) {
           </div>
           <p className={success ? 'mt-2 text-sm leading-6 text-emerald-800' : 'mt-2 text-sm leading-6 text-red-800'}>
             {success
-              ? '系统已生成美国账户开户申请记录。下一步进入待审核状态，等待 Fidere Admin 后台处理。'
+              ? '系统已生成美国账户开户申请记录。下一步进入审核中状态，等待 Fidere Admin 后台处理。'
               : '当前可用余额为 USD 120.00，低于 USD 500 开户费。扣费失败时不会生成开户申请记录。'}
           </p>
         </div>
         <div className="mt-6 flex gap-3">
           {success ? (
             <Button type="button" onClick={onContinue} className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">
-              查看待审核状态
+              查看审核中状态
             </Button>
           ) : (
             <Button type="button" className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">
@@ -506,31 +502,13 @@ function ModalHeader({ eyebrow, title, onClose }) {
   )
 }
 
-function MainContent({ status, activeAccount, onOpenAccountInfo }) {
-  if (status === 'opened') {
-    return <AssetDistribution status={status} />
-  }
-
-  if (activeAccount === 'trust' || status === 'not_opened') {
-    return <TrustAccountAssets />
-  }
-
-  return (
-    <div className="grid gap-6">
-      <UsAccountStatusPanel status={status} onOpenAccountInfo={onOpenAccountInfo} />
-      <AssetDistribution status={status} />
-    </div>
-  )
+function MainContent({ status, activeAccount }) {
+  return <AssetDistribution status={status} />
 }
 
 function UsAccountStatusPanel({ status }) {
   const meta = usStatusMeta[status]
-  const Icon = meta.icon
-  const descriptions = {
-    submitted: '开户费用已支付，开户申请已创建，当前等待 Fidere Admin 在后台处理。此时美国账户暂不可用，也不会展示银行收款账户信息。',
-    reviewing: 'Fidere Admin 已提交开户申请，当前由外部机构审核。审核完成且 accountId 绑定前，美国账户仍不可用。',
-    failed: '外部机构审核未通过。请查看失败原因，并联系客服或重新申请。',
-  }
+  const Icon = status === 'failed' ? X : RefreshCw
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -541,23 +519,21 @@ function UsAccountStatusPanel({ status }) {
         <div>
           <Badge variant={meta.badge}>{meta.label}</Badge>
           <h3 className="mt-3 text-2xl font-bold text-slate-950">{meta.title}</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-500">{descriptions[status]}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">{meta.description}</p>
         </div>
       </div>
       {status === 'failed' ? (
         <div className="mt-5 grid gap-3">
           <div className="rounded-2xl border border-red-100 bg-red-50 p-5">
             <div className="text-sm font-semibold text-red-900">失败原因</div>
-            <p className="mt-2 text-sm leading-6 text-red-800">外部机构审核未通过。具体原因由客服或运营人员进一步确认。</p>
+            <p className="mt-2 text-sm leading-6 text-red-800">{meta.reason}</p>
           </div>
           <div className="rounded-2xl border border-amber-100 bg-amber-50 p-5">
             <div className="text-sm font-semibold text-amber-900">开户费处理说明</div>
             <p className="mt-2 text-sm leading-6 text-amber-800">开户失败后 USD 500 开户费是否退回、自动退回还是人工处理，当前 PRD 未明确，标注为待确认。</p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button type="button" className="rounded-lg bg-blue-600 hover:bg-blue-700">重新申请</Button>
             <Button type="button" variant="outline" className="rounded-lg">
-              <HelpCircle className="h-4 w-4" />
               联系客服
             </Button>
           </div>
@@ -567,78 +543,95 @@ function UsAccountStatusPanel({ status }) {
   )
 }
 
-function TrustAccountAssets() {
+const hkAssetRows = [
+  {
+    currency: 'HKD 港币',
+    balance: '625106.36 HKD',
+    available: '624905.36 HKD',
+    frozen: '201.00 HKD',
+    usdValue: '79806.95',
+    rate: '1 HKD = 0.12 USD',
+  },
+  {
+    currency: 'USD 美元',
+    balance: '16230.44 USD',
+    available: '16230.44 USD',
+    frozen: '0.00 USD',
+    usdValue: '16230.44',
+    rate: '1 USD = 1.00 USD',
+  },
+]
+
+const usAssetRows = [
+  {
+    currency: 'USD 美元',
+    balance: '82630.27 USD',
+    available: '82430.27 USD',
+    frozen: '200.00 USD',
+    usdValue: '82430.27',
+    rate: '1 USD = 1.00 USD',
+  },
+]
+
+function AssetAccountCard({ title, subtitle, total, badge, badgeVariant, rows, statusInfo }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
         <div>
-          <h3 className="text-lg font-bold text-slate-950">资产分布</h3>
-          <p className="mt-1 text-sm text-slate-500">法币资产</p>
+          <h4 className="text-base font-bold text-slate-950">{title}</h4>
+          <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
         </div>
-        <div className="text-lg font-bold text-blue-600">$96063.04</div>
+        <div className="flex items-center gap-3">
+          {total ? <div className="text-lg font-bold text-blue-600">{total}</div> : null}
+          {badge ? <Badge variant={badgeVariant}>{badge}</Badge> : null}
+        </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-sm">
-          <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-500">
-            <tr>
-              {['币种', '余额', '可用余额', '冻结金额', '美元价值', '24H汇率', '快捷操作'].map((item) => (
-                <th key={item} className="px-6 py-4">{item}</th>
+      {rows?.length ? (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-sm">
+            <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-500">
+              <tr>
+                {['币种', '余额', '可用余额', '冻结金额', '美元价值', '24H汇率', '快捷操作'].map((item) => (
+                  <th key={item} className="px-6 py-4">{item}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.currency} className="border-t border-slate-100">
+                  <td className="px-6 py-5 font-semibold text-slate-900">{row.currency}<br /><span className="text-xs font-normal text-slate-500">{title}</span></td>
+                  <td className="px-6 py-5">{row.balance}</td>
+                  <td className="px-6 py-5">{row.available}</td>
+                  <td className="px-6 py-5">{row.frozen}</td>
+                  <td className="px-6 py-5 font-bold">{row.usdValue}</td>
+                  <td className="px-6 py-5">{row.rate}</td>
+                  <td className="px-6 py-5 text-slate-400">—</td>
+                </tr>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-t border-slate-100">
-              <td className="px-6 py-5 font-semibold text-slate-900">HKD 港币<br /><span className="text-xs font-normal text-slate-500">信托账户</span></td>
-              <td className="px-6 py-5">625106.36 HKD</td>
-              <td className="px-6 py-5">624905.36 HKD</td>
-              <td className="px-6 py-5">201.00 HKD</td>
-              <td className="px-6 py-5 font-bold">79806.95</td>
-              <td className="px-6 py-5">1 HKD = 0.12 USD</td>
-              <td className="px-6 py-5 text-slate-400">—</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="grid gap-3 p-6 sm:grid-cols-2">
+          {statusInfo.map(([label, value, tone]) => (
+            <div key={label} className={tone === 'danger' ? 'rounded-2xl border border-red-100 bg-red-50 p-4 sm:col-span-2' : 'rounded-2xl border border-slate-100 bg-slate-50 p-4'}>
+              <div className="text-xs font-semibold text-slate-500">{label}</div>
+              <div className={tone === 'danger' ? 'mt-2 text-sm font-semibold leading-6 text-red-800' : 'mt-2 text-sm font-bold text-slate-950'}>{value}</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
 function AssetDistribution({ status }) {
-  const opened = status === 'opened'
-  const openedCards = [
-    {
-      accountType: '香港账户',
-      totalUsd: '$96,037.39',
-      rows: [
-        {
-          currency: 'HKD 港币',
-          balance: '626,120.40 HKD',
-          available: '625,919.40 HKD',
-          frozen: '201.00 HKD',
-          usdValue: '79,806.95',
-        },
-        {
-          currency: 'USD 美元',
-          balance: '16,230.44 USD',
-          available: '16,230.44 USD',
-          frozen: '0.00 USD',
-          usdValue: '16,230.44',
-        },
-      ],
-    },
-    {
-      accountType: '美国账户',
-      totalUsd: '$82,430.27',
-      rows: [
-        {
-          currency: 'USD 美元',
-          balance: '82,630.27 USD',
-          available: '82,430.27 USD',
-          frozen: '200.00 USD',
-          usdValue: '82,430.27',
-        },
-      ],
-    },
+  const usMeta = usStatusMeta[status]
+  const showUsCard = status !== 'not_opened'
+  const usOpened = status === 'opened'
+  const usStatusInfo = [
+    ['当前审核状态', usMeta.label],
+    ...(status === 'failed' ? [['拒绝原因', usMeta.reason, 'danger']] : []),
   ]
 
   return (
@@ -646,58 +639,36 @@ function AssetDistribution({ status }) {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-slate-950">资产分布</h3>
-          <p className="mt-1 text-sm text-slate-500">{opened ? '香港账户 / 美国账户' : '美国账户资产'}</p>
+          <p className="mt-1 text-sm text-slate-500">信托账户下的香港账户 / 美国账户分类</p>
         </div>
-        <div className="text-lg font-bold text-blue-600">{opened ? '$178467.66' : '$0.00'}</div>
       </div>
 
-      {opened ? (
-        <div className="grid gap-5">
-          {openedCards.map((card) => (
-            <section key={card.accountType} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
-                <div>
-                  <h4 className="text-base font-bold text-slate-950">{card.accountType}</h4>
-                  <p className="mt-1 text-sm text-slate-500">{card.rows.map((row) => row.currency.split(' ')[0]).join(' / ')}</p>
-                </div>
-                <div className="text-base font-bold text-blue-600">{card.totalUsd}</div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[620px] text-sm">
-                  <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-500">
-                    <tr>
-                      {['币种', '余额', '可用余额', '冻结金额', '美元价值'].map((item) => (
-                        <th key={item} className="px-5 py-4">{item}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {card.rows.map((row) => (
-                      <tr key={row.currency} className="border-t border-slate-100">
-                        <td className="px-5 py-5 font-semibold text-slate-900">{row.currency}</td>
-                        <td className="px-5 py-5">{row.balance}</td>
-                        <td className="px-5 py-5">{row.available}</td>
-                        <td className="px-5 py-5">{row.frozen}</td>
-                        <td className="px-5 py-5 font-bold">{row.usdValue}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          ))}
+      <div className="grid gap-5">
+        <AssetAccountCard
+          title="香港账户"
+          subtitle="信托账户下的香港法币资产分类，支持 HKD / USD。"
+          total="$96037.39"
+          rows={hkAssetRows}
+        />
+        {showUsCard ? (
+          <AssetAccountCard
+            title="美国账户"
+            subtitle="信托账户下的美国法币资产分类，仅支持 USD。"
+            total={usOpened ? '$82430.27' : ''}
+            badge={usOpened ? usMeta.label : ''}
+            badgeVariant={usOpened ? usMeta.badge : undefined}
+            rows={usOpened ? usAssetRows : []}
+            statusInfo={usStatusInfo}
+          />
+        ) : null}
+      </div>
+
+      {status === 'failed' ? (
+        <div className="rounded-2xl border border-amber-100 bg-amber-50 p-5">
+          <div className="text-sm font-semibold text-amber-900">处理说明</div>
+          <p className="mt-2 text-sm leading-6 text-amber-800">审核拒绝后当前原型不提供重新申请入口，如需继续处理需联系运营或客服线下确认。</p>
         </div>
-      ) : (
-        <div className="rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center shadow-sm">
-          <div className="mx-auto flex max-w-md flex-col items-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-              <WalletCards className="h-5 w-5" />
-            </div>
-            <div className="mt-3 font-semibold text-slate-900">暂无正式资产数据</div>
-            <p className="mt-2 text-sm leading-6 text-slate-500">美国账户尚未完成开户或 accountId 绑定，仅保留 USD 币种占位。开户成功后展示真实资产分布。</p>
-          </div>
-        </div>
-      )}
+      ) : null}
     </div>
   )
 }
@@ -1535,8 +1506,8 @@ function InternalTransferRecordsPage({ records, onBack, onCreate }) {
   )
 }
 
-export function BaasOpeningPrototype({ onBack, onOpenApplication, onPrototypeHome }) {
-  const [status, setStatus] = useState('not_opened')
+export function BaasOpeningPrototype({ onBack, onOpenApplication, onPrototypeHome, initialStatus = 'not_opened' }) {
+  const [status, setStatus] = useState(initialStatus)
   const [activeAccount, setActiveAccount] = useState('trust')
   const [pickerOpen, setPickerOpen] = useState(false)
   const [feeConfirmOpen, setFeeConfirmOpen] = useState(false)
@@ -1550,7 +1521,8 @@ export function BaasOpeningPrototype({ onBack, onOpenApplication, onPrototypeHom
 
   const changeStatus = (nextStatus) => {
     setStatus(nextStatus)
-    setActiveAccount(nextStatus === 'submitted' || nextStatus === 'reviewing' || nextStatus === 'failed' ? 'us' : 'trust')
+    setActiveAccount('trust')
+    setActiveOpenedPage('account')
   }
 
   const selectUsAccount = () => {
@@ -1565,7 +1537,7 @@ export function BaasOpeningPrototype({ onBack, onOpenApplication, onPrototypeHom
 
   const continueAfterFeeSuccess = () => {
     setFeeResult(null)
-    changeStatus('submitted')
+    changeStatus('reviewing')
   }
 
   const openInternalTransfer = (direction) => {

@@ -153,6 +153,7 @@ const userRows = [
 const transferRows = [
   {
     requestId: 'IT-1780221843260',
+    customer: { name: 'yejin', id: '130', email: 'orvafrew@123mails.org' },
     fromAccount: '香港账户',
     toAccount: '美国账户',
     currency: 'USD',
@@ -165,6 +166,7 @@ const transferRows = [
   },
   {
     requestId: 'IT-1780221843261',
+    customer: { name: 'QIXUE', id: '4', email: 'voigtus1@123mails.org' },
     fromAccount: '美国账户',
     toAccount: '香港账户',
     currency: 'USD',
@@ -177,6 +179,7 @@ const transferRows = [
   },
   {
     requestId: 'IT-1780221843262',
+    customer: { name: 'LUZHOU LU', id: '86', email: 'luzhou.lu@example.com' },
     fromAccount: '香港账户',
     toAccount: '美国账户',
     currency: 'USD',
@@ -186,6 +189,7 @@ const transferRows = [
     status: '已拒绝',
     submittedAt: '2026-05-31 18:29',
     completedAt: '2026-05-31 19:20',
+    rejectReason: '客户资料与收款账户信息不一致，需补充说明后重新提交。',
   },
 ]
 
@@ -436,7 +440,7 @@ function AccountTypeTabs({ value, onChange }) {
   )
 }
 
-function PendingReviewTable({ onOpenDetail }) {
+function PendingReviewTable({ onOpenDetail, onOpenProcess }) {
   return (
     <div className="mt-[15px] border-t border-[#e5e6ef] pt-[15px]">
       <table className="w-full border-collapse text-left">
@@ -466,7 +470,7 @@ function PendingReviewTable({ onOpenDetail }) {
               <td className="px-[18px]">
                 <div className="flex items-center gap-[7px]">
                   <ActionButton icon={Eye} onClick={onOpenDetail}>查看详情</ActionButton>
-                  <ActionButton icon={Play} onClick={onOpenDetail}>开始处理</ActionButton>
+                  <ActionButton icon={Play} onClick={onOpenProcess}>开始处理</ActionButton>
                 </div>
               </td>
             </tr>
@@ -477,7 +481,7 @@ function PendingReviewTable({ onOpenDetail }) {
   )
 }
 
-function OpeningReviewPage({ onOpenDetail }) {
+function OpeningReviewPage({ onOpenDetail, onOpenProcess }) {
   const [accountType, setAccountType] = useState('personal')
 
   return (
@@ -494,7 +498,7 @@ function OpeningReviewPage({ onOpenDetail }) {
         <div className="mt-[21px]">
           <SearchBox placeholder="搜索客户名称、审核类型..." width="w-[440px]" />
         </div>
-        <PendingReviewTable onOpenDetail={onOpenDetail} />
+        <PendingReviewTable onOpenDetail={onOpenDetail} onOpenProcess={onOpenProcess} />
       </Panel>
     </AdminShell>
   )
@@ -510,7 +514,30 @@ function ReviewFieldCard({ label, value, note }) {
   )
 }
 
-function OpeningReviewDetailPage({ onBack }) {
+function OpeningReviewDecisionCard() {
+  return (
+    <Panel className="p-[18px]">
+      <div className="flex items-center gap-[8px] text-[14px] font-semibold text-[#20213a]">
+        <FileCheck2 className="h-[17px] w-[17px] text-[#8b4fff]" />
+        审核决定
+      </div>
+      <div className="mt-[14px] text-[12px] text-[#55556e]">请选择审核决定</div>
+      <label className="mt-[10px] flex h-[46px] items-center justify-between rounded-[5px] border border-[#8b4fff] bg-white px-[12px] text-[13px] font-semibold text-[#20213a]">
+        <span>通过审核</span>
+        <ChevronDown className="h-[16px] w-[16px] text-[#55556e]" />
+      </label>
+      <textarea className="mt-[10px] h-[94px] w-full resize-none rounded-[5px] border border-[#d8d9e3] bg-white px-[12px] py-[10px] text-[13px] outline-none focus:border-[#8b4fff]" placeholder="审核备注" />
+      <button type="button" className="mt-[12px] flex h-[38px] w-full items-center justify-center gap-[8px] rounded-[5px] bg-[#bda2f9] text-[13px] font-semibold text-white hover:bg-[#9b63f5]">
+        <FileCheck2 className="h-[15px] w-[15px]" />
+        确认提交
+      </button>
+    </Panel>
+  )
+}
+
+function OpeningReviewDetailPage({ onBack, mode = 'detail' }) {
+  const isProcess = mode === 'process'
+
   return (
     <AdminShell>
       <div className="grid grid-cols-[360px_1fr] gap-[18px]">
@@ -545,26 +572,13 @@ function OpeningReviewDetailPage({ onBack }) {
               <div>职位：-</div>
             </div>
           </Panel>
-
-          <Panel className="p-[18px]">
-            <div className="mb-[14px] flex items-center gap-[8px] text-[14px] font-semibold text-[#20213a]">
-              <FileCheck2 className="h-[17px] w-[17px] text-[#8b4fff]" />
-              审核决定
-            </div>
-            <label className="text-[12px] text-[#66677f]">请选择审核决定</label>
-            <select className="mt-[8px] h-[44px] w-full rounded-[4px] border border-[#8b4fff] bg-white px-[12px] text-[13px] outline-none">
-              <option>通过审核</option>
-              <option>拒绝申请</option>
-            </select>
-            <textarea className="mt-[12px] h-[92px] w-full resize-none rounded-[4px] border border-[#cfd1dc] px-[12px] py-[10px] text-[13px] outline-none" placeholder="审核备注" />
-            <PrimaryButton icon={Play} onClick={onBack}>确认提交</PrimaryButton>
-          </Panel>
+          {isProcess ? <OpeningReviewDecisionCard /> : null}
         </div>
 
         <div className="space-y-[18px]">
           <div className="flex items-center justify-between">
             <ActionButton icon={ChevronDown} onClick={onBack}>返回开户审核</ActionButton>
-            <StatusBadge tone="blue">基本信息</StatusBadge>
+            <StatusBadge tone="blue">{isProcess ? '开始处理' : '查看详情'}</StatusBadge>
           </div>
 
           {reviewFieldGroups.map((group) => (
@@ -673,6 +687,7 @@ function UserManagementPage() {
 function TransferAuditDrawer({ record, onClose }) {
   if (!record) return null
 
+  const isPending = record.status === '待审核'
   const detailRows = [
     ['申请编号', record.requestId],
     ['转出账户', record.fromAccount],
@@ -688,13 +703,17 @@ function TransferAuditDrawer({ record, onClose }) {
     detailRows.push(['完成时间', record.completedAt])
   }
 
+  if (record.rejectReason) {
+    detailRows.push(['拒绝原因', record.rejectReason])
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-[#252236]/55">
       <aside className="fixed bottom-0 right-0 top-0 flex w-[390px] flex-col bg-white shadow-[0_18px_48px_rgba(28,29,42,0.28)]">
         <div className="flex h-[58px] items-center justify-between border-b border-[#e5e6ef] px-[18px]">
           <div>
-            <h2 className="text-[15px] font-semibold text-[#20213a]">资金互转审核</h2>
-            <div className="mt-[3px] text-[11px] font-semibold uppercase text-[#8a8ca0]">INTERNAL TRANSFER REVIEW</div>
+            <h2 className="text-[15px] font-semibold text-[#20213a]">{isPending ? '资金互转审核' : '资金互转详情'}</h2>
+            <div className="mt-[3px] text-[11px] font-semibold uppercase text-[#8a8ca0]">{isPending ? 'INTERNAL TRANSFER REVIEW' : 'INTERNAL TRANSFER DETAIL'}</div>
           </div>
           <button type="button" onClick={onClose} className="rounded-[4px] p-[7px] text-[#66677f] hover:bg-[#f6f7fb]">
             <X className="h-[16px] w-[16px]" />
@@ -717,6 +736,12 @@ function TransferAuditDrawer({ record, onClose }) {
               <span className="text-[12px] text-[#66677f]">当前状态</span>
               <StatusBadge tone={transferStatusTone(record.status)}>{record.status}</StatusBadge>
             </div>
+            <div className="border-t border-[#e5e6ef] py-[11px]">
+              <div className="text-[12px] text-[#66677f]">客户</div>
+              <div className="mt-[5px] text-[13px] font-semibold text-[#20213a]">{record.customer.name}</div>
+              <div className="mt-[3px] text-[12px] text-[#66677f]">ID: {record.customer.id}</div>
+              <div className="mt-[3px] break-all text-[12px] text-[#66677f]">{record.customer.email}</div>
+            </div>
             {detailRows.map(([label, value]) => (
               <div key={label} className="border-t border-[#e5e6ef] py-[11px]">
                 <div className="text-[12px] text-[#66677f]">{label}</div>
@@ -725,17 +750,25 @@ function TransferAuditDrawer({ record, onClose }) {
             ))}
           </div>
 
-          <div className="mt-[10px] space-y-[8px]">
-            <SelectBox label="审核结论 *" width="w-full" />
-            <textarea className="h-[102px] w-full resize-none rounded-[4px] border border-[#ff4c57] bg-white px-[12px] py-[10px] text-[13px] outline-none" placeholder="审核备注 *" />
-            <div className="text-[12px] text-[#ff4c57]">此字段为必填项</div>
-          </div>
+          {isPending ? (
+            <div className="mt-[10px] space-y-[8px]">
+              <SelectBox label="审核结论 *" width="w-full" />
+              <textarea className="h-[102px] w-full resize-none rounded-[4px] border border-[#ff4c57] bg-white px-[12px] py-[10px] text-[13px] outline-none" placeholder="审核备注 *" />
+              <div className="text-[12px] text-[#ff4c57]">此字段为必填项</div>
+            </div>
+          ) : null}
         </div>
 
-        <div className="grid grid-cols-2 gap-[8px] border-t border-[#e5e6ef] bg-white p-[10px]">
-          <button type="button" className="h-[36px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">拒绝</button>
-          <button type="button" className="h-[36px] rounded-[5px] bg-[#bda2f9] text-[13px] font-semibold text-white hover:bg-[#9b63f5]">批准</button>
-        </div>
+        {isPending ? (
+          <div className="grid grid-cols-2 gap-[8px] border-t border-[#e5e6ef] bg-white p-[10px]">
+            <button type="button" className="h-[36px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">拒绝</button>
+            <button type="button" className="h-[36px] rounded-[5px] bg-[#bda2f9] text-[13px] font-semibold text-white hover:bg-[#9b63f5]">批准</button>
+          </div>
+        ) : (
+          <div className="border-t border-[#e5e6ef] bg-white p-[10px]">
+            <button type="button" onClick={onClose} className="h-[36px] w-full rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">关闭</button>
+          </div>
+        )}
       </aside>
     </div>
   )
@@ -783,10 +816,12 @@ function FiatAssetManagementPage() {
 
       <Panel className="mt-[21px] overflow-hidden">
         {activeTab === '资金互转' ? (
-          <table className="w-full border-collapse text-left text-[13px] text-[#55556e]">
+          <div className="overflow-x-auto">
+          <table className="min-w-[1450px] w-full border-collapse text-left text-[13px] text-[#55556e]">
             <thead>
               <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
                 <th className="px-[18px]">申请编号</th>
+                <th className="px-[18px]">客户</th>
                 <th className="px-[18px]">转出账户</th>
                 <th className="px-[18px]">转入账户</th>
                 <th className="px-[18px]">币种</th>
@@ -803,6 +838,13 @@ function FiatAssetManagementPage() {
               {transferRows.map((row) => (
                 <tr key={row.requestId} className="h-[74px] border-b border-[#e7e8ef] bg-white">
                   <td className="px-[18px] font-semibold text-[#20213a]">{row.requestId}</td>
+                  <td className="px-[18px]">
+                    <div className="leading-[1.55]">
+                      <div className="font-semibold text-[#20213a]">{row.customer.name}</div>
+                      <div>ID: {row.customer.id}</div>
+                      <div>{row.customer.email}</div>
+                    </div>
+                  </td>
                   <td className="px-[18px]">{row.fromAccount}</td>
                   <td className="px-[18px]">{row.toAccount}</td>
                   <td className="px-[18px]">{row.currency}</td>
@@ -812,11 +854,18 @@ function FiatAssetManagementPage() {
                   <td className="px-[18px]"><StatusBadge tone={transferStatusTone(row.status)}>{row.status}</StatusBadge></td>
                   <td className="px-[18px]">{row.submittedAt}</td>
                   <td className="px-[18px]">{row.completedAt || ''}</td>
-                  <td className="px-[18px]"><ActionButton icon={FileCheck2} onClick={() => setSelectedTransfer(row)}>审核</ActionButton></td>
+                  <td className="px-[18px]">
+                    {row.status === '待审核' ? (
+                      <ActionButton icon={FileCheck2} onClick={() => setSelectedTransfer(row)}>审核</ActionButton>
+                    ) : (
+                      <ActionButton icon={Eye} onClick={() => setSelectedTransfer(row)}>查看详情</ActionButton>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         ) : (
           <div className="p-[36px] text-center text-[13px] text-[#66677f]">{activeTab} 数据占位，当前原型重点展示资金互转。</div>
         )}
@@ -993,8 +1042,8 @@ export function BaasAdminReviewPrototype({ onBack }) {
     <div className="min-h-screen bg-[#f4f5fb] font-sans text-[#24243d]">
       <Header onBack={onBack} />
       <Sidebar activePage={activePage} onSelect={selectPage} />
-      {activePage === 'opening-review' && reviewMode === 'list' ? <OpeningReviewPage onOpenDetail={() => setReviewMode('detail')} /> : null}
-      {activePage === 'opening-review' && reviewMode === 'detail' ? <OpeningReviewDetailPage onBack={() => setReviewMode('list')} /> : null}
+      {activePage === 'opening-review' && reviewMode === 'list' ? <OpeningReviewPage onOpenDetail={() => setReviewMode('detail')} onOpenProcess={() => setReviewMode('process')} /> : null}
+      {activePage === 'opening-review' && reviewMode !== 'list' ? <OpeningReviewDetailPage mode={reviewMode} onBack={() => setReviewMode('list')} /> : null}
       {activePage === 'user-management' ? <UserManagementPage /> : null}
       {activePage === 'fiat-assets' ? <FiatAssetManagementPage /> : null}
       {activePage === 'fee-config' ? <FeeConfigPage /> : null}

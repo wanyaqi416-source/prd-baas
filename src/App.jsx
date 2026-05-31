@@ -82,6 +82,7 @@ function BaasInterlacePage({ onBack }) {
 
 function App() {
   const [path, navigate] = useCurrentPath()
+  const [baasOpeningInitialStatus, setBaasOpeningInitialStatus] = useState('not_opened')
 
   if (path === '/admin/product-manual/prd-invest') {
     return <PrdInvestPage onBack={() => navigate('/')} />
@@ -97,6 +98,7 @@ function App() {
         onBack={() => navigate('/')}
         onOpenApplication={() => navigate('/admin/product-manual/baas-prototype/account-opening/create')}
         onPrototypeHome={() => navigate('/admin/product-manual/baas-prototype')}
+        initialStatus={baasOpeningInitialStatus}
       />
     )
   }
@@ -109,7 +111,10 @@ function App() {
     return (
       <BaasOpeningApplicationPage
         onBack={() => navigate('/admin/product-manual/baas-prototype/opening')}
-        onProceedToOpeningStatus={() => navigate('/admin/product-manual/baas-prototype/opening')}
+        onProceedToOpeningStatus={() => {
+          setBaasOpeningInitialStatus('reviewing')
+          navigate('/admin/product-manual/baas-prototype/opening')
+        }}
       />
     )
   }
