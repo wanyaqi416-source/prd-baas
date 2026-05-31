@@ -24,6 +24,7 @@ import {
   TransferOutSection,
 } from './components/prd/ManualSections'
 import { ClientAdminVisibility } from './components/prd/ClientAdminVisibility'
+import { BaasAdminReviewPrototype } from './pages/BaasAdminReviewPrototype'
 import { BaasOpeningApplicationPage } from './pages/BaasOpeningApplicationPage'
 import { BaasOpeningPrototype } from './pages/BaasOpeningPrototype'
 import { BaasPrototypeHome } from './pages/BaasPrototypeHome'
@@ -98,6 +99,10 @@ function App() {
         onPrototypeHome={() => navigate('/admin/product-manual/baas-prototype')}
       />
     )
+  }
+
+  if (path === '/admin/product-manual/baas-prototype/admin-review') {
+    return <BaasAdminReviewPrototype onBack={() => navigate('/admin/product-manual/baas-prototype')} />
   }
 
   if (path === '/admin/product-manual/baas-prototype/account-opening/create') {

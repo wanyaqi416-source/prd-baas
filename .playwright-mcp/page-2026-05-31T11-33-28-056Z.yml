@@ -1,0 +1,32 @@
+- main [ref=e4]:
+  - generic [ref=e5]:
+    - button "返回 PRD 首页" [ref=e6] [cursor=pointer]:
+      - img [ref=e7]
+      - text: 返回 PRD 首页
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]: 原型
+        - generic [ref=e12]: BaaS
+        - generic [ref=e13]: Interlace
+      - generic [ref=e14]:
+        - heading "BaaS 原型" [level=1] [ref=e15]
+        - paragraph [ref=e16]: 这里用于汇总 BaaS / Interlace 的产品原型页面
+    - generic [ref=e17]:
+      - generic [ref=e18]:
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - heading "开户流程" [level=3] [ref=e22]
+            - paragraph [ref=e23]: 客户开通美国账户、确认 USD 500 开户费、扣费成功后进入 Admin 手动开户与 accountId 绑定流程。
+          - img [ref=e25]
+        - button "进入开户原型" [ref=e29] [cursor=pointer]:
+          - text: 进入开户原型
+          - img [ref=e30]
+      - generic [ref=e32]:
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - heading "后台审核" [level=3] [ref=e36]
+            - paragraph [ref=e37]: 开户审核、法币资产管理、资金互转手续费配置等 Admin 原型入口。
+          - img [ref=e39]
+        - button "进入后台审核原型" [ref=e43] [cursor=pointer]:
+          - text: 进入后台审核原型
+          - img [ref=e44]

@@ -1,4 +1,4 @@
-import { Building2, CheckCircle2, Download, FileUp, UserRound, X } from 'lucide-react'
+import { Building2, CheckCircle2, Download, FileText, FileUp, UserRound, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { Badge } from '../components/ui/badge'
@@ -60,10 +60,35 @@ function SuccessModal({ onProceedToFee, onClose }) {
   )
 }
 
+function FatcaSigningModal({ onCancel, onConfirm }) {
+  return (
+    <ModalShell>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="text-sm font-semibold uppercase tracking-wide text-blue-500">Third-party signing</div>
+          <h3 className="mt-1 text-2xl font-bold text-slate-950">签署 FATCA 文档</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-500">当前为第三方文档签署模拟。确认后将回填 FATCA 已签署状态，不再要求上传 FATCA 文件。</p>
+        </div>
+        <button type="button" onClick={onCancel} className="rounded-full p-2 text-slate-400 hover:bg-slate-100">
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="text-sm font-bold text-slate-950">W-8BEN / W-9 模拟签署包</div>
+        <p className="mt-2 text-sm leading-6 text-slate-500">模拟跳转第三方签署服务、完成身份确认、签名并回传签署结果。</p>
+      </div>
+      <div className="mt-6 flex gap-3">
+        <Button type="button" onClick={onConfirm} className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">确认已签署</Button>
+        <Button type="button" onClick={onCancel} variant="outline" className="rounded-lg">取消</Button>
+      </div>
+    </ModalShell>
+  )
+}
+
 function FeeConfirmModal({ balanceMode, onBalanceModeChange, onClose, onConfirm }) {
   const currentBalance = balanceMode === 'sufficient' ? 'USD 1,200.00' : 'USD 120.00'
   const rows = [
-    ['扣费账户', '香港信托账户'],
+    ['扣费账户', '信托账户'],
     ['扣费币种', 'USD'],
     ['扣费金额', 'USD 500.00'],
     ['当前可用余额', currentBalance],
@@ -237,6 +262,31 @@ function PersonalTextInput({ field, value, error, onChange }) {
   )
 }
 
+function FatcaSigningCard({ signed, error, onOpen }) {
+  return (
+    <div className={error ? 'rounded-xl border border-red-200 bg-red-50 p-4' : signed ? 'rounded-xl border border-emerald-200 bg-emerald-50 p-4' : 'rounded-xl border border-slate-200 bg-white p-4'}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex gap-3">
+          <span className={signed ? 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-700 shadow-sm' : 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700'}>
+            <FileText className="h-5 w-5" />
+          </span>
+          <div>
+            <div className="text-sm font-bold text-slate-950">FATCA 第三方文档签署</div>
+            <div className="mt-1 text-xs leading-5 text-slate-500">通过第三方签署模拟完成 W-8BEN / W-9，不作为文件上传。</div>
+            <div className={signed ? 'mt-2 text-xs font-bold text-emerald-700' : 'mt-2 text-xs font-bold text-amber-700'}>
+              {signed ? '已签署' : '待签署'}
+            </div>
+            {error ? <div className="mt-2 text-xs leading-5 text-red-600">{error}</div> : null}
+          </div>
+        </div>
+        <Button type="button" onClick={onOpen} variant={signed ? 'outline' : 'default'} className={signed ? 'shrink-0 rounded-lg' : 'shrink-0 rounded-lg bg-blue-600 hover:bg-blue-700'}>
+          {signed ? '重新签署' : '去签署'}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, defaultAccountType = 'personal' }) {
   const [accountType, setAccountType] = useState(defaultAccountType)
   const [profileValues] = useState(mockBaasOpeningProfile)
@@ -248,11 +298,13 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
   const [feeConfirmOpen, setFeeConfirmOpen] = useState(false)
   const [feeBalanceMode, setFeeBalanceMode] = useState('sufficient')
   const [feeResult, setFeeResult] = useState(null)
+  const [fatcaSigned, setFatcaSigned] = useState(false)
+  const [fatcaSignOpen, setFatcaSignOpen] = useState(false)
   const [enterpriseStats, setEnterpriseStats] = useState({ acquired: 0, missing: 0, revision: 0 })
   const [enterpriseActions, setEnterpriseActions] = useState(null)
 
   const sections = useMemo(() => getBaasApplicationSections(profileValues, supplementValues), [profileValues, supplementValues])
-  const pendingCount = sections.missing.length
+  const pendingCount = sections.missing.length + (fatcaSigned ? 0 : 1)
   const personalStats = { acquired: sections.acquired.length, missing: pendingCount, revision: 0 }
   const activeStats = accountType === 'enterprise' ? enterpriseStats : personalStats
 
@@ -291,12 +343,17 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
     }
 
     const nextErrors = validateBaasApplication(profileValues, supplementValues)
+    if (!fatcaSigned) {
+      nextErrors.fatcaSigning = '请先完成 FATCA 第三方文档签署。'
+    }
     setErrors(nextErrors)
     setNotice('')
     if (Object.keys(nextErrors).length > 0) {
       setNotice('仍有资料待补充或需修正，请补充后再提交。')
       return
     }
+    // 开发说明：提交后走自动开户流程。Fidere 将 KYC 和 VA 信息给到 BaaS，BaaS 提交给 Interlace；
+    // Interlace 分两次判断 KYC 和 VA 是否通过，通过后回传 BaaS，BaaS 再通知 Fidere 审核通过。
     setConfirmOpen(true)
   }
 
@@ -385,6 +442,7 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
                     ? <PersonalFileUpload key={field.id} field={field} file={supplementValues[field.key]} error={errors[field.key]} onFileChange={changePersonalFile} />
                     : <PersonalTextInput key={field.id} field={field} value={supplementValues[field.key]} error={errors[field.key]} onChange={changePersonalValue} />
                 ))}
+                <FatcaSigningCard signed={fatcaSigned} error={errors.fatcaSigning} onOpen={() => setFatcaSignOpen(true)} />
               </div>
             </section>
           </div>
@@ -394,9 +452,9 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
       <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-5 py-4 shadow-2xl backdrop-blur">
         <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-600">
-            <span>{accountType === 'enterprise' ? `还有 ${activeStats.missing} 项待补充` : '还有数据待补充'}</span>
             {accountType === 'enterprise' ? (
               <>
+                <span>{`还有 ${activeStats.missing} 项待补充`}</span>
                 <Button type="button" onClick={() => enterpriseActions?.nextItem?.()} variant="outline" size="sm" className="rounded-lg">下一项</Button>
               </>
             ) : null}
@@ -410,6 +468,7 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
       </footer>
 
       {confirmOpen ? <ConfirmSubmitModal onCancel={() => setConfirmOpen(false)} onConfirm={() => { setConfirmOpen(false); setSubmitted(true) }} /> : null}
+      {fatcaSignOpen ? <FatcaSigningModal onCancel={() => setFatcaSignOpen(false)} onConfirm={() => { setFatcaSigned(true); setErrors((current) => ({ ...current, fatcaSigning: '' })); setFatcaSignOpen(false) }} /> : null}
       {submitted ? <SuccessModal onClose={() => setSubmitted(false)} onProceedToFee={continueToFee} /> : null}
       {feeConfirmOpen ? <FeeConfirmModal balanceMode={feeBalanceMode} onBalanceModeChange={setFeeBalanceMode} onClose={() => setFeeConfirmOpen(false)} onConfirm={confirmFee} /> : null}
       {feeResult ? <FeeResultModal type={feeResult} onClose={() => setFeeResult(null)} onContinue={onProceedToOpeningStatus} /> : null}

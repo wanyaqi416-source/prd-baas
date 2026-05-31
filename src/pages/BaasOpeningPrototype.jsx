@@ -50,16 +50,16 @@ const bankAccountRows = [
 
 const internalTransferDirections = {
   'trust-to-us': {
-    title: '转账至美国账户',
-    sourceAccount: '香港信托账户',
+    title: '资金互转至美国账户',
+    sourceAccount: '香港账户',
     targetAccount: '美国账户',
     sourceBalance: 'USD 96,037.39',
     targetBalance: 'USD 82,430.27',
   },
   'us-to-trust': {
-    title: '转账至香港账户',
+    title: '资金互转至香港账户',
     sourceAccount: '美国账户',
-    targetAccount: '香港信托账户',
+    targetAccount: '香港账户',
     sourceBalance: 'USD 82,430.27',
     targetBalance: 'USD 96,037.39',
   },
@@ -89,6 +89,18 @@ const formatTransferTime = () => {
   const now = new Date()
   const pad = (value) => String(value).padStart(2, '0')
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`
+}
+
+const formatChineseDate = (text) => {
+  const datePart = String(text || '').split(' ')[0]
+  const [year, month, day] = datePart.split('-')
+  return year && month && day ? `${year}年${Number(month)}月${Number(day)}日` : text
+}
+
+const makeTransactionId = () => {
+  const now = new Date()
+  const pad = (value) => String(value).padStart(2, '0')
+  return `TXN-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${Date.now().toString(16).slice(-8)}`
 }
 
 function ClickMark() {
@@ -168,16 +180,16 @@ function ClientTopNav({ onBack }) {
   )
 }
 
-function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdiction, onOpenIncomingDeposit }) {
+function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdiction, onOpenIncomingDeposit, onOpenFiatTransferOut }) {
   const hasUsAccount = status !== 'not_opened'
   const opened = status === 'opened'
   const usMeta = usStatusMeta[status]
   const showUsAccount = hasUsAccount && activeAccount === 'us'
   const blocksUsActions = showUsAccount && (status === 'submitted' || status === 'reviewing' || status === 'failed')
   const accountTabs = [
-    { id: 'trust', Icon: Landmark, label: '香港信托账户', enabled: true },
+    { id: 'trust', Icon: Landmark, label: '信托账户', enabled: true },
     { id: 'digital', Icon: WalletCards, label: '数字资产账户', enabled: false },
-    ...(hasUsAccount ? [{ id: 'us', Icon: Globe2, label: '美国账户', enabled: true }] : []),
+    ...(hasUsAccount && !opened ? [{ id: 'us', Icon: Globe2, label: '美国账户', enabled: true }] : []),
   ]
 
   return (
@@ -218,10 +230,10 @@ function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdictio
             </>
           ) : (
             <>
-              <div className="mt-7 text-sm font-medium text-blue-100">账户余额：香港信托</div>
+              <div className="mt-7 text-sm font-medium text-blue-100">账户余额：信托账户</div>
               <div className="mt-2 text-5xl font-bold tracking-tight md:text-6xl">$96037.39</div>
               <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-blue-100">
-                在岸信托账户
+                信托账户
                 <span>处理中：$25.66</span>
                 <RefreshCw className="h-4 w-4" />
               </div>
@@ -235,7 +247,7 @@ function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdictio
                     <Banknote className="h-4 w-4" />
                     存入资金
                   </button>
-                  <button type="button" onClick={onOpenIncomingDeposit} className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#083861] px-5 text-sm font-semibold text-white hover:bg-[#0a4776]">
+                  <button type="button" onClick={onOpenFiatTransferOut} className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#083861] px-5 text-sm font-semibold text-white hover:bg-[#0a4776]">
                     <Send className="h-4 w-4" />
                     <ClickMark />
                     法币转出
@@ -243,12 +255,14 @@ function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdictio
                 </>
               ) : (
                 <>
-                  <button type="button" className="inline-flex h-11 items-center gap-2 rounded-lg bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm">
+                  <button type="button" onClick={opened ? onOpenIncomingDeposit : undefined} className="inline-flex h-11 items-center gap-2 rounded-lg bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm">
                     <Banknote className="h-4 w-4" />
+                    {opened ? <ClickMark /> : null}
                     存入资金
                   </button>
-                  <button type="button" className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#083861] px-5 text-sm font-semibold text-white hover:bg-[#0a4776]">
+                  <button type="button" onClick={opened ? onOpenFiatTransferOut : undefined} className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#083861] px-5 text-sm font-semibold text-white hover:bg-[#0a4776]">
                     <Send className="h-4 w-4" />
+                    {opened ? <ClickMark /> : null}
                     法币转出
                   </button>
                 </>
@@ -288,7 +302,7 @@ function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdictio
   )
 }
 
-function QuickActionDock({ status, activeAccount, onOpenAccountInfo, onOpenIncomingDeposit, onOpenInternalTransfer }) {
+function QuickActionDock({ status, activeAccount, onOpenAccountInfo, onOpenIncomingDeposit, onOpenFiatTransferOut, onOpenInternalTransfer }) {
   if (activeAccount === 'us' && (status === 'submitted' || status === 'reviewing' || status === 'failed')) {
     return null
   }
@@ -297,18 +311,17 @@ function QuickActionDock({ status, activeAccount, onOpenAccountInfo, onOpenIncom
   const actions = activeAccount === 'us' && opened
     ? [
         [Banknote, '存入资金', undefined],
-        [Send, '法币转出', onOpenIncomingDeposit],
-        [RefreshCw, '转账至香港账户', () => onOpenInternalTransfer('us-to-trust')],
-        [Landmark, '查看账户信息', onOpenAccountInfo],
+        [Send, '法币转出', undefined],
+        [RefreshCw, '资金互转', () => onOpenInternalTransfer('us-to-trust')],
         [RefreshCw, '兑换', undefined],
       ]
     : activeAccount === 'trust' && opened
       ? [
-          [Landmark, '银行存入', undefined],
+          [Landmark, '银行存入', onOpenIncomingDeposit],
           [WalletCards, '数字资产存入', undefined],
-          [RefreshCw, '转账至美国账户', () => onOpenInternalTransfer('trust-to-us')],
+          [Send, '法币转出', onOpenFiatTransferOut],
+          [RefreshCw, '资金互转', () => onOpenInternalTransfer('trust-to-us')],
           [Send, '转账给受益人', undefined],
-          [RefreshCw, '兑换', undefined],
         ]
       : [
         [Landmark, '银行存入', undefined],
@@ -333,7 +346,7 @@ function QuickActionDock({ status, activeAccount, onOpenAccountInfo, onOpenIncom
                 <Icon className="h-5 w-5" />
               </span>
               <span className="mt-1 inline-flex items-center justify-center gap-1">
-                {label === '法币转出' || label === '查看账户信息' || label === '转账至美国账户' || label === '转账至香港账户' ? <ClickMark /> : null}
+                {label === '银行存入' || label === '法币转出' || label === '资金互转' ? <ClickMark /> : null}
                 {label}
               </span>
             </button>
@@ -383,7 +396,7 @@ function JurisdictionPicker({ onClose, onSelectUs }) {
 function FeeConfirmModal({ balanceMode, onBalanceModeChange, onClose, onConfirm }) {
   const currentBalance = balanceMode === 'sufficient' ? 'USD 1,200.00' : 'USD 120.00'
   const rows = [
-    ['扣费账户', '香港信托账户'],
+    ['扣费账户', '信托账户'],
     ['扣费币种', 'USD'],
     ['扣费金额', 'USD 500.00'],
     ['当前可用余额', currentBalance],
@@ -494,12 +507,12 @@ function ModalHeader({ eyebrow, title, onClose }) {
 }
 
 function MainContent({ status, activeAccount, onOpenAccountInfo }) {
-  if (activeAccount === 'trust' || status === 'not_opened') {
-    return <TrustAccountAssets />
-  }
-
   if (status === 'opened') {
     return <AssetDistribution status={status} />
+  }
+
+  if (activeAccount === 'trust' || status === 'not_opened') {
+    return <TrustAccountAssets />
   }
 
   return (
@@ -592,50 +605,99 @@ function TrustAccountAssets() {
 
 function AssetDistribution({ status }) {
   const opened = status === 'opened'
+  const openedCards = [
+    {
+      accountType: '香港账户',
+      totalUsd: '$96,037.39',
+      rows: [
+        {
+          currency: 'HKD 港币',
+          balance: '626,120.40 HKD',
+          available: '625,919.40 HKD',
+          frozen: '201.00 HKD',
+          usdValue: '79,806.95',
+        },
+        {
+          currency: 'USD 美元',
+          balance: '16,230.44 USD',
+          available: '16,230.44 USD',
+          frozen: '0.00 USD',
+          usdValue: '16,230.44',
+        },
+      ],
+    },
+    {
+      accountType: '美国账户',
+      totalUsd: '$82,430.27',
+      rows: [
+        {
+          currency: 'USD 美元',
+          balance: '82,630.27 USD',
+          available: '82,430.27 USD',
+          frozen: '200.00 USD',
+          usdValue: '82,430.27',
+        },
+      ],
+    },
+  ]
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+    <div className="grid gap-5">
+      <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-slate-950">资产分布</h3>
-          <p className="mt-1 text-sm text-slate-500">美国账户资产</p>
+          <p className="mt-1 text-sm text-slate-500">{opened ? '香港账户 / 美国账户' : '美国账户资产'}</p>
         </div>
-        <div className="text-lg font-bold text-blue-600">{opened ? '$82430.27' : '$0.00'}</div>
+        <div className="text-lg font-bold text-blue-600">{opened ? '$178467.66' : '$0.00'}</div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-sm">
-          <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-500">
-            <tr>
-              {['币种', '余额', '可用余额', '冻结金额', '美元价值', '24H变化', '快捷操作'].map((item) => (
-                <th key={item} className="px-6 py-4">{item}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-t border-slate-100">
-              <td className="px-6 py-5 font-semibold text-slate-900">USD 美元<br /><span className="text-xs font-normal text-slate-500">美国账户</span></td>
-              <td className="px-6 py-5">{opened ? '82630.27 USD' : '0.00 USD'}</td>
-              <td className="px-6 py-5">{opened ? '82430.27 USD' : '0.00 USD'}</td>
-              <td className="px-6 py-5">{opened ? '200.00 USD' : '0.00 USD'}</td>
-              <td className="px-6 py-5 font-bold">{opened ? '82430.27' : '0.00'}</td>
-              <td className="px-6 py-5">— 0%</td>
-              <td className="px-6 py-5 text-slate-400">—</td>
-            </tr>
-            {!opened ? (
-              <tr className="border-t border-slate-100">
-                <td colSpan={7} className="px-6 py-10 text-center">
-                  <div className="mx-auto flex max-w-md flex-col items-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                      <WalletCards className="h-5 w-5" />
-                    </div>
-                    <div className="mt-3 font-semibold text-slate-900">暂无正式资产数据</div>
-                    <p className="mt-2 text-sm leading-6 text-slate-500">美国账户尚未完成开户或 accountId 绑定，仅保留 USD 币种占位。开户成功后展示真实资产分布。</p>
-                  </div>
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+
+      {opened ? (
+        <div className="grid gap-5">
+          {openedCards.map((card) => (
+            <section key={card.accountType} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+                <div>
+                  <h4 className="text-base font-bold text-slate-950">{card.accountType}</h4>
+                  <p className="mt-1 text-sm text-slate-500">{card.rows.map((row) => row.currency.split(' ')[0]).join(' / ')}</p>
+                </div>
+                <div className="text-base font-bold text-blue-600">{card.totalUsd}</div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[620px] text-sm">
+                  <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-500">
+                    <tr>
+                      {['币种', '余额', '可用余额', '冻结金额', '美元价值'].map((item) => (
+                        <th key={item} className="px-5 py-4">{item}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {card.rows.map((row) => (
+                      <tr key={row.currency} className="border-t border-slate-100">
+                        <td className="px-5 py-5 font-semibold text-slate-900">{row.currency}</td>
+                        <td className="px-5 py-5">{row.balance}</td>
+                        <td className="px-5 py-5">{row.available}</td>
+                        <td className="px-5 py-5">{row.frozen}</td>
+                        <td className="px-5 py-5 font-bold">{row.usdValue}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center shadow-sm">
+          <div className="mx-auto flex max-w-md flex-col items-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+              <WalletCards className="h-5 w-5" />
+            </div>
+            <div className="mt-3 font-semibold text-slate-900">暂无正式资产数据</div>
+            <p className="mt-2 text-sm leading-6 text-slate-500">美国账户尚未完成开户或 accountId 绑定，仅保留 USD 币种占位。开户成功后展示真实资产分布。</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -690,6 +752,480 @@ function AccountInfoDrawer({ onClose }) {
   )
 }
 
+const fiatTransferOutAccounts = {
+  hk: {
+    label: '香港账户',
+    holderName: 'WANYARA OP WAN',
+    accountName: '香港账户',
+    accountNumber: 'HK-AC-202604-dbff4be8',
+    balance: {
+      USD: 'USD 16,230.44',
+      HKD: 'HKD 625,919.40',
+    },
+  },
+  us: {
+    label: '美国账户',
+    holderName: 'WANYARA OP WAN',
+    accountName: '美国账户',
+    accountNumber: 'US-AC-202604-9a31f2c0',
+    balance: {
+      USD: 'USD 82,430.27',
+      HKD: 'HKD 0.00',
+    },
+  },
+}
+
+const fiatTransferOutBanks = [
+  {
+    id: 'wo-main',
+    name: 'WO',
+    bank: '万银',
+    accountNumber: '232232',
+    swift: '12313231',
+    country: '阿富汗',
+    currency: 'USD',
+  },
+  {
+    id: 'wo-test',
+    name: 'WO',
+    bank: '测试银行',
+    accountNumber: '232232',
+    swift: '12313232',
+    country: '香港',
+    currency: 'USD',
+  },
+  {
+    id: 'wo-011',
+    name: 'WO111',
+    bank: '测试银行',
+    accountNumber: '12',
+    swift: '12313233',
+    country: '美国',
+    currency: 'USD',
+  },
+]
+
+function ExternalFiatTransferOutDetailPage({ record, onBack, onClose }) {
+  return (
+    <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
+      <main className="mx-auto min-h-screen max-w-[460px] bg-[#f7faff] shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+              <Landmark className="h-5 w-5" />
+            </span>
+            <div>
+              <h1 className="text-base font-bold text-slate-950">法币转出 详情</h1>
+              <div className="text-xs font-bold uppercase tracking-wide text-slate-400">TRANSACTION DETAIL</div>
+            </div>
+          </div>
+          <button type="button" onClick={onBack} className="rounded-full p-2 text-slate-400 hover:bg-slate-100">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-6 px-6 py-6">
+          <section className="rounded-3xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-emerald-100 bg-emerald-50 text-emerald-600">
+              <Check className="h-6 w-6" />
+            </div>
+            <div className="mt-5 text-sm text-slate-500">{record.statusLabel}</div>
+            <div className="mt-3 text-3xl font-bold text-red-500">
+              - {record.amount}
+              <span className="ml-2 text-base font-semibold text-slate-500">{record.currency}</span>
+            </div>
+            <div className="mt-3 text-sm text-slate-500">手续费: {record.feeAmount} {record.currency}</div>
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-sm font-bold text-slate-700">支账账户</h2>
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-4">
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-slate-500">
+                  <Landmark className="h-6 w-6" />
+                </span>
+                <div className="min-w-0">
+                  <div className="font-bold text-slate-950">{record.accountHolder}</div>
+                  <div className="mt-1 text-sm font-semibold text-slate-400">{record.accountNumber}</div>
+                  <div className="mt-2 inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{record.accountLabel}</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-sm font-bold text-slate-700">指示详情</h2>
+            <div className="rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+              {[
+                ['创建日期', formatChineseDate(record.createdAt)],
+                ['交易编号', record.id],
+                ['审核时间', formatChineseDate(record.reviewedAt)],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between gap-4 py-2 text-sm">
+                  <span className="text-slate-500">{label}</span>
+                  <span className="inline-flex items-center gap-2 text-right font-bold text-slate-950">
+                    {value}
+                    {label === '交易编号' || label === '银行账号' ? (
+                      <button type="button" className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 hover:bg-blue-50 hover:text-blue-600" aria-label={`复制${label}`}>
+                        <Copy className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-sm font-bold text-slate-700">收款银行账户</h2>
+            <div className="rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+              {[
+                ['账户持有人姓名', record.beneficiary],
+                ['银行名称', record.beneficiaryBank],
+                ['银行账号', record.beneficiaryAccount],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between gap-4 py-2 text-sm">
+                  <span className="text-slate-500">{label}</span>
+                  <span className="inline-flex items-center gap-2 text-right font-bold text-slate-950">
+                    {value}
+                    {label === '银行账号' ? (
+                      <button type="button" className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 hover:bg-blue-50 hover:text-blue-600" aria-label={`复制${label}`}>
+                        <Copy className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <div className="grid grid-cols-2 gap-3 pb-8">
+            <Button type="button" onClick={onBack} variant="outline" className="rounded-lg">返回表单</Button>
+            <Button type="button" onClick={onClose} className="rounded-lg bg-blue-600 hover:bg-blue-700">返回账户</Button>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+function ExternalFiatTransferOutPage({ onBack, records, onSubmit }) {
+  const [view, setView] = useState('form')
+  const [selectedRecord, setSelectedRecord] = useState(null)
+  const [accountType, setAccountType] = useState('hk')
+  const [currency, setCurrency] = useState('USD')
+  const [selectedBankId, setSelectedBankId] = useState('wo-main')
+  const [amount, setAmount] = useState('')
+  const [purpose, setPurpose] = useState('')
+  const [note, setNote] = useState('')
+  const [error, setError] = useState('')
+  const account = fiatTransferOutAccounts[accountType]
+  const selectedBank = fiatTransferOutBanks.find((bank) => bank.id === selectedBankId) || fiatTransferOutBanks[0]
+  const scopedRecords = records.filter((record) => record.accountType === accountType && record.currency === currency)
+
+  const openDetail = (record) => {
+    setSelectedRecord(record)
+    setAccountType(record.accountType)
+    setCurrency(record.currency)
+    setView('detail')
+  }
+
+  const submit = () => {
+    const numericAmount = Number(amount)
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setError('请输入大于 0 的转账金额。')
+      return
+    }
+    setError('')
+    const createdAt = formatTransferTime()
+    const record = {
+      id: makeTransactionId(),
+      accountType,
+      accountLabel: account.label,
+      accountHolder: account.holderName,
+      accountName: account.accountName,
+      accountNumber: account.accountNumber,
+      beneficiary: selectedBank.name,
+      beneficiaryBank: selectedBank.bank,
+      beneficiaryAccount: selectedBank.accountNumber,
+      currency,
+      amount: numericAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      feeAmount: '2.00',
+      purpose: purpose || '-',
+      note: note || '-',
+      createdAt,
+      reviewedAt: createdAt,
+      status: 'COMPLETED',
+      statusLabel: '已完成',
+    }
+    onSubmit(record)
+    setSelectedRecord(record)
+    setView('detail')
+    setAmount('')
+    setPurpose('')
+    setNote('')
+  }
+
+  if (view === 'detail' && selectedRecord) {
+    return (
+      <ExternalFiatTransferOutDetailPage
+        record={selectedRecord}
+        onBack={() => setView('form')}
+        onClose={onBack}
+      />
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f4f7fb] pb-24 text-slate-950">
+      <ClientTopNav onBack={onBack} />
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-4 px-6">
+          <button type="button" onClick={onBack} className="text-2xl text-slate-500 hover:text-slate-800">‹</button>
+          <div>
+            <h1 className="text-xl font-bold text-slate-950">法币转出</h1>
+            <p className="text-xs text-slate-500">向您已保存的银行账户发起银行转账</p>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-[1280px] px-6 py-5">
+        <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-bold text-slate-900">选择账户</span>
+            {[
+              ['hk', '香港账户'],
+              ['us', '美国账户'],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setAccountType(value)}
+                className={accountType === value ? 'h-10 rounded-xl bg-blue-50 px-4 text-sm font-bold text-slate-950 shadow-sm' : 'h-10 rounded-xl bg-slate-100 px-4 text-sm font-bold text-slate-600 hover:bg-slate-200'}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <div className="grid gap-5 lg:grid-cols-[0.68fr_0.32fr]">
+          <div className="space-y-5">
+            <section className="rounded-2xl border border-blue-500 bg-white shadow-[0_8px_24px_rgba(37,99,235,0.16)]">
+              <div className="border-b border-slate-100 px-6 py-4">
+                <h2 className="flex items-center gap-2 text-base font-bold text-slate-950">
+                  <WalletCards className="h-5 w-5 text-blue-600" />
+                  转账账户信息
+                </h2>
+              </div>
+              <div className="grid gap-6 p-6 md:grid-cols-2">
+                <div>
+                  {[
+                    ['账户名称', account.accountName],
+                    ['账户号码', account.accountNumber],
+                    ['可用余额', account.balance[currency]],
+                    ['扣款币种', currency],
+                  ].map(([label, value]) => (
+                    <div key={label} className="border-b border-slate-100 py-3">
+                      <div className="text-xs text-slate-500">{label}</div>
+                      <div className="mt-1 font-bold text-slate-950">{value}</div>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <div className="mb-3 text-sm font-bold text-slate-950">收款人信息</div>
+                  {[
+                    ['收款人名称', selectedBank.name],
+                    ['收款人账户', selectedBank.accountNumber],
+                    ['银行名称 / 钱包地址', `${selectedBank.bank}${selectedBank.swift}`],
+                    ['国家/地区', selectedBank.country],
+                    ['SWIFT / Routing / Network', selectedBank.swift],
+                  ].map(([label, value]) => (
+                    <div key={label} className="border-b border-slate-100 py-3">
+                      <div className="text-xs text-slate-500">{label}</div>
+                      <div className="mt-1 font-bold text-slate-950">{value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <h2 className="flex items-center gap-2 text-base font-bold text-slate-950">
+                  <Landmark className="h-5 w-5 text-blue-600" />
+                  银行地址
+                </h2>
+              </div>
+              <div className="p-6">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-sm font-bold text-slate-900">选择银行地址</div>
+                  <button type="button" className="inline-flex items-center gap-2 text-sm font-bold text-blue-600">
+                    <span className="text-lg">＋</span>
+                    添加新银行地址
+                  </button>
+                </div>
+                <div className="mb-4 flex h-11 items-center gap-2 rounded-xl border border-slate-200 px-4 text-sm text-slate-400">
+                  <span className="text-lg">⌕</span>
+                  搜索银行地址
+                </div>
+                <div className="space-y-3">
+                  {fiatTransferOutBanks.map((bank) => {
+                    const selected = selectedBankId === bank.id
+                    return (
+                      <button
+                        key={bank.id}
+                        type="button"
+                        onClick={() => setSelectedBankId(bank.id)}
+                        className={selected ? 'w-full rounded-xl bg-blue-50 p-4 text-left' : 'w-full rounded-xl bg-white p-4 text-left hover:bg-slate-50'}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex gap-3">
+                            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                              <Landmark className="h-5 w-5" />
+                            </span>
+                            <div>
+                              <div className="font-bold text-slate-950">{bank.name}</div>
+                              <div className="text-sm text-slate-500">{bank.bank} · {bank.accountNumber}</div>
+                            </div>
+                          </div>
+                          <div className="text-right text-xs text-slate-500">
+                            <div>接收币种</div>
+                            <div className="text-sm font-bold text-slate-950">{currency}</div>
+                          </div>
+                        </div>
+                        {selected ? (
+                          <div className="mt-5 grid gap-5 text-sm md:grid-cols-2">
+                            <div>
+                              <div className="text-xs text-slate-500">SWIFT代码</div>
+                              <div className="font-bold text-slate-950">{bank.swift}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-slate-500">国家/地区</div>
+                              <div className="font-bold text-slate-950">{bank.country}</div>
+                            </div>
+                          </div>
+                        ) : null}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-[1fr_1fr]">
+                  <label className="flex h-12 overflow-hidden rounded-full border border-slate-200 bg-white">
+                    <select value={currency} onChange={(event) => setCurrency(event.target.value)} className="w-24 border-r border-slate-200 bg-white px-4 text-sm font-bold outline-none">
+                      <option value="USD">USD</option>
+                      <option value="HKD">HKD</option>
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={amount}
+                      onChange={(event) => setAmount(event.target.value)}
+                      placeholder="0.00"
+                      className="min-w-0 flex-1 px-4 text-sm font-semibold outline-none"
+                    />
+                  </label>
+                  <select value={purpose} onChange={(event) => setPurpose(event.target.value)} className="h-12 rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 outline-none">
+                    <option value="">转账用途</option>
+                    <option value="Investment">Investment</option>
+                    <option value="Settlement">Settlement</option>
+                    <option value="Family Support">Family Support</option>
+                  </select>
+                </div>
+                <input
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  placeholder="附言 / 付款备注"
+                  className="mt-4 h-12 w-full rounded-full border border-slate-200 px-5 text-sm font-semibold outline-none"
+                />
+
+                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">预计手续费</span>
+                    <span className="font-bold text-slate-950">-</span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-sm">
+                    <span className="text-slate-500">预计到账时间</span>
+                    <span className="font-bold text-slate-950">1-3 个工作日</span>
+                  </div>
+                  <div className="mt-2 text-right text-xs text-slate-400">以实际到账和银行处理结果为准</div>
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                  <div className="font-bold text-amber-900">转账提示</div>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                    <li>请确认收款账户信息准确无误</li>
+                    <li>提交后当前原型仅生成待处理记录，不调用真实 API</li>
+                  </ul>
+                </div>
+                {error ? <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</div> : null}
+              </div>
+            </section>
+          </div>
+
+          <aside className="space-y-5">
+            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-100 px-5 py-4">
+                <h2 className="flex items-center gap-2 text-base font-bold text-slate-950">
+                  <RefreshCw className="h-5 w-5 text-blue-600" />
+                  本次转账摘要
+                </h2>
+              </div>
+              <div className="space-y-4 p-5 text-sm">
+                {[
+                  ['付款账户', account.accountName],
+                  ['收款人', selectedBank.name],
+                  ['转账金额', amount ? `${currency} ${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'],
+                  ['手续费', '-'],
+                  ['实际扣款', '-'],
+                ].map(([label, value]) => (
+                  <div key={label} className="border-b border-slate-100 pb-3 last:border-0">
+                    <div className="text-xs text-slate-500">{label}</div>
+                    <div className="mt-1 font-bold text-slate-950">{value}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-100 px-5 py-4">
+                <h2 className="text-base font-bold text-slate-950">最近转账记录</h2>
+              </div>
+              {scopedRecords.length === 0 ? (
+                <div className="flex h-40 flex-col items-center justify-center text-slate-400">
+                  <CircleAlert className="h-8 w-8" />
+                  <div className="mt-3 text-sm">暂无转账记录</div>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {scopedRecords.map((record) => (
+                    <button key={record.id} type="button" onClick={() => openDetail(record)} className="block w-full p-5 text-left text-sm hover:bg-blue-50">
+                      <div className="flex justify-between gap-3">
+                        <span className="font-bold text-slate-950">{record.currency} {record.amount}</span>
+                        <Badge variant={record.status === 'COMPLETED' ? 'success' : 'warning'}>{record.statusLabel}</Badge>
+                      </div>
+                      <div className="mt-2 text-slate-500">{record.accountLabel} · {record.beneficiary} · {record.createdAt}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+          </aside>
+        </div>
+      </main>
+
+      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-6 py-4 shadow-2xl backdrop-blur">
+        <div className="mx-auto flex max-w-[1280px] justify-end gap-3">
+          <Button type="button" onClick={onBack} variant="outline" className="rounded-lg">取消</Button>
+          <Button type="button" onClick={submit} className="rounded-lg bg-blue-600 px-8 hover:bg-blue-700">继续确认</Button>
+        </div>
+      </footer>
+    </div>
+  )
+}
+
 function InternalTransferConfirmModal({ draft, onClose, onConfirm }) {
   const rows = [
     ['转出账户', draft.sourceAccount],
@@ -727,7 +1263,8 @@ function InternalTransferConfirmModal({ draft, onClose, onConfirm }) {
 }
 
 function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
-  const config = internalTransferDirections[direction]
+  const [currentDirection, setCurrentDirection] = useState(direction)
+  const config = internalTransferDirections[currentDirection]
   const [currency, setCurrency] = useState('USD')
   const [amount, setAmount] = useState('')
   const [feeMode, setFeeMode] = useState('fixed')
@@ -753,7 +1290,7 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
 
     setError('')
     setConfirmDraft({
-      direction,
+      direction: currentDirection,
       sourceAccount: config.sourceAccount,
       targetAccount: config.targetAccount,
       currency,
@@ -797,17 +1334,26 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
 
         <div className="grid gap-5 lg:grid-cols-[0.72fr_0.28fr]">
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="grid gap-4 md:grid-cols-2">
-              {[
-                ['转出账户', config.sourceAccount, config.sourceBalance],
-                ['转入账户', config.targetAccount, config.targetBalance],
-              ].map(([label, account, balance]) => (
-                <div key={label} className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
-                  <div className="text-sm font-semibold text-blue-700">{label}</div>
-                  <div className="mt-2 text-xl font-bold text-slate-950">{account}</div>
-                  <div className="mt-2 text-sm text-slate-500">参考余额：{balance}</div>
-                </div>
-              ))}
+            <div className="grid items-center gap-4 md:grid-cols-[1fr_auto_1fr]">
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+                <div className="text-sm font-semibold text-blue-700">转出账户</div>
+                <div className="mt-2 text-xl font-bold text-slate-950">{config.sourceAccount}</div>
+                <div className="mt-2 text-sm text-slate-500">参考余额：{config.sourceBalance}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCurrentDirection((current) => (current === 'trust-to-us' ? 'us-to-trust' : 'trust-to-us'))}
+                className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-blue-200 bg-white text-blue-700 shadow-sm hover:bg-blue-50"
+                aria-label="互换转出和转入账户"
+                title="互换转出和转入账户"
+              >
+                <RefreshCw className="h-5 w-5" />
+              </button>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+                <div className="text-sm font-semibold text-emerald-700">转入账户</div>
+                <div className="mt-2 text-xl font-bold text-slate-950">{config.targetAccount}</div>
+                <div className="mt-2 text-sm text-slate-500">参考余额：{config.targetBalance}</div>
+              </div>
             </div>
 
             <div className="mt-6 grid gap-5">
@@ -940,7 +1486,7 @@ function InternalTransferRecordsPage({ records, onBack, onCreate }) {
         <div className="mb-6">
           <Badge variant="warning">待后台审核</Badge>
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">内部转账记录</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500">客户提交香港信托账户与美国账户之间的法币转账申请后，金额会先冻结并扣减转出账户可用余额，后台审核通过后再入账到转入账户。</p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">客户提交香港账户与美国账户之间的法币转账申请后，金额会先冻结并扣减转出账户可用余额，后台审核通过后再入账到转入账户。</p>
         </div>
 
         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -1000,10 +1546,11 @@ export function BaasOpeningPrototype({ onBack, onOpenApplication, onPrototypeHom
   const [activeOpenedPage, setActiveOpenedPage] = useState('account')
   const [internalTransferDirection, setInternalTransferDirection] = useState('trust-to-us')
   const [internalTransferRecords, setInternalTransferRecords] = useState([])
+  const [fiatTransferOutRecords, setFiatTransferOutRecords] = useState([])
 
   const changeStatus = (nextStatus) => {
     setStatus(nextStatus)
-    setActiveAccount(nextStatus === 'not_opened' ? 'trust' : 'us')
+    setActiveAccount(nextStatus === 'submitted' || nextStatus === 'reviewing' || nextStatus === 'failed' ? 'us' : 'trust')
   }
 
   const selectUsAccount = () => {
@@ -1031,8 +1578,22 @@ export function BaasOpeningPrototype({ onBack, onOpenApplication, onPrototypeHom
     setActiveOpenedPage('internal-transfer-records')
   }
 
+  const submitFiatTransferOut = (record) => {
+    setFiatTransferOutRecords((current) => [record, ...current])
+  }
+
   if (status === 'opened' && activeOpenedPage === 'external-fiat-transfer-in') {
     return <IncomingFiatDepositPrototype onBack={() => setActiveOpenedPage('account')} />
+  }
+
+  if (status === 'opened' && activeOpenedPage === 'external-fiat-transfer-out') {
+    return (
+      <ExternalFiatTransferOutPage
+        onBack={() => setActiveOpenedPage('account')}
+        records={fiatTransferOutRecords}
+        onSubmit={submitFiatTransferOut}
+      />
+    )
   }
 
   if (activeOpenedPage === 'internal-transfer') {
@@ -1066,12 +1627,14 @@ export function BaasOpeningPrototype({ onBack, onOpenApplication, onPrototypeHom
         onAccountChange={setActiveAccount}
         onOpenJurisdiction={() => setPickerOpen(true)}
         onOpenIncomingDeposit={() => setActiveOpenedPage('external-fiat-transfer-in')}
+        onOpenFiatTransferOut={() => setActiveOpenedPage('external-fiat-transfer-out')}
       />
       <QuickActionDock
         status={status}
         activeAccount={activeAccount}
         onOpenAccountInfo={() => setAccountInfoOpen(true)}
         onOpenIncomingDeposit={() => setActiveOpenedPage('external-fiat-transfer-in')}
+        onOpenFiatTransferOut={() => setActiveOpenedPage('external-fiat-transfer-out')}
         onOpenInternalTransfer={openInternalTransfer}
       />
       <main className="mx-auto max-w-[1280px] px-5 py-8">

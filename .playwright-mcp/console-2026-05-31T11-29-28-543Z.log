@@ -1,0 +1,3 @@
+[    3234ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5180/node_modules/.vite/deps/client-Ce_9biLG.js?v=f0976f52:14336
+[    3564ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:5180/favicon.ico:0
+[  303136ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5180/node_modules/.vite/deps/client-Ce_9biLG.js?v=f0976f52:14336
