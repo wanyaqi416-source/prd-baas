@@ -1,7 +1,96 @@
+const companyTypeOptions = [
+  'Limited Liability Company, L.L.C.（责任有限公司）',
+  'Limited Liability Partnership, L.L.P（有限合伙公司）',
+  'Corporation（股份有限公司）',
+]
+
+const mainBusinessOptions = [
+  { value: '出海服务', label: '出海服务', description: '例如经营广告投放、跨境物流、电商营销、众筹等相关服务' },
+  { value: 'web3或数字货币相关', label: 'web3或数字货币相关', description: 'web3或数字货币相关' },
+  { value: '金融投资', label: '金融投资', description: '金融投资' },
+  { value: '电商', label: '电商', description: '例如在电商平台（Amazon、eBay、AliExpress等）、独立站或众筹平台售卖商品' },
+  { value: 'B2B业务', label: 'B2B业务', description: '例如经营Alibaba或其他B2B贸易等业务' },
+  { value: '其他', label: '其他', description: '例如经营旅游、游戏等行业业务' },
+]
+
+const industryCategoryGroups = [
+  {
+    label: '货物贸易',
+    options: [
+      '服装和配饰',
+      '行李箱',
+      '电子产品',
+      '健康和家居产品',
+      '家庭厨房用品',
+      '运动和户外用品',
+      '家庭工具',
+      '玩具和游戏设备',
+      '宠物用品',
+      '计算机',
+      '工艺品',
+      '汽车用品',
+      '婴儿用品',
+      '美容和护理产品',
+      '工业和科学产品',
+      '媒体和影像设备',
+    ],
+  },
+  {
+    label: '服务贸易',
+    options: [
+      '广告相关服务',
+      '软件和技术服务',
+      '物流运输',
+      '运输服务',
+      '媒体和互联网视频服务',
+      '软件销售（不包括游戏）',
+      '在线教育',
+      '文件存储服务',
+      '数据登记和管理服务',
+      '网络游戏',
+      '会计、人力资源和法律服务',
+      '通讯产品',
+      '旅行和票务服务',
+      '酒店和住宿服务',
+      '摄影摄像服务',
+      '艺术设计，建筑和媒体服务',
+      '工程和科学技术服务',
+      '翻译和语言相关服务',
+    ],
+  },
+]
+
+const businessCountryOptions = [
+  '中国内地',
+  '中国香港',
+  '中国澳门',
+  '中国台湾',
+  '美国',
+  '加拿大',
+  '英国',
+  '欧盟',
+  '新加坡',
+  '日本',
+  '韩国',
+  '澳大利亚',
+  '新西兰',
+  '阿联酋',
+  '马来西亚',
+  '泰国',
+  '越南',
+  '印度尼西亚',
+  '菲律宾',
+  '印度',
+  '墨西哥',
+  '巴西',
+]
+
+const volumeOptions = ['5万美金以下', '5万~50万美金', '50万~100万美金', '100万美金以上']
+
 export const companyBaseFields = [
-  { path: 'registrationPlace', label: '企业注册地', required: true, section: '企业主体信息', readOnly: true },
-  { path: 'businessNameEn', label: '企业英文名称', required: true, section: '企业主体信息', readOnly: true },
-  { path: 'isListedCompany', label: '是否为上市公司', required: true, section: '企业主体信息', inputType: 'segmented', options: ['是', '否'], supplement: true },
+  { path: 'registrationPlace', label: '企业注册地', required: true, section: '认证前确认', readOnly: true },
+  { path: 'businessNameEn', label: '企业英文名称', required: true, section: '认证前确认', readOnly: true, hint: '请确保您的企业名称与企业文件上的注册名称一致，开始认证流程后无法修改' },
+  { path: 'isListedCompany', label: '是否为上市公司', required: true, section: '认证前确认', inputType: 'segmented', options: ['是', '否'], supplement: true },
   { path: 'stockExchangeName', label: '交易所名称', required: true, section: '企业主体信息', dependsOn: { path: 'isListedCompany', value: '是' }, placeholder: '请输入交易所名称' },
   { path: 'stockCode', label: '股票代码', required: true, section: '企业主体信息', dependsOn: { path: 'isListedCompany', value: '是' }, placeholder: '请输入股票代码' },
   { path: 'authorizedCapital', label: '法定股本数', required: true, section: '企业主体信息', dependsOn: { path: 'isListedCompany', value: '是' }, sanitize: 'digits', placeholder: '请输入法定股本数' },
@@ -12,14 +101,77 @@ export const companyBaseFields = [
     label: '企业类型',
     required: true,
     section: '企业主体信息',
-    inputType: 'select',
+    inputType: 'radioCards',
     placeholder: '请选择企业类型',
     supplement: true,
     tooltip: '请确保与公司文件中登记的企业类型一致',
-    options: ['私人股份有限公司', '公众股份有限公司', '有股本的公众无限公司', '有股本的私人无限公司'],
+    options: companyTypeOptions,
   },
   { path: 'businessRegistrationNumber', label: '商业登记号码', required: true, section: '企业主体信息', placeholder: '请输入商业登记号码', supplement: true },
   { path: 'companyRegistrationNumber', label: '公司注册编号', required: true, section: '企业主体信息', placeholder: '请输入公司注册编号', supplement: true },
+  { path: 'federalTaxId', label: '公司联邦税号', required: true, section: '业务信息', placeholder: '请输入EIN税号', hint: '请填写您EIN确认函上展示的EIN税号', supplement: true },
+  {
+    path: 'mainBusiness',
+    label: '主营业务',
+    required: true,
+    section: '业务信息',
+    inputType: 'descriptiveSelect',
+    placeholder: '请选择主营业务类型',
+    supplement: true,
+    options: mainBusinessOptions,
+  },
+  {
+    path: 'industryCategories',
+    label: '行业类别',
+    required: true,
+    section: '业务信息',
+    inputType: 'groupedMultiselect',
+    placeholder: '请选择行业类别',
+    supplement: true,
+    groups: industryCategoryGroups,
+  },
+  {
+    path: 'hasOfficialWebsite',
+    label: '是否有官方网站',
+    required: true,
+    section: '业务信息',
+    inputType: 'radioCards',
+    options: ['有网站', '暂无网站'],
+    supplement: true,
+  },
+  { path: 'officialWebsite', label: '官方网站', required: true, section: '业务信息', dependsOn: { path: 'hasOfficialWebsite', value: '有网站' }, placeholder: '请输入网站链接', supplement: true },
+  { path: 'businessDescription', label: '业务描述', required: true, section: '业务信息', inputType: 'textarea', dependsOn: { path: 'hasOfficialWebsite', value: '暂无网站' }, placeholder: '请描述您的业务', supplement: true },
+  {
+    path: 'businessCountries',
+    label: '业务往来国家',
+    required: true,
+    section: '业务信息',
+    inputType: 'multiselect',
+    placeholder: '请选择业务往来国家(最多可选5项)',
+    supplement: true,
+    options: businessCountryOptions,
+    maxSelections: 5,
+  },
+  {
+    path: 'cryptoWalletMonthlyVolume',
+    label: '加密钱包预计月交易量',
+    required: true,
+    section: '业务信息',
+    inputType: 'select',
+    placeholder: '请选择加密钱包预计月交易量',
+    supplement: true,
+    options: volumeOptions,
+  },
+  {
+    path: 'estimatedAnnualRevenue',
+    label: '预计年营业额',
+    required: true,
+    section: '业务信息',
+    inputType: 'select',
+    placeholder: '请选择预计年营业额',
+    supplement: true,
+    options: volumeOptions,
+  },
   {
     path: 'employeeCount',
     label: '雇员人数',
@@ -54,7 +206,7 @@ export const registrationAddressFields = [
   { path: 'operatingAddress.postalCode', label: '邮政编码/Postal Code', required: true, section: '实际经营地址', placeholder: '请输入邮政编码', supplement: true },
 ]
 
-export const companyAttachmentFields = [
+export const listedCompanyAttachmentFields = [
   { path: 'attachments.attachmentLicense', label: '公司营业执照', hint: 'pdf / jpeg / png，限 8M。对应我们系统的公司注册证书和商业登记证字段。' },
   { path: 'attachments.attachmentAddress', label: '地址证明', hint: 'pdf / jpeg / png，限 8M。' },
   { path: 'attachments.attachmentCorporateRecords', label: '公司章程或组织大纲', hint: 'pdf / jpeg / png，限 8M。对应我们系统的公司章程字段。' },
@@ -66,6 +218,60 @@ export const companyAttachmentFields = [
   { path: 'attachments.attachmentSourceOfFunds', label: '资金来源证明', hint: 'pdf / jpeg / png，限 8M。' },
   { path: 'attachments.attachmentTaxIdentificationNumber', label: '税务识别号或同等文件', hint: 'pdf / jpeg / png，限 8M。' },
 ]
+
+const interlaceNonListedAttachmentHint = '1.照片彩色、清晰、完整\n2.支持PDF、JPG、JPEG、PNG、ZIP、RAR格式\n3.多份文件请打包压缩上传，文件大小不超过20MB'
+const interlaceRegisterAttachmentHint = '1.请上传董事名册等能体现董事信息的文件\n2.请确保文件清晰、完整\n3.支持PDF、JPG、JPEG、PNG、ZIP、RAR格式\n4.多份文件请打包压缩上传，文件大小不超过20MB'
+const interlaceOwnerAttachmentHint = '1.请上传股东名册、股权架构图等能体现股东信息的文件\n2.请确保文件清晰、完整\n3.支持PDF、JPG、JPEG、PNG、ZIP、RAR格式\n4.多份文件请打包压缩上传，文件大小不超过20MB'
+
+export const nonListedCompanyAttachmentFields = [
+  {
+    path: 'attachments.attachmentCertificateOfIncorporation',
+    label: '公司注册书（Certificate of Incorporation）',
+    hint: interlaceNonListedAttachmentHint,
+    accept: '.pdf,.jpeg,.jpg,.png,.zip,.rar,application/pdf,image/jpeg,image/png,application/zip,application/x-zip-compressed,application/vnd.rar,application/x-rar-compressed',
+    acceptDescription: '支持 PDF、JPG、JPEG、PNG、ZIP、RAR，单个文件大小限制 20MB。',
+    allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'zip', 'rar'],
+    fileLimit: 20 * 1024 * 1024,
+  },
+  {
+    path: 'attachments.attachmentOperatingAgreement',
+    label: '公司章程（Operating Agreement / Articles of Association / Company By laws）',
+    hint: interlaceNonListedAttachmentHint,
+    accept: '.pdf,.jpeg,.jpg,.png,.zip,.rar,application/pdf,image/jpeg,image/png,application/zip,application/x-zip-compressed,application/vnd.rar,application/x-rar-compressed',
+    acceptDescription: '支持 PDF、JPG、JPEG、PNG、ZIP、RAR，单个文件大小限制 20MB。',
+    allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'zip', 'rar'],
+    fileLimit: 20 * 1024 * 1024,
+  },
+  {
+    path: 'attachments.attachmentEinConfirmationLetter',
+    label: '联邦雇主识别号码确认函（EIN Confirmation Letter）',
+    hint: interlaceNonListedAttachmentHint,
+    accept: '.pdf,.jpeg,.jpg,.png,.zip,.rar,application/pdf,image/jpeg,image/png,application/zip,application/x-zip-compressed,application/vnd.rar,application/x-rar-compressed',
+    acceptDescription: '支持 PDF、JPG、JPEG、PNG、ZIP、RAR，单个文件大小限制 20MB。',
+    allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'zip', 'rar'],
+    fileLimit: 20 * 1024 * 1024,
+  },
+  {
+    path: 'attachments.attachmentDirectorRegister',
+    label: '董事信息文件',
+    hint: interlaceRegisterAttachmentHint,
+    accept: '.pdf,.jpeg,.jpg,.png,.zip,.rar,application/pdf,image/jpeg,image/png,application/zip,application/x-zip-compressed,application/vnd.rar,application/x-rar-compressed',
+    acceptDescription: '支持 PDF、JPG、JPEG、PNG、ZIP、RAR，单个文件大小限制 20MB。',
+    allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'zip', 'rar'],
+    fileLimit: 20 * 1024 * 1024,
+  },
+  {
+    path: 'attachments.attachmentShareholderRegister',
+    label: '股东信息文件（需体现最终受益自然人）',
+    hint: interlaceOwnerAttachmentHint,
+    accept: '.pdf,.jpeg,.jpg,.png,.zip,.rar,application/pdf,image/jpeg,image/png,application/zip,application/x-zip-compressed,application/vnd.rar,application/x-rar-compressed',
+    acceptDescription: '支持 PDF、JPG、JPEG、PNG、ZIP、RAR，单个文件大小限制 20MB。',
+    allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'zip', 'rar'],
+    fileLimit: 20 * 1024 * 1024,
+  },
+]
+
+export const companyAttachmentFields = listedCompanyAttachmentFields
 
 export const personFields = [
   { path: 'firstName', label: '名', required: true },
@@ -138,6 +344,16 @@ export const enterpriseDirectorAttachmentFields = [
     accept: '.jpeg,.jpg,.png,image/jpeg,image/png',
     acceptDescription: '支持 JPG、JPEG、PNG，单个文件大小限制 20MB。',
   },
+  {
+    path: 'attachments.attachmentPassportHolding',
+    label: '董事手持护照照片',
+    required: true,
+    supplement: true,
+    inputType: 'file',
+    hint: '为确认开户为董事本人意愿，请上传董事手持【护照】照片。\n1.请保证脸部不被遮挡，证件上所有信息完整清晰\n2.支持JPG、JPEG、PNG格式\n3.文件大小不超过20M',
+    accept: '.jpeg,.jpg,.png,image/jpeg,image/png',
+    acceptDescription: '支持 JPG、JPEG、PNG，单个文件大小限制 20MB。',
+  },
 ]
 
 export const beneficialOwnerConfirmationFields = [
@@ -178,9 +394,18 @@ export const mockEnterpriseApplication = {
   authorizedCapital: '',
   issuedCapital: '',
   capitalCurrency: '',
-  companyType: '私人股份有限公司',
+  companyType: 'Limited Liability Company, L.L.C.（责任有限公司）',
   businessRegistrationNumber: '',
   companyRegistrationNumber: '',
+  federalTaxId: '',
+  mainBusiness: '',
+  industryCategories: [],
+  hasOfficialWebsite: '有网站',
+  officialWebsite: '',
+  businessDescription: '',
+  businessCountries: [],
+  cryptoWalletMonthlyVolume: '',
+  estimatedAnnualRevenue: '',
   employeeCount: '',
   premisesType: '',
   registrationAddress: {
@@ -201,6 +426,11 @@ export const mockEnterpriseApplication = {
     otherBeneficialOwners: [],
   },
   attachments: {
+    attachmentCertificateOfIncorporation: null,
+    attachmentOperatingAgreement: null,
+    attachmentEinConfirmationLetter: null,
+    attachmentDirectorRegister: null,
+    attachmentShareholderRegister: null,
     attachmentLicense: createMockUploadedImage('kyb_license_001', 'Certificate of Incorporation.png'),
     attachmentAddress: createMockUploadedImage('kyb_address_001', 'Office Lease Address Proof.png'),
     attachmentCorporateRecords: createMockUploadedImage('kyb_articles_001', 'Articles of Association.png'),
@@ -268,6 +498,7 @@ export const mockEnterpriseApplication = {
       attachments: {
         attachmentAddress: null,
         attachmentIdentity: null,
+        attachmentPassportHolding: null,
         attachmentFatca: null,
         attachmentSourceOfFunds: null,
       },
@@ -300,6 +531,7 @@ export const mockEnterpriseApplication = {
       attachments: {
         attachmentAddress: null,
         attachmentIdentity: null,
+        attachmentPassportHolding: null,
         attachmentFatca: null,
         attachmentSourceOfFunds: null,
       },
@@ -367,6 +599,13 @@ function validateCommon(path, value, owner) {
   return ''
 }
 
+function optionValues(field) {
+  if (field.groups?.length) {
+    return field.groups.flatMap((group) => group.options || [])
+  }
+  return (field.options || []).map((option) => (typeof option === 'string' ? option : option.value))
+}
+
 function isFieldActive(source, field) {
   if (!field.dependsOn) return true
   return getByPath(source, field.dependsOn.path) === field.dependsOn.value
@@ -377,7 +616,8 @@ function classifyField(sections, source, field, group, owner = source) {
     return
   }
   const value = getByPath(source, field.path)
-  const text = String(value || '').trim()
+  const isMultiValue = Array.isArray(value)
+  const text = isMultiValue ? value.join(',').trim() : String(value || '').trim()
   const item = {
     ...field,
     id: `${group}:${field.path}`,
@@ -391,6 +631,11 @@ function classifyField(sections, source, field, group, owner = source) {
   }
 
   if (!text) {
+    return
+  }
+
+  if (isMultiValue && field.maxSelections && value.length > field.maxSelections) {
+    sections.revision.push({ ...item, error: `最多可选择 ${field.maxSelections} 项。` })
     return
   }
 
@@ -409,7 +654,16 @@ function classifyField(sections, source, field, group, owner = source) {
     return
   }
 
-  if (field.options?.length && !field.options.includes(text)) {
+  const allowedValues = optionValues(field)
+  if (allowedValues.length) {
+    const values = isMultiValue ? value : [text]
+    if (values.some((current) => !allowedValues.includes(current))) {
+      sections.revision.push({ ...item, error: '请选择有效选项。' })
+      return
+    }
+  }
+
+  if (field.inputType === 'groupedMultiselect' && (!isMultiValue || !value.length)) {
     sections.revision.push({ ...item, error: '请选择有效选项。' })
     return
   }
@@ -453,6 +707,10 @@ function classifyPerson(sections, data, collectionKey, personType, index, includ
 
 function isYes(value) {
   return value === true || String(value || '').trim().toUpperCase() === 'YES' || String(value || '').trim() === '是'
+}
+
+export function getCompanyAttachmentFields(data) {
+  return isYes(data.isListedCompany) ? listedCompanyAttachmentFields : nonListedCompanyAttachmentFields
 }
 
 export function hasAtLeastOneBeneficialOwner(data) {
@@ -525,7 +783,7 @@ export function getEnterpriseSections(data) {
     const owner = field.path.startsWith('operatingAddress.') ? data.operatingAddress : data.registrationAddress
     classifyField(sections, data, field, '企业基础资料', owner)
   })
-  companyAttachmentFields.forEach((field) => classifyAttachment(sections, data, field, '企业基础资料'))
+  getCompanyAttachmentFields(data).forEach((field) => classifyAttachment(sections, data, field, '企业基础资料'))
   classifyEnterpriseDirector(sections, data)
   classifyBeneficialOwnerConfirmation(sections, data)
   data.shareholders.forEach((person, index) => classifyPerson(sections, data, 'shareholders', '股东', index, true))

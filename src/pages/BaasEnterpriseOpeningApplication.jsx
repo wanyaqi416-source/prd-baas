@@ -1,11 +1,10 @@
 import { ChevronDown, Download, FileUp, HelpCircle, UsersRound, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import {
   beneficialOwnerConfirmationFields,
-  companyAttachmentFields,
   companyBaseFields,
   createMockEnterpriseFile,
   enterpriseApplicantRoleLabels,
@@ -15,6 +14,7 @@ import {
   enterpriseDirectorInfoFields,
   getEnterpriseApplicantSelection,
   getByPath,
+  getCompanyAttachmentFields,
   getEnterpriseSections,
   hasAtLeastOneBeneficialOwner,
   mockEnterpriseApplication,
@@ -30,7 +30,7 @@ const fileLimit = 8 * 1024 * 1024
 const passportFileLimit = 20 * 1024 * 1024
 const acceptedTypes = ['application/pdf', 'image/jpeg', 'image/png']
 const passportAcceptedTypes = ['image/jpeg', 'image/png']
-const baseFieldGroups = ['企业主体信息', '注册地址', '实际经营地址', '经营规模与场所']
+const baseFieldGroups = ['认证前确认', '企业主体信息', '业务信息', '注册地址', '实际经营地址', '经营规模与场所']
 const listedCompanyFields = ['stockExchangeName', 'stockCode', 'authorizedCapital', 'issuedCapital', 'capitalCurrency']
 
 function getModuleStatus(missingCount, revisionCount) {
@@ -40,8 +40,21 @@ function getModuleStatus(missingCount, revisionCount) {
 }
 
 function formatValue(value) {
+  if (Array.isArray(value)) return value.length ? value.join('、') : '—'
   if (value?.name) return value.name
   return value || '—'
+}
+
+function optionValue(option) {
+  return typeof option === 'string' ? option : option.value
+}
+
+function optionLabel(option) {
+  return typeof option === 'string' ? option : option.label
+}
+
+function optionDescription(option) {
+  return typeof option === 'string' ? '' : option.description
 }
 
 function formatYesNo(value) {
@@ -191,7 +204,7 @@ function UploadEditor({ item, file, error, onFileChange }) {
               accept={accept}
               className="hidden"
               onChange={(event) => {
-                onFileChange(item.path, event.target.files?.[0], item.id)
+                onFileChange(item.path, event.target.files?.[0], item.id, item)
                 event.target.value = ''
               }}
             />
@@ -232,9 +245,50 @@ function EnterpriseFieldLabel({ field }) {
 }
 
 function EnterpriseBaseEditor({ field, value, error, onChange }) {
+  const rootRef = useRef(null)
+  const [descriptiveOpen, setDescriptiveOpen] = useState(false)
+  const [multiOpen, setMultiOpen] = useState(false)
   const baseClass = error
     ? 'mt-2 h-11 w-full rounded-lg border border-red-300 bg-red-50 px-3 text-sm font-semibold text-slate-950 outline-none focus:border-red-400'
     : 'mt-2 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-950 outline-none focus:border-blue-400'
+
+  useEffect(() => {
+    if (!descriptiveOpen && !multiOpen) return undefined
+    const closeDropdowns = (event) => {
+      if (rootRef.current?.contains(event.target)) return
+      setDescriptiveOpen(false)
+      setMultiOpen(false)
+    }
+    document.addEventListener('mousedown', closeDropdowns)
+    return () => document.removeEventListener('mousedown', closeDropdowns)
+  }, [descriptiveOpen, multiOpen])
+
+  if (field.inputType === 'radioCards') {
+    return (
+      <div id={fieldDomId(field)} className={error ? 'block scroll-mt-8 rounded-xl border border-red-200 bg-red-50 p-4' : 'block scroll-mt-8 rounded-xl border border-slate-200 bg-white p-4'}>
+        <EnterpriseFieldLabel field={field} />
+        <div className="mt-3 grid gap-3">
+          {field.options.map((option) => {
+            const optionText = optionLabel(option)
+            const selected = value === optionValue(option)
+            return (
+              <button
+                type="button"
+                key={optionText}
+                onClick={() => onChange(field.path, optionValue(option), field.id)}
+                className={selected ? 'flex min-h-12 w-full items-center gap-3 rounded-lg border border-blue-500 bg-blue-50 px-4 py-3 text-left text-sm font-bold text-slate-950 shadow-sm' : 'flex min-h-12 w-full items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-left text-sm font-bold text-slate-700 hover:border-blue-300 hover:bg-blue-50'}
+              >
+                <span className={selected ? 'flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-500 ring-4 ring-blue-100' : 'h-4 w-4 shrink-0 rounded-full border border-slate-300 bg-white'} />
+                <span className="min-w-0 leading-5">{optionText}</span>
+              </button>
+            )
+          })}
+        </div>
+        {field.hint ? <span className="mt-2 block text-xs leading-5 text-slate-400">{field.hint}</span> : null}
+        {error ? <span className="mt-1 block text-xs leading-5 text-red-600">{error}</span> : null}
+      </div>
+    )
+  }
 
   if (field.inputType === 'segmented') {
     return (
@@ -257,14 +311,140 @@ function EnterpriseBaseEditor({ field, value, error, onChange }) {
     )
   }
 
+  if (field.inputType === 'descriptiveSelect') {
+    const selectedOption = field.options.find((option) => optionValue(option) === value)
+    return (
+      <div ref={rootRef} id={fieldDomId(field)} className={error ? 'relative block scroll-mt-8 rounded-xl border border-red-200 bg-red-50 p-4' : 'relative block scroll-mt-8 rounded-xl border border-slate-200 bg-white p-4'}>
+        <EnterpriseFieldLabel field={field} />
+        <button
+          type="button"
+          onClick={() => setDescriptiveOpen((open) => !open)}
+          className={`${baseClass} flex items-center justify-between text-left`}
+        >
+          <span className={selectedOption ? 'truncate' : 'truncate text-slate-400'}>{selectedOption ? optionLabel(selectedOption) : field.placeholder || '请选择'}</span>
+          <ChevronDown className={descriptiveOpen ? 'h-4 w-4 shrink-0 rotate-180 text-slate-400' : 'h-4 w-4 shrink-0 text-slate-400'} />
+        </button>
+        {descriptiveOpen ? (
+          <div className="absolute left-4 right-4 top-[88px] z-30 max-h-80 overflow-auto rounded-lg border border-slate-200 bg-white py-2 shadow-xl">
+            {field.options.map((option) => (
+              <button
+                type="button"
+                key={optionValue(option)}
+                onClick={() => {
+                  onChange(field.path, optionValue(option), field.id)
+                  setDescriptiveOpen(false)
+                }}
+                className={value === optionValue(option) ? 'block w-full bg-blue-50 px-4 py-3 text-left' : 'block w-full px-4 py-3 text-left hover:bg-slate-50'}
+              >
+                <span className="block text-sm font-bold text-slate-950">{optionLabel(option)}</span>
+                {optionDescription(option) ? <span className="mt-1 block text-xs leading-5 text-slate-400">{optionDescription(option)}</span> : null}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {error ? <span className="mt-1 block text-xs leading-5 text-red-600">{error}</span> : null}
+      </div>
+    )
+  }
+
+  if (field.inputType === 'multiselect' || field.inputType === 'groupedMultiselect') {
+    const selectedValues = Array.isArray(value) ? value : []
+    const selectedText = selectedValues.length ? selectedValues.join('、') : field.placeholder || '请选择'
+    const groups = field.inputType === 'groupedMultiselect'
+      ? field.groups
+      : [{ label: '', options: field.options || [] }]
+    const atLimit = field.maxSelections && selectedValues.length >= field.maxSelections
+
+    return (
+      <div ref={rootRef} id={fieldDomId(field)} className={error ? 'relative block scroll-mt-8 rounded-xl border border-red-200 bg-red-50 p-4' : 'relative block scroll-mt-8 rounded-xl border border-slate-200 bg-white p-4'}>
+        <EnterpriseFieldLabel field={field} />
+        <button
+          type="button"
+          onClick={() => setMultiOpen((open) => !open)}
+          className={`${baseClass} flex items-center justify-between text-left`}
+        >
+          <span className={selectedValues.length ? 'truncate' : 'truncate text-slate-400'}>{selectedText}</span>
+          <ChevronDown className={multiOpen ? 'h-4 w-4 shrink-0 rotate-180 text-slate-400' : 'h-4 w-4 shrink-0 text-slate-400'} />
+        </button>
+        {selectedValues.length ? (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {selectedValues.map((item) => (
+              <button
+                type="button"
+                key={item}
+                onClick={() => onChange(field.path, selectedValues.filter((valueItem) => valueItem !== item), field.id)}
+                className="inline-flex max-w-full items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700"
+              >
+                <span className="truncate">{item}</span>
+                <X className="h-3 w-3" />
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {multiOpen ? (
+          <div className="absolute left-4 right-4 top-[88px] z-30 max-h-80 overflow-auto rounded-lg border border-slate-200 bg-white py-2 shadow-xl">
+            {groups.map((group) => (
+              <div key={group.label || 'options'}>
+                {group.label ? <div className="px-4 py-2 text-xs font-bold text-slate-400">{group.label}</div> : null}
+                {(group.options || []).map((option) => {
+                  const currentValue = optionValue(option)
+                  const selected = selectedValues.includes(currentValue)
+                  const disabled = !selected && atLimit
+                  return (
+                    <button
+                      type="button"
+                      key={currentValue}
+                      disabled={disabled}
+                      onClick={() => {
+                        const next = selected
+                          ? selectedValues.filter((item) => item !== currentValue)
+                          : [...selectedValues, currentValue]
+                        onChange(field.path, next, field.id)
+                      }}
+                      className={selected ? 'flex w-full items-center gap-3 bg-blue-50 px-4 py-2 text-left text-sm font-bold text-slate-950' : disabled ? 'flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-semibold text-slate-300' : 'flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50'}
+                    >
+                      <span className={selected ? 'flex h-4 w-4 shrink-0 items-center justify-center rounded border border-blue-500 bg-blue-500' : 'h-4 w-4 shrink-0 rounded border border-slate-300 bg-white'}>
+                        {selected ? <span className="h-1.5 w-1.5 rounded-sm bg-white" /> : null}
+                      </span>
+                      <span>{optionLabel(option)}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {field.maxSelections ? <span className="mt-1 block text-xs leading-5 text-slate-400">最多可选 {field.maxSelections} 项</span> : null}
+        {error ? <span className="mt-1 block text-xs leading-5 text-red-600">{error}</span> : null}
+      </div>
+    )
+  }
+
   if (field.inputType === 'select') {
     return (
       <label id={fieldDomId(field)} className={error ? 'block scroll-mt-8 rounded-xl border border-red-200 bg-red-50 p-4' : 'block scroll-mt-8 rounded-xl border border-slate-200 bg-white p-4'}>
         <EnterpriseFieldLabel field={field} />
         <select value={value || ''} onChange={(event) => onChange(field.path, event.target.value, field.id)} className={baseClass}>
           <option value="">{field.placeholder || '请选择'}</option>
-          {field.options.map((option) => <option key={option} value={option}>{option}</option>)}
+          {field.options.map((option) => <option key={optionValue(option)} value={optionValue(option)}>{optionLabel(option)}</option>)}
         </select>
+        {field.hint ? <span className="mt-1 block text-xs leading-5 text-slate-400">{field.hint}</span> : null}
+        {error ? <span className="mt-1 block text-xs leading-5 text-red-600">{error}</span> : null}
+      </label>
+    )
+  }
+
+  if (field.inputType === 'textarea') {
+    return (
+      <label id={fieldDomId(field)} className={error ? 'block scroll-mt-8 rounded-xl border border-red-200 bg-red-50 p-4 md:col-span-2 lg:col-span-3' : 'block scroll-mt-8 rounded-xl border border-slate-200 bg-white p-4 md:col-span-2 lg:col-span-3'}>
+        <EnterpriseFieldLabel field={field} />
+        <textarea
+          value={value || ''}
+          onChange={(event) => onChange(field.path, event.target.value, field.id)}
+          placeholder={field.placeholder || '请输入'}
+          className={error ? 'mt-2 min-h-28 w-full rounded-lg border border-red-300 bg-red-50 px-3 py-3 text-sm font-semibold text-slate-950 outline-none focus:border-red-400' : 'mt-2 min-h-28 w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-950 outline-none focus:border-blue-400'}
+        />
+        {field.hint ? <span className="mt-1 block text-xs leading-5 text-slate-400">{field.hint}</span> : null}
         {error ? <span className="mt-1 block text-xs leading-5 text-red-600">{error}</span> : null}
       </label>
     )
@@ -280,6 +460,7 @@ function EnterpriseBaseEditor({ field, value, error, onChange }) {
         placeholder={field.placeholder || '请输入'}
         className={baseClass}
       />
+      {field.hint ? <span className="mt-1 block text-xs leading-5 text-slate-400">{field.hint}</span> : null}
       {error ? <span className="mt-1 block text-xs leading-5 text-red-600">{error}</span> : null}
     </label>
   )
@@ -305,7 +486,18 @@ function EnterpriseReadOnlyValue({ field, value }) {
   )
 }
 
-function EnterpriseBaseForm({ data, fields, sections, errors, onlyProblems, onChange, onCopyRegistrationAddress }) {
+function EnterpriseBaseForm({
+  data,
+  fields,
+  companyFileFields,
+  sections,
+  errors,
+  onlyProblems,
+  isListedCompany,
+  onChange,
+  onFileChange,
+  onCopyRegistrationAddress,
+}) {
   const visibleFields = fields
     .filter((field) => isFieldActive(data, field))
     .map((field) => {
@@ -323,33 +515,58 @@ function EnterpriseBaseForm({ data, fields, sections, errors, onlyProblems, onCh
     <div className="mt-5 grid gap-5">
       {baseFieldGroups.map((group) => {
         const groupFields = visibleFields.filter((field) => field.section === group)
-        if (!groupFields.length) return null
+        const showNonListedFiles = !isListedCompany && group === '认证前确认'
+        if (!groupFields.length && !showNonListedFiles) return null
 
         return (
           <div key={group} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h5 className="text-sm font-bold text-slate-950">{group}</h5>
+              <div>
+                <h5 className="text-sm font-bold text-slate-950">{group}</h5>
+                {group === '认证前确认' ? (
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Interlace 将根据是否上市决定后续资料路径，请在开始认证前确认企业名称和上市状态。
+                  </p>
+                ) : null}
+              </div>
               {group === '实际经营地址' ? (
                 <Button type="button" size="sm" variant="outline" onClick={onCopyRegistrationAddress} className="rounded-lg">
                   与注册地址一致，点击填充
                 </Button>
               ) : null}
             </div>
-            <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {groupFields.map((field) => (
-                field.readOnly
-                  ? <EnterpriseReadOnlyValue key={field.id} field={field} value={getByPath(data, field.path)} />
-                  : (
-                    <EnterpriseBaseEditor
-                      key={field.id}
-                      field={field}
-                      value={getByPath(data, field.path)}
-                      error={errors[field.id] || errors[field.path]}
-                      onChange={onChange}
-                    />
-                  )
-              ))}
-            </div>
+            {groupFields.length ? (
+              <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {groupFields.map((field) => (
+                  field.readOnly
+                    ? <EnterpriseReadOnlyValue key={field.id} field={field} value={getByPath(data, field.path)} />
+                    : (
+                      <EnterpriseBaseEditor
+                        key={field.id}
+                        field={field}
+                        value={getByPath(data, field.path)}
+                        error={errors[field.id] || errors[field.path]}
+                        onChange={onChange}
+                      />
+                    )
+                ))}
+              </div>
+            ) : null}
+            {showNonListedFiles ? (
+              <div className="mt-5 border-t border-slate-200 pt-5">
+                <h5 className="text-sm font-bold text-slate-950">请上传如下文件</h5>
+                <ModuleFieldGrid
+                  data={data}
+                  fields={companyFileFields}
+                  group="企业基础资料"
+                  sections={sections}
+                  errors={errors}
+                  onChange={onChange}
+                  onFileChange={onFileChange}
+                  onlyProblems={onlyProblems}
+                />
+              </div>
+            ) : null}
           </div>
         )
       })}
@@ -477,7 +694,7 @@ function EnterpriseDirectorModule({ data, sections, errors, onRoleChange, onChan
                   <span className="font-bold text-slate-950">{roleLabel}：{personDisplayName(person)}</span>
                   <Badge variant="success">当前选择</Badge>
                 </div>
-                <div className="mt-1 text-xs text-slate-500">系统已有资料只读展示，缺失的中文姓名与护照在本模块补充。</div>
+                <div className="mt-1 text-xs text-slate-500">系统已有资料只读展示，缺失的中文姓名、护照与手持护照照片在本模块补充。</div>
               </div>
             </div>
           </div>
@@ -861,7 +1078,8 @@ export function BaasEnterpriseOpeningApplication({ onRegisterActions, onStatsCha
   const [onlyProblems, setOnlyProblems] = useState({ base: false, shareholders: false, directors: false })
 
   const sections = useMemo(() => getEnterpriseSections(data), [data])
-  const companyFileFields = companyAttachmentFields.map((field) => ({ ...field, inputType: 'file' }))
+  const isListedCompany = data.isListedCompany === '是'
+  const companyFileFields = getCompanyAttachmentFields(data).map((field) => ({ ...field, inputType: 'file' }))
   const enterpriseBaseFields = [...companyBaseFields, ...registrationAddressFields]
   const actionItems = useMemo(() => [...sections.missing, ...sections.revision], [sections.missing, sections.revision])
 
@@ -905,6 +1123,9 @@ export function BaasEnterpriseOpeningApplication({ onRegisterActions, onStatsCha
           next = setByPath(next, fieldPath, '')
         })
       }
+      if (path === 'hasOfficialWebsite') {
+        next = setByPath(next, value === '有网站' ? 'businessDescription' : 'officialWebsite', '')
+      }
       return next
     })
     setErrors((current) => {
@@ -914,6 +1135,12 @@ export function BaasEnterpriseOpeningApplication({ onRegisterActions, onStatsCha
           next[fieldPath] = ''
           next[`企业基础资料:${fieldPath}`] = ''
         })
+      }
+      if (path === 'hasOfficialWebsite') {
+        next.officialWebsite = ''
+        next.businessDescription = ''
+        next['企业基础资料:officialWebsite'] = ''
+        next['企业基础资料:businessDescription'] = ''
       }
       return next
     })
@@ -943,20 +1170,24 @@ export function BaasEnterpriseOpeningApplication({ onRegisterActions, onStatsCha
     }))
   }
 
-  const changeFile = (path, file, itemId) => {
+  const changeFile = (path, file, itemId, fieldConfig = {}) => {
     if (!file) return
-    const isPassportUpload = path.startsWith('directors.') && path.endsWith('attachments.attachmentIdentity')
-    const allowedTypes = isPassportUpload ? passportAcceptedTypes : acceptedTypes
-    const allowedExtensions = isPassportUpload ? ['jpg', 'jpeg', 'png'] : ['pdf', 'jpg', 'jpeg', 'png']
+    const isPassportUpload = path.startsWith('directors.') && (
+      path.endsWith('attachments.attachmentIdentity') || path.endsWith('attachments.attachmentPassportHolding')
+    )
+    const allowedTypes = fieldConfig.acceptedTypes || (isPassportUpload ? passportAcceptedTypes : acceptedTypes)
+    const allowedExtensions = fieldConfig.allowedExtensions || (isPassportUpload ? ['jpg', 'jpeg', 'png'] : ['pdf', 'jpg', 'jpeg', 'png'])
     const extension = file.name.split('.').pop()?.toLowerCase()
-    const limit = isPassportUpload ? passportFileLimit : fileLimit
+    const limit = fieldConfig.fileLimit || (isPassportUpload ? passportFileLimit : fileLimit)
     if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(extension)) {
-      const message = isPassportUpload ? '仅支持 JPG、JPEG、PNG 格式。' : '仅支持 pdf / jpeg / png 文件。'
+      const message = isPassportUpload
+        ? '仅支持 JPG、JPEG、PNG 格式。'
+        : `仅支持 ${allowedExtensions.map((item) => item.toUpperCase()).join(' / ')} 文件。`
       setErrors((current) => ({ ...current, [path]: message, [itemId]: message }))
       return
     }
     if (file.size > limit) {
-      const message = isPassportUpload ? '文件大小不能超过20MB。' : '单个文件大小不能超过 8M。'
+      const message = `文件大小不能超过${Math.round(limit / 1024 / 1024)}MB。`
       setErrors((current) => ({ ...current, [path]: message, [itemId]: message }))
       return
     }
@@ -1059,22 +1290,27 @@ export function BaasEnterpriseOpeningApplication({ onRegisterActions, onStatsCha
         <EnterpriseBaseForm
           data={data}
           fields={enterpriseBaseFields}
+          companyFileFields={companyFileFields}
           sections={sections}
           errors={errors}
+          isListedCompany={isListedCompany}
           onChange={changeBaseValue}
+          onFileChange={changeFile}
           onCopyRegistrationAddress={copyRegistrationAddress}
           onlyProblems={onlyProblems.base}
         />
-        <div className="mt-5 border-t border-slate-100 pt-5">
-          <h5 className="text-sm font-bold text-slate-950">企业文件</h5>
-          <ModuleFieldGrid data={data} fields={companyFileFields} group="企业基础资料" sections={sections} errors={errors} onChange={changeValue} onFileChange={changeFile} onlyProblems={onlyProblems.base} />
-        </div>
+        {isListedCompany ? (
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <h5 className="text-sm font-bold text-slate-950">企业文件</h5>
+            <ModuleFieldGrid data={data} fields={companyFileFields} group="企业基础资料" sections={sections} errors={errors} onChange={changeValue} onFileChange={changeFile} onlyProblems={onlyProblems.base} />
+          </div>
+        ) : null}
       </Section>
 
       <Section
         id="enterprise-directors"
         title="企业董事"
-        description="身份由用户主动选择，系统已有资料只读展示，仅补充当前身份下缺失的中文姓名和护照文件。"
+        description="身份由用户主动选择，系统已有资料只读展示，仅补充当前身份下缺失的中文姓名、护照文件和手持护照照片。"
         badge={directorStatus.label}
         tone={directorStatus.tone}
       >
