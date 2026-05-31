@@ -94,6 +94,62 @@ export const personAttachmentFields = [
   { path: 'attachments.attachmentSourceOfFunds', label: '资金来源证明' },
 ]
 
+export const enterpriseApplicantRoleOptions = [
+  { value: 'director', label: '企业董事', description: '您本人为该企业的负责人，能够代表企业行使职权' },
+  { value: 'authorizedRepresentative', label: '被授权人', description: '您本人被企业授权，能够代表企业处理事务' },
+]
+
+export const enterpriseApplicantRoleLabels = {
+  director: '企业董事',
+  authorizedRepresentative: '被授权人',
+}
+
+export const enterpriseDirectorInfoFields = [
+  { path: 'region', label: '国家', readOnly: true },
+  { path: 'identityType', label: '证件类型', readOnly: true, fixedValue: '护照' },
+  { path: 'firstName', label: '英文名称', readOnly: true, uppercase: true },
+  { path: 'lastName', label: '英文姓氏', readOnly: true, uppercase: true },
+  { path: 'chineseFirstName', label: '中文名称', required: true, supplement: true, sanitize: 'chinese', placeholder: '请输入中文名称' },
+  { path: 'chineseLastName', label: '中文姓氏', required: true, supplement: true, sanitize: 'chinese', placeholder: '请输入中文姓氏' },
+  { path: 'number', label: '证件号码', readOnly: true },
+  { path: 'birthday', label: '生日', readOnly: true },
+  { path: 'phonePrefix', label: '电话前缀', readOnly: true },
+  { path: 'phoneNumber', label: '手机号', readOnly: true },
+  { path: 'isBeneficialOwner', label: '是否为受益所有人', readOnly: true },
+  { path: 'beneficialOwnerRatio', label: '持股比例', readOnly: true, visibleWhen: { path: 'isBeneficialOwner', value: '是' }, tooltip: '若持股比例<25%，则非受益所有人' },
+]
+
+export const enterpriseDirectorAddressFields = [
+  { path: 'address.country', label: '国家', readOnly: true },
+  { path: 'address.state', label: '州/省', readOnly: true },
+  { path: 'address.city', label: '城市', readOnly: true },
+  { path: 'address.addressLine1', label: '居住地址', readOnly: true },
+  { path: 'address.postalCode', label: '邮编', readOnly: true },
+]
+
+export const enterpriseDirectorAttachmentFields = [
+  {
+    path: 'attachments.attachmentIdentity',
+    label: '护照上传',
+    required: true,
+    supplement: true,
+    inputType: 'file',
+    hint: '注意事项：\n1.请上传证件原件照片，不支持扫描件\n2.请确保证件信息清晰、完整，照片需包含证件四角，无反光\n3.支持JPG、JPEG、PNG格式\n4.文件大小不超过20MB',
+    accept: '.jpeg,.jpg,.png,image/jpeg,image/png',
+    acceptDescription: '支持 JPG、JPEG、PNG，单个文件大小限制 20MB。',
+  },
+]
+
+export const beneficialOwnerConfirmationFields = [
+  {
+    path: 'beneficialOwnerConfirmation.hasOtherBeneficialOwners',
+    label: '贵公司是否还有其他受益所有人？',
+    required: true,
+    readOnly: true,
+    options: ['是', '否'],
+  },
+]
+
 const sampleUploadedImageUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAx0lEQVR4Xu3XMQqAMAxE0fz/n7l0EEvBGlLZkgdOUOMtYmBm9kC/7z0A/E8EwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAIEwAL3u2wH45B9JVAeObK+9uAAAAABJRU5ErkJggg=='
 
 function createMockUploadedImage(fileId, name) {
@@ -139,6 +195,10 @@ export const mockEnterpriseApplication = {
     city: '',
     state: '',
     postalCode: '',
+  },
+  beneficialOwnerConfirmation: {
+    hasOtherBeneficialOwners: '否',
+    otherBeneficialOwners: [],
   },
   attachments: {
     attachmentLicense: createMockUploadedImage('kyb_license_001', 'Certificate of Incorporation.png'),
@@ -186,8 +246,14 @@ export const mockEnterpriseApplication = {
       roles: ['director'],
       firstName: 'Michael',
       lastName: 'Chan',
+      chineseFirstName: '',
+      chineseLastName: '',
       birthday: '1979-11-03',
       gender: 'MALE',
+      phonePrefix: '+852',
+      phoneNumber: '91234567',
+      isBeneficialOwner: '是',
+      beneficialOwnerRatio: '32%',
       address: {
         addressLine1: '22 Des Voeux Road Central',
         addressLine2: '',
@@ -201,7 +267,7 @@ export const mockEnterpriseApplication = {
       number: 'K7654321',
       attachments: {
         attachmentAddress: null,
-        attachmentIdentity: createMockUploadedImage('dir_id_001', 'Director Passport.png'),
+        attachmentIdentity: null,
         attachmentFatca: null,
         attachmentSourceOfFunds: null,
       },
@@ -212,8 +278,14 @@ export const mockEnterpriseApplication = {
       roles: ['authorizedRepresentative'],
       firstName: 'Sophia',
       lastName: 'Lee',
+      chineseFirstName: '',
+      chineseLastName: '',
       birthday: '1983-06-22',
       gender: 'FEMALE',
+      phonePrefix: '+852',
+      phoneNumber: '92345678',
+      isBeneficialOwner: '否',
+      beneficialOwnerRatio: '',
       address: {
         addressLine1: '9 Queen\'s Road Central',
         addressLine2: '15/F',
@@ -227,7 +299,7 @@ export const mockEnterpriseApplication = {
       number: '',
       attachments: {
         attachmentAddress: null,
-        attachmentIdentity: createMockUploadedImage('auth_id_001', 'Authorized Representative Passport.png'),
+        attachmentIdentity: null,
         attachmentFatca: null,
         attachmentSourceOfFunds: null,
       },
@@ -289,6 +361,9 @@ function validateCommon(path, value, owner) {
     const number = Number(text)
     return number > 0 && number <= 100 ? '' : 'ratio 必须大于 0 且不超过 100。'
   }
+  if (path === 'chineseFirstName' || path === 'chineseLastName') {
+    return /^[\u3400-\u9fff]+$/.test(text) ? '' : '只能输入中文。'
+  }
   return ''
 }
 
@@ -326,6 +401,11 @@ function classifyField(sections, source, field, group, owner = source) {
 
   if (field.sanitize === 'currency' && !/^[A-Z]{1,3}$/.test(text)) {
     sections.revision.push({ ...item, error: '只支持大写英文字母，最多 3 位。' })
+    return
+  }
+
+  if (field.sanitize === 'chinese' && !/^[\u3400-\u9fff]+$/.test(text)) {
+    sections.revision.push({ ...item, error: '只能输入中文。' })
     return
   }
 
@@ -371,8 +451,71 @@ function classifyPerson(sections, data, collectionKey, personType, index, includ
   })
 }
 
-function isCurrentApplicantPerson(data, person) {
-  return data.currentApplicant?.matchStatus === 'matched' && data.currentApplicant.personId === person.id
+function isYes(value) {
+  return value === true || String(value || '').trim().toUpperCase() === 'YES' || String(value || '').trim() === '是'
+}
+
+export function hasAtLeastOneBeneficialOwner(data) {
+  const directorBeneficialOwners = (data.directors || []).filter((person) => isYes(person.isBeneficialOwner))
+  const otherBeneficialOwners = data.beneficialOwnerConfirmation?.otherBeneficialOwners || []
+  return directorBeneficialOwners.length > 0 || otherBeneficialOwners.length > 0
+}
+
+export function getEnterpriseApplicantSelection(data) {
+  const role = data.currentApplicant?.role || 'director'
+  const index = (data.directors || []).findIndex((person) => person.roles?.includes(role))
+  return {
+    role,
+    index,
+    person: index >= 0 ? data.directors[index] : null,
+  }
+}
+
+function classifyEnterpriseDirector(sections, data) {
+  const { index, person } = getEnterpriseApplicantSelection(data)
+  if (!person || index < 0) return
+
+  const group = '企业董事'
+  const pathPrefix = `directors.${index}.`
+  enterpriseDirectorInfoFields
+    .filter((field) => !field.readOnly)
+    .forEach((field) => {
+      classifyField(sections, data, { ...field, path: `${pathPrefix}${field.path}` }, group, person)
+    })
+  enterpriseDirectorAttachmentFields.forEach((field) => {
+    classifyAttachment(sections, data, { ...field, path: `${pathPrefix}${field.path}` }, group)
+  })
+}
+
+function classifyBeneficialOwnerConfirmation(sections, data) {
+  const group = '受益所有人确认'
+  beneficialOwnerConfirmationFields.forEach((field) => {
+    classifyField(sections, data, field, group, data.beneficialOwnerConfirmation)
+  })
+
+  const hasOtherBeneficialOwners = data.beneficialOwnerConfirmation?.hasOtherBeneficialOwners
+  const otherBeneficialOwners = data.beneficialOwnerConfirmation?.otherBeneficialOwners || []
+  if (hasOtherBeneficialOwners === '是' && !otherBeneficialOwners.length) {
+    sections.missing.push({
+      id: `${group}:beneficialOwnerConfirmation.otherBeneficialOwners`,
+      group,
+      path: 'beneficialOwnerConfirmation.otherBeneficialOwners',
+      label: '其他受益所有人名单',
+      value: otherBeneficialOwners,
+      error: '需通过企业资料变更提交受益所有人信息，提交后进入人工审核。',
+    })
+  }
+
+  if (!hasAtLeastOneBeneficialOwner(data)) {
+    sections.missing.push({
+      id: `${group}:beneficialOwnerMinimum`,
+      group,
+      path: 'beneficialOwnerMinimum',
+      label: '受益所有人',
+      value: '',
+      error: '受益所有人需至少有一人，请检查填写。',
+    })
+  }
 }
 
 export function getEnterpriseSections(data) {
@@ -383,12 +526,9 @@ export function getEnterpriseSections(data) {
     classifyField(sections, data, field, '企业基础资料', owner)
   })
   companyAttachmentFields.forEach((field) => classifyAttachment(sections, data, field, '企业基础资料'))
+  classifyEnterpriseDirector(sections, data)
+  classifyBeneficialOwnerConfirmation(sections, data)
   data.shareholders.forEach((person, index) => classifyPerson(sections, data, 'shareholders', '股东', index, true))
-  data.directors.forEach((person, index) => {
-    if (isCurrentApplicantPerson(data, person)) {
-      classifyPerson(sections, data, 'directors', '董事/授权代表', index, false)
-    }
-  })
   return sections
 }
 

@@ -4,11 +4,19 @@ import { useEffect, useMemo, useState } from 'react'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import {
+  beneficialOwnerConfirmationFields,
   companyAttachmentFields,
   companyBaseFields,
   createMockEnterpriseFile,
+  enterpriseApplicantRoleLabels,
+  enterpriseApplicantRoleOptions,
+  enterpriseDirectorAddressFields,
+  enterpriseDirectorAttachmentFields,
+  enterpriseDirectorInfoFields,
+  getEnterpriseApplicantSelection,
   getByPath,
   getEnterpriseSections,
+  hasAtLeastOneBeneficialOwner,
   mockEnterpriseApplication,
   personAttachmentFields,
   personFields,
@@ -19,17 +27,11 @@ import {
 } from '../data/baasEnterpriseOpeningApplication'
 
 const fileLimit = 8 * 1024 * 1024
+const passportFileLimit = 20 * 1024 * 1024
 const acceptedTypes = ['application/pdf', 'image/jpeg', 'image/png']
+const passportAcceptedTypes = ['image/jpeg', 'image/png']
 const baseFieldGroups = ['企业主体信息', '注册地址', '实际经营地址', '经营规模与场所']
 const listedCompanyFields = ['stockExchangeName', 'stockCode', 'authorizedCapital', 'issuedCapital', 'capitalCurrency']
-const applicantRoleOptions = [
-  { value: 'director', label: '企业董事', description: '您本人为该企业的负责人，能够代表企业行使职权' },
-  { value: 'authorizedRepresentative', label: '被授权人', description: '您本人被企业授权，能够代表企业处理事务' },
-]
-const roleLabels = {
-  director: '企业董事',
-  authorizedRepresentative: '被授权人',
-}
 
 function getModuleStatus(missingCount, revisionCount) {
   if (missingCount > 0) return { label: `待补充 ${missingCount} 项`, tone: 'warning' }
@@ -42,6 +44,12 @@ function formatValue(value) {
   return value || '—'
 }
 
+function formatYesNo(value) {
+  if (value === true) return '是'
+  if (value === false) return '否'
+  return value || '—'
+}
+
 function fieldDomId(item) {
   return `enterprise-field-${item.id.replace(/[^A-Za-z0-9_-]/g, '-')}`
 }
@@ -51,7 +59,7 @@ function personDisplayName(person) {
 }
 
 function getPersonRoleLabels(person) {
-  return (person.roles || []).map((role) => roleLabels[role] || role)
+  return (person.roles || []).map((role) => enterpriseApplicantRoleLabels[role] || role)
 }
 
 function isCurrentApplicant(data, person) {
@@ -59,7 +67,7 @@ function isCurrentApplicant(data, person) {
 }
 
 function shouldShowFieldGroup(item) {
-  return item.group !== '企业基础资料' && !item.group?.startsWith('股东')
+  return item.group !== '企业基础资料' && item.group !== '企业董事' && !item.group?.startsWith('股东')
 }
 
 function shouldRenderAsPlainValue(item) {
@@ -145,8 +153,8 @@ function TextEditor({ item, value, error, onChange }) {
       ) : (
         <input
           value={value || ''}
-          onChange={(event) => onChange(item.path, event.target.value, item.id)}
-          placeholder={item.hint || '请输入'}
+          onChange={(event) => onChange(item.path, sanitizeFieldValue(item, event.target.value), item.id)}
+          placeholder={item.placeholder || item.hint || '请输入'}
           className={error ? 'mt-2 h-11 w-full rounded-lg border border-red-300 bg-red-50 px-3 text-sm font-semibold text-slate-950 outline-none focus:border-red-400' : 'mt-2 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-950 outline-none focus:border-blue-400'}
         />
       )}
@@ -157,6 +165,9 @@ function TextEditor({ item, value, error, onChange }) {
 }
 
 function UploadEditor({ item, file, error, onFileChange }) {
+  const accept = item.accept || '.pdf,.jpeg,.jpg,.png,application/pdf,image/jpeg,image/png'
+  const acceptDescription = item.acceptDescription || '支持 pdf / jpeg / png，单个文件大小限制 8M。'
+
   return (
     <div id={fieldDomId(item)} className={error ? 'scroll-mt-8 rounded-xl border border-red-200 bg-red-50 p-4' : 'scroll-mt-8 rounded-xl border border-slate-200 bg-white p-4'}>
       <div className="flex items-start justify-between gap-3">
@@ -165,9 +176,8 @@ function UploadEditor({ item, file, error, onFileChange }) {
             <span className="text-sm font-bold text-slate-950">{item.label}</span>
             {shouldShowFieldGroup(item) ? <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700">{item.group}</span> : null}
           </div>
-          <div className="mt-1 text-xs leading-5 text-slate-500">
-            {item.hint ? `${item.hint}；` : ''}支持 pdf / jpeg / png，单个文件大小限制 8M。
-          </div>
+          {item.hint ? <div className="mt-1 whitespace-pre-line text-xs leading-5 text-slate-500">{item.hint}</div> : null}
+          <div className="mt-1 text-xs leading-5 text-slate-500">{acceptDescription}</div>
           {file?.name ? <div className="mt-2 text-xs font-semibold text-blue-700">{file.name} · {file.status || '已上传'}</div> : null}
           {error ? <div className="mt-2 text-xs leading-5 text-red-600">{error}</div> : null}
         </div>
@@ -178,7 +188,7 @@ function UploadEditor({ item, file, error, onFileChange }) {
             上传
             <input
               type="file"
-              accept=".pdf,.jpeg,.jpg,.png,application/pdf,image/jpeg,image/png"
+              accept={accept}
               className="hidden"
               onChange={(event) => {
                 onFileChange(item.path, event.target.files?.[0], item.id)
@@ -200,6 +210,7 @@ function isFieldActive(data, field) {
 function sanitizeFieldValue(field, value) {
   if (field.sanitize === 'digits') return value.replace(/\D/g, '')
   if (field.sanitize === 'currency') return value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3)
+  if (field.sanitize === 'chinese') return value.replace(/[^\u3400-\u9fff]/g, '')
   return value
 }
 
@@ -279,6 +290,14 @@ function EnterpriseReadOnlyValue({ field, value }) {
     <div id={fieldDomId(field)} className="scroll-mt-8 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-semibold text-slate-500">{field.label}</span>
+        {field.tooltip ? (
+          <span className="group relative inline-flex" title={field.tooltip}>
+            <HelpCircle className="h-4 w-4 text-slate-400" />
+            <span className="pointer-events-none absolute left-1/2 top-6 z-20 hidden w-64 -translate-x-1/2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold leading-5 text-slate-600 shadow-xl group-hover:block">
+              {field.tooltip}
+            </span>
+          </span>
+        ) : null}
       </div>
       <div className="mt-1 min-h-6 text-sm font-bold text-slate-950">{formatValue(value)}</div>
       {field.hint ? <div className="mt-1 text-xs leading-5 text-slate-400">{field.hint}</div> : null}
@@ -338,38 +357,299 @@ function EnterpriseBaseForm({ data, fields, sections, errors, onlyProblems, onCh
   )
 }
 
-function CurrentApplicantIdentity({ data }) {
-  const applicant = data.currentApplicant
-  const matchedPerson = applicant?.matchStatus === 'matched'
-    ? data.directors.find((person) => person.id === applicant.personId)
-    : null
-
+function ApplicantRoleSelector({ selectedRole, onChange }) {
   return (
     <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
       <h5 className="text-sm font-bold text-slate-950">您的身份为</h5>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
-        {applicantRoleOptions.map((option) => {
-          const selected = applicant?.matchStatus === 'matched' && applicant.role === option.value
+        {enterpriseApplicantRoleOptions.map((option) => {
+          const selected = selectedRole === option.value
           return (
-            <div key={option.value} className={selected ? 'rounded-xl border border-blue-400 bg-blue-50 p-4' : 'rounded-xl border border-slate-200 bg-white p-4 opacity-70'}>
-              <div className="flex items-center gap-2">
+            <button
+              type="button"
+              key={option.value}
+              onClick={() => onChange(option.value)}
+              className={selected ? 'rounded-xl border border-blue-400 bg-blue-50 p-4 text-left shadow-sm' : 'rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-blue-200 hover:bg-blue-50'}
+            >
+              <span className="flex items-center gap-2">
                 <span className={selected ? 'flex h-4 w-4 items-center justify-center rounded-full border border-blue-500 bg-blue-500' : 'h-4 w-4 rounded-full border border-slate-300 bg-white'}>
                   {selected ? <span className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
                 </span>
                 <span className="text-sm font-bold text-slate-950">{option.label}</span>
-              </div>
-              <p className="mt-2 text-xs leading-5 text-slate-500">{option.description}</p>
-            </div>
+              </span>
+              <span className="mt-2 block text-xs leading-5 text-slate-500">{option.description}</span>
+            </button>
           )
         })}
       </div>
-      {applicant?.matchStatus === 'matched' ? (
-        <div className="mt-3 rounded-xl border border-blue-100 bg-white px-3 py-2 text-xs font-semibold text-blue-700">
-          已匹配当前用户：{matchedPerson ? personDisplayName(matchedPerson) : applicant.personId}
+    </div>
+  )
+}
+
+function directorFieldValue(field, person) {
+  if (field.fixedValue) return field.fixedValue
+  const value = getByPath(person, field.path)
+  if (field.path === 'isBeneficialOwner') return formatYesNo(value)
+  if (field.uppercase && value) return String(value).toUpperCase()
+  return value
+}
+
+function isDirectorFieldVisible(field, person) {
+  if (!field.visibleWhen) return true
+  const value = directorFieldValue({ path: field.visibleWhen.path }, person)
+  return value === field.visibleWhen.value
+}
+
+function createDirectorItem(field, pathPrefix, person) {
+  const path = `${pathPrefix}${field.path}`
+  return {
+    ...field,
+    id: `企业董事:${path}`,
+    path,
+    group: '企业董事',
+    value: directorFieldValue(field, person),
+  }
+}
+
+function EnterpriseDirectorField({ data, person, pathPrefix, field, sections, errors, onChange }) {
+  const item = createDirectorItem(field, pathPrefix, person)
+  const missingItem = itemByPath(sections.missing, '企业董事', item.path)
+  const revisionItem = itemByPath(sections.revision, '企业董事', item.path)
+  const fieldItem = missingItem || revisionItem || item
+
+  if (field.readOnly) {
+    return <EnterpriseReadOnlyValue key={item.id} field={item} value={directorFieldValue(field, person)} />
+  }
+
+  return (
+    <EnterpriseBaseEditor
+      key={item.id}
+      field={fieldItem}
+      value={getByPath(data, item.path)}
+      error={errors[fieldItem.id] || errors[fieldItem.path]}
+      onChange={onChange}
+    />
+  )
+}
+
+function EnterpriseDirectorAttachment({ data, person, pathPrefix, field, sections, errors, onFileChange }) {
+  const item = createDirectorItem(field, pathPrefix, person)
+  const missingItem = itemByPath(sections.missing, '企业董事', item.path)
+  const acquiredItem = itemByPath(sections.acquired, '企业董事', item.path)
+  const fieldItem = missingItem || acquiredItem || item
+  const file = getByPath(data, item.path)
+
+  return (
+    <UploadEditor
+      key={item.id}
+      item={fieldItem}
+      file={file}
+      error={errors[fieldItem.id] || errors[fieldItem.path]}
+      onFileChange={onFileChange}
+    />
+  )
+}
+
+function EnterpriseDirectorModule({ data, sections, errors, onRoleChange, onChange, onFileChange }) {
+  const { role, index, person } = getEnterpriseApplicantSelection(data)
+  const roleLabel = enterpriseApplicantRoleLabels[role] || '企业董事'
+  const pathPrefix = index >= 0 ? `directors.${index}.` : ''
+  const infoTitle = role === 'authorizedRepresentative' ? '被授权人信息' : '董事信息'
+  const infoBeforePassport = enterpriseDirectorInfoFields.slice(0, 2).filter((field) => isDirectorFieldVisible(field, person))
+  const infoAfterPassport = enterpriseDirectorInfoFields.slice(2).filter((field) => isDirectorFieldVisible(field, person))
+
+  return (
+    <div className="mt-4 grid gap-4">
+      <ApplicantRoleSelector selectedRole={role} onChange={onRoleChange} />
+      {!person ? (
+        <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-800">
+          系统暂未获取该身份对应的人员资料，当前模块不产生待补项。
         </div>
       ) : (
-        <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-800">
-          当前用户未匹配到企业董事或被授权人，仅可查看已有资料。
+        <div className="rounded-2xl border border-slate-200 bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                <UsersRound className="h-5 w-5" />
+              </span>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-bold text-slate-950">{roleLabel}：{personDisplayName(person)}</span>
+                  <Badge variant="success">当前选择</Badge>
+                </div>
+                <div className="mt-1 text-xs text-slate-500">系统已有资料只读展示，缺失的中文姓名与护照在本模块补充。</div>
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-5 p-4">
+            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <h5 className="text-sm font-bold text-slate-950">{infoTitle}</h5>
+              <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {infoBeforePassport.map((field) => (
+                  <EnterpriseDirectorField
+                    key={field.path}
+                    data={data}
+                    person={person}
+                    pathPrefix={pathPrefix}
+                    field={field}
+                    sections={sections}
+                    errors={errors}
+                    onChange={onChange}
+                  />
+                ))}
+                {enterpriseDirectorAttachmentFields.map((field) => (
+                  <EnterpriseDirectorAttachment
+                    key={field.path}
+                    data={data}
+                    person={person}
+                    pathPrefix={pathPrefix}
+                    field={field}
+                    sections={sections}
+                    errors={errors}
+                    onFileChange={onFileChange}
+                  />
+                ))}
+                {infoAfterPassport.map((field) => (
+                  <EnterpriseDirectorField
+                    key={field.path}
+                    data={data}
+                    person={person}
+                    pathPrefix={pathPrefix}
+                    field={field}
+                    sections={sections}
+                    errors={errors}
+                    onChange={onChange}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <h5 className="text-sm font-bold text-slate-950">实际居住地址</h5>
+              <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {enterpriseDirectorAddressFields.map((field) => (
+                  <EnterpriseDirectorField
+                    key={field.path}
+                    data={data}
+                    person={person}
+                    pathPrefix={pathPrefix}
+                    field={field}
+                    sections={sections}
+                    errors={errors}
+                    onChange={onChange}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function isYesValue(value) {
+  return formatYesNo(value) === '是' || String(value || '').trim().toUpperCase() === 'YES'
+}
+
+function ownerDisplayName(owner) {
+  return owner.name || `${owner.firstName || ''} ${owner.lastName || ''}`.trim() || '未获取姓名'
+}
+
+function BeneficialOwnerConfirmation({ data, sections, errors }) {
+  const group = '受益所有人确认'
+  const confirmationField = beneficialOwnerConfirmationFields[0]
+  const confirmationItem = {
+    ...confirmationField,
+    id: `${group}:${confirmationField.path}`,
+    group,
+    value: getByPath(data, confirmationField.path),
+  }
+  const fieldItem = itemByPath(sections.missing, group, confirmationField.path)
+    || itemByPath(sections.revision, group, confirmationField.path)
+    || itemByPath(sections.acquired, group, confirmationField.path)
+    || confirmationItem
+  const hasOtherBeneficialOwners = getByPath(data, confirmationField.path)
+  const otherBeneficialOwners = data.beneficialOwnerConfirmation?.otherBeneficialOwners || []
+  const directorBeneficialOwners = (data.directors || []).filter((person) => isYesValue(person.isBeneficialOwner))
+  const minimumProblem = itemByPath(sections.missing, group, 'beneficialOwnerMinimum')
+  const listProblem = itemByPath(sections.missing, group, 'beneficialOwnerConfirmation.otherBeneficialOwners')
+  const fieldError = errors[fieldItem.id] || errors[fieldItem.path]
+  const minimumError = errors[minimumProblem?.id] || minimumProblem?.error
+  const listError = errors[listProblem?.id] || listProblem?.error
+
+  return (
+    <div className="mt-4 grid gap-4">
+      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+        <div className="grid gap-3 md:grid-cols-2">
+          <EnterpriseReadOnlyValue field={fieldItem} value={formatYesNo(hasOtherBeneficialOwners)} />
+          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <div className="text-xs font-semibold text-slate-500">系统已识别受益所有人</div>
+            <div className="mt-1 text-sm font-bold text-slate-950">
+              {hasAtLeastOneBeneficialOwner(data) ? `${directorBeneficialOwners.length + otherBeneficialOwners.length} 人` : '—'}
+            </div>
+            <div className="mt-1 text-xs leading-5 text-slate-400">本页仅展示已有资料；新增或变更需走企业资料变更并人工审核。</div>
+          </div>
+        </div>
+        {fieldError ? <div className="mt-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">{fieldError}</div> : null}
+        {minimumError ? <div className="mt-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">{minimumError}</div> : null}
+      </div>
+
+      {directorBeneficialOwners.length ? (
+        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+          <h5 className="text-sm font-bold text-slate-950">董事/被授权人中的受益所有人</h5>
+          <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {directorBeneficialOwners.map((person) => (
+              <div key={person.id} className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-bold text-slate-950">{personDisplayName(person)}</span>
+                  {(person.roles || []).map((role) => <Badge key={role} variant="secondary">{enterpriseApplicantRoleLabels[role] || role}</Badge>)}
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
+                  <span>持股比例：{formatValue(person.beneficialOwnerRatio)}</span>
+                  <span className="group relative inline-flex" title="若持股比例<25%，则非受益所有人">
+                    <HelpCircle className="h-4 w-4 text-slate-400" />
+                    <span className="pointer-events-none absolute left-1/2 top-6 z-20 hidden w-64 -translate-x-1/2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold leading-5 text-slate-600 shadow-xl group-hover:block">
+                      若持股比例&lt;25%，则非受益所有人
+                    </span>
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {hasOtherBeneficialOwners === '是' ? (
+        otherBeneficialOwners.length ? (
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <h5 className="text-sm font-bold text-slate-950">其他受益所有人</h5>
+            <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {otherBeneficialOwners.map((owner) => (
+                <div key={owner.id || owner.name} className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-bold text-slate-950">{ownerDisplayName(owner)}</span>
+                    <Badge variant="secondary">{owner.role || owner.relationship || '其他受益所有人'}</Badge>
+                  </div>
+                  <div className="mt-2 grid gap-1 text-xs font-semibold text-slate-500">
+                    <span>持股比例：{formatValue(owner.beneficialOwnerRatio)}</span>
+                    <span>资料状态：{owner.status || '系统已获取'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-800">
+            {listError || '系统显示存在其他受益所有人，但名单资料未获取。需通过企业资料变更提交，提交后进入人工审核。'}
+          </div>
+        )
+      ) : hasOtherBeneficialOwners === '否' ? (
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm font-semibold leading-6 text-blue-800">
+          系统显示暂无其他受益所有人；如需新增或变更，请通过企业资料变更流程提交并进入人工审核。
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-800">
+          系统尚未获取“贵公司是否还有其他受益所有人”的确认结果，请先通过企业资料变更补充并进入人工审核。
         </div>
       )}
     </div>
@@ -515,13 +795,14 @@ function PersonCard({ data, person, collectionKey, type, index, sections, errors
 
 function checklistGroup(item) {
   if (item.group === '企业基础资料') return '企业基础资料'
+  if (item.group === '企业董事') return '企业董事'
+  if (item.group === '受益所有人确认') return '受益所有人确认'
   if (item.group.startsWith('股东')) return '股东信息'
-  if (item.group.startsWith('董事/授权代表')) return '董事/授权代表信息'
   return item.group
 }
 
 function ChecklistModal({ items, onClose, onJump }) {
-  const groups = ['企业基础资料', '股东信息', '董事/授权代表信息']
+  const groups = ['企业基础资料', '企业董事', '受益所有人确认', '股东信息']
     .map((group) => [group, items.filter((item) => checklistGroup(item) === group)])
     .filter(([, groupItems]) => groupItems.length)
 
@@ -597,6 +878,25 @@ export function BaasEnterpriseOpeningApplication({ onRegisterActions, onStatsCha
     setErrors((current) => ({ ...current, [path]: '', [itemId]: '' }))
   }
 
+  const changeApplicantRole = (role) => {
+    setData((current) => {
+      const person = current.directors.find((item) => item.roles?.includes(role))
+      return {
+        ...current,
+        currentApplicant: {
+          ...current.currentApplicant,
+          role,
+          personId: person?.id || '',
+          matchStatus: person ? 'matched' : 'unmatched',
+        },
+      }
+    })
+    setErrors((current) => Object.fromEntries(
+      Object.entries(current).filter(([key]) => !key.startsWith('企业董事:') && !key.startsWith('directors.')),
+    ))
+    setFocusedGroup('')
+  }
+
   const changeBaseValue = (path, value, itemId) => {
     setData((current) => {
       let next = setByPath(current, path, value)
@@ -645,12 +945,19 @@ export function BaasEnterpriseOpeningApplication({ onRegisterActions, onStatsCha
 
   const changeFile = (path, file, itemId) => {
     if (!file) return
-    if (!acceptedTypes.includes(file.type)) {
-      setErrors((current) => ({ ...current, [path]: '仅支持 pdf / jpeg / png 文件。', [itemId]: '仅支持 pdf / jpeg / png 文件。' }))
+    const isPassportUpload = path.startsWith('directors.') && path.endsWith('attachments.attachmentIdentity')
+    const allowedTypes = isPassportUpload ? passportAcceptedTypes : acceptedTypes
+    const allowedExtensions = isPassportUpload ? ['jpg', 'jpeg', 'png'] : ['pdf', 'jpg', 'jpeg', 'png']
+    const extension = file.name.split('.').pop()?.toLowerCase()
+    const limit = isPassportUpload ? passportFileLimit : fileLimit
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(extension)) {
+      const message = isPassportUpload ? '仅支持 JPG、JPEG、PNG 格式。' : '仅支持 pdf / jpeg / png 文件。'
+      setErrors((current) => ({ ...current, [path]: message, [itemId]: message }))
       return
     }
-    if (file.size > fileLimit) {
-      setErrors((current) => ({ ...current, [path]: '单个文件大小不能超过 8M。', [itemId]: '单个文件大小不能超过 8M。' }))
+    if (file.size > limit) {
+      const message = isPassportUpload ? '文件大小不能超过20MB。' : '单个文件大小不能超过 8M。'
+      setErrors((current) => ({ ...current, [path]: message, [itemId]: message }))
       return
     }
     setData((current) => setByPath(current, path, createMockEnterpriseFile(file)))
@@ -665,7 +972,14 @@ export function BaasEnterpriseOpeningApplication({ onRegisterActions, onStatsCha
     setChecklistOpen(false)
     setFocusedGroup(item.group)
     window.setTimeout(() => {
-      const target = document.getElementById(fieldDomId(item)) || document.getElementById(item.group.startsWith('股东') ? `shareholder-${Math.max(Number(item.group.match(/^股东(\d+)/)?.[1] || 1) - 1, 0)}` : '')
+      const fallbackId = item.group === '企业董事'
+        ? 'enterprise-directors'
+        : item.group === '受益所有人确认'
+          ? 'enterprise-beneficial-owners'
+          : item.group.startsWith('股东')
+            ? `shareholder-${Math.max(Number(item.group.match(/^股东(\d+)/)?.[1] || 1) - 1, 0)}`
+            : ''
+      const target = document.getElementById(fieldDomId(item)) || document.getElementById(fallbackId)
       target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }, 80)
   }
@@ -713,6 +1027,12 @@ export function BaasEnterpriseOpeningApplication({ onRegisterActions, onStatsCha
   const baseMissing = sections.missing.filter((item) => item.group === '企业基础资料').length
   const baseRevision = sections.revision.filter((item) => item.group === '企业基础资料').length
   const baseStatus = getModuleStatus(baseMissing, baseRevision)
+  const directorMissing = sections.missing.filter((item) => item.group === '企业董事').length
+  const directorRevision = sections.revision.filter((item) => item.group === '企业董事').length
+  const directorStatus = getModuleStatus(directorMissing, directorRevision)
+  const beneficialOwnerMissing = sections.missing.filter((item) => item.group === '受益所有人确认').length
+  const beneficialOwnerRevision = sections.revision.filter((item) => item.group === '受益所有人确认').length
+  const beneficialOwnerStatus = getModuleStatus(beneficialOwnerMissing, beneficialOwnerRevision)
 
   return (
     <div className="grid gap-5">
@@ -752,6 +1072,33 @@ export function BaasEnterpriseOpeningApplication({ onRegisterActions, onStatsCha
       </Section>
 
       <Section
+        id="enterprise-directors"
+        title="企业董事"
+        description="身份由用户主动选择，系统已有资料只读展示，仅补充当前身份下缺失的中文姓名和护照文件。"
+        badge={directorStatus.label}
+        tone={directorStatus.tone}
+      >
+        <EnterpriseDirectorModule
+          data={data}
+          sections={sections}
+          errors={errors}
+          onRoleChange={changeApplicantRole}
+          onChange={changeValue}
+          onFileChange={changeFile}
+        />
+      </Section>
+
+      <Section
+        id="enterprise-beneficial-owners"
+        title="受益所有人确认"
+        description="仅展示系统已有受益所有人判断和名单；新增或变更需通过企业资料变更并进入人工审核。"
+        badge={beneficialOwnerStatus.label}
+        tone={beneficialOwnerStatus.tone}
+      >
+        <BeneficialOwnerConfirmation data={data} sections={sections} errors={errors} />
+      </Section>
+
+      <Section
         id="enterprise-shareholders"
         title="股东信息"
         description="每个股东只展示自己的缺失项和需转换项，避免附件归属混乱。"
@@ -776,35 +1123,6 @@ export function BaasEnterpriseOpeningApplication({ onRegisterActions, onStatsCha
             />
           ))}
           {errors.shareholders ? <div className="text-sm font-semibold text-red-600">{errors.shareholders}</div> : null}
-        </div>
-      </Section>
-
-      <Section
-        id="enterprise-directors"
-        title="董事/授权代表"
-        description="名单来自系统已有资料；当前用户可补充缺失项，其他人员仅只读展示。"
-        badge={`${data.directors.length} 名`}
-        action={filterButton('directors')}
-      >
-        <div className="mt-4 grid gap-3">
-          <CurrentApplicantIdentity data={data} />
-          {data.directors.map((person, index) => (
-            <PersonCard
-              key={person.id}
-              data={data}
-              person={person}
-              collectionKey="directors"
-              type="董事/授权代表"
-              index={index}
-              sections={sections}
-              errors={errors}
-              focusedGroup={focusedGroup}
-              onlyProblems={onlyProblems.directors}
-              onChange={changeValue}
-              onFileChange={changeFile}
-              canSupplement={isCurrentApplicant(data, person)}
-            />
-          ))}
         </div>
       </Section>
 
