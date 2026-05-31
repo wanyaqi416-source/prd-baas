@@ -193,6 +193,106 @@ const transferRows = [
   },
 ]
 
+const manualAccountOptions = ['香港账户', '美国账户']
+
+const incomingClaimRows = [
+  {
+    id: 'IC-20260522-001',
+    submittedAt: '2026-05-22 18:54:17',
+    accountType: '香港账户',
+    currencyAmount: 'USD 10',
+    payer: 'JW',
+    channel: '电汇',
+    referenceNo: '-',
+    voucher: '-',
+    matchedCustomer: 'yejin',
+    matchStatus: '已匹配',
+    status: '处理完成',
+  },
+  {
+    id: 'IC-20260522-002',
+    submittedAt: '2026-05-22 18:53:41',
+    accountType: '美国账户',
+    currencyAmount: 'USD 12',
+    payer: 'JW',
+    channel: '电汇',
+    referenceNo: '-',
+    voucher: '-',
+    matchedCustomer: 'yejin',
+    matchStatus: '已匹配',
+    status: '已拒绝',
+  },
+  {
+    id: 'IC-20260520-001',
+    submittedAt: '2026-05-20 14:05:44',
+    accountType: '香港账户',
+    currencyAmount: 'HKD 100',
+    payer: 'LL',
+    channel: '电汇',
+    referenceNo: '-',
+    voucher: '-',
+    matchedCustomer: 'luluzhuo',
+    matchStatus: '已匹配',
+    status: '处理完成',
+  },
+]
+
+const withdrawalApprovalRows = [
+  {
+    id: 'WO-20260525-001',
+    appliedAt: '2026-05-25 16:01:10',
+    customer: { name: 'yejin', id: '130', email: 'orvafrew@123mails.org' },
+    accountType: '香港账户',
+    currencyAmount: 'HKD 10',
+    fee: 'HKD 2',
+    recipient: 'JW',
+    purpose: '未知',
+    status: '待处理',
+    channel: '电汇',
+    bank: '测试银行',
+  },
+  {
+    id: 'WO-20260525-002',
+    appliedAt: '2026-05-25 14:49:52',
+    customer: { name: 'QIXUE', id: '4', email: 'voigtus1@123mails.org' },
+    accountType: '美国账户',
+    currencyAmount: 'USD 11',
+    fee: 'USD 2.2',
+    recipient: 'YQ',
+    purpose: '未知',
+    status: '待处理',
+    channel: '电汇',
+    bank: 'WO Bank',
+  },
+  {
+    id: 'WO-20260524-001',
+    appliedAt: '2026-05-24 10:49:22',
+    customer: { name: 'wanyara', id: '120', email: 'wanyara@example.com' },
+    accountType: '香港账户',
+    currencyAmount: 'USD 4',
+    fee: 'USD 0.8',
+    recipient: 'JW',
+    purpose: '未知',
+    status: '处理完成',
+    channel: '电汇',
+    bank: 'Fidere Partner Bank',
+  },
+  {
+    id: 'WO-20260523-001',
+    appliedAt: '2026-05-23 10:12:18',
+    customer: { name: '2342', id: '98', email: 'ac1yanch@gongjua.com' },
+    accountType: '美国账户',
+    currencyAmount: 'USD 100',
+    fee: 'USD 3',
+    recipient: '忘记时间',
+    purpose: '未知',
+    status: '已拒绝',
+    channel: '电汇',
+    bank: 'WO Bank',
+    rejectReason: '客户收款银行账户信息不完整。',
+  },
+]
+
 const customers = [
   { id: '65', email: 'vigze5606@justdefinition.com' },
   { id: '34', email: 'perumily2@mediaholy.com' },
@@ -208,6 +308,7 @@ const initialFeeConfigs = [
 ]
 
 const fiatTabs = ['总览', '客户资产', '流水查询', '入账认领', '出金审批', '资金互转', '对账中心']
+const markedFiatTabs = new Set(['总览', '入账认领', '出金审批', '资金互转'])
 
 function Header({ onBack }) {
   return (
@@ -251,6 +352,20 @@ function SidebarItem({ icon: Icon, label, active = false, marked = false, onClic
         ) : null}
       </span>
     </button>
+  )
+}
+
+function QuestionMark({ active = false, inverse = false }) {
+  const className = inverse
+    ? 'bg-white text-[#8b4fff]'
+    : active
+      ? 'bg-[#8b4fff] text-white'
+      : 'bg-[#e7d6ff] text-[#8b4fff]'
+
+  return (
+    <span className={`inline-flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${className}`}>
+      ?
+    </span>
   )
 }
 
@@ -774,9 +889,458 @@ function TransferAuditDrawer({ record, onClose }) {
   )
 }
 
+function fiatStatusTone(status) {
+  if (status === '处理完成' || status === '已匹配') return 'green'
+  if (status === '已拒绝') return 'red'
+  return 'orange'
+}
+
+function DrawerShell({ title, eyebrow, onClose, children, footer }) {
+  return (
+    <div className="fixed inset-0 z-50 bg-[#252236]/55">
+      <aside className="fixed bottom-0 right-0 top-0 flex w-[456px] flex-col bg-white shadow-[0_18px_48px_rgba(28,29,42,0.28)]">
+        <div className="flex h-[58px] items-center justify-between border-b border-[#e5e6ef] px-[18px]">
+          <div>
+            <h2 className="text-[15px] font-semibold text-[#20213a]">{title}</h2>
+            {eyebrow ? <div className="mt-[3px] text-[11px] font-semibold uppercase text-[#8a8ca0]">{eyebrow}</div> : null}
+          </div>
+          <button type="button" onClick={onClose} className="rounded-[4px] p-[7px] text-[#66677f] hover:bg-[#f6f7fb]">
+            <X className="h-[16px] w-[16px]" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto bg-white px-[12px] py-[14px]">{children}</div>
+        {footer ? <div className="border-t border-[#e5e6ef] bg-white p-[10px]">{footer}</div> : null}
+      </aside>
+    </div>
+  )
+}
+
+function DrawerSelectField({ label, value, onChange, options, placeholder }) {
+  return (
+    <label className="block">
+      <span className="mb-[-8px] ml-[10px] inline-block bg-white px-[4px] text-[12px] text-[#66677f]">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
+        className="h-[54px] w-full rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] text-[14px] text-[#24243d] outline-none"
+      >
+        {placeholder ? <option value="">{placeholder}</option> : null}
+        {options.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+function DrawerInputField({ label, placeholder = '', prefix = '' }) {
+  return (
+    <label className="block">
+      <span className="mb-[-8px] ml-[10px] inline-block bg-white px-[4px] text-[12px] text-[#66677f]">{label}</span>
+      <div className="flex h-[54px] items-center rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] text-[14px] text-[#24243d]">
+        {prefix ? <span className="mr-[8px] font-semibold">{prefix}</span> : null}
+        <input className="h-full min-w-0 flex-1 bg-transparent outline-none" placeholder={placeholder} />
+      </div>
+    </label>
+  )
+}
+
+function DrawerTextareaField({ label, placeholder }) {
+  return (
+    <label className="block">
+      <span className="mb-[-8px] ml-[10px] inline-block bg-white px-[4px] text-[12px] text-[#66677f]">{label}</span>
+      <textarea className="h-[106px] w-full resize-none rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] py-[12px] text-[14px] outline-none" placeholder={placeholder} />
+    </label>
+  )
+}
+
+function ManualFiatDrawer({ type, accountType, onAccountTypeChange, onClose }) {
+  const isDeposit = type === 'deposit'
+  const title = isDeposit ? '手动入金' : '手动出金'
+  const toneClass = isDeposit ? 'bg-[#d8f0ff] text-[#1295d8]' : 'bg-[#fff1d6] text-[#f39800]'
+  const confirmClass = isDeposit ? 'bg-[#46c800] hover:bg-[#3bb000]' : 'bg-[#ff4c57] hover:bg-[#e53d48]'
+  const message = isDeposit
+    ? '手动入金将直接增加客户账户余额，请谨慎操作并确保信息准确。'
+    : '手动出金将直接扣减客户账户余额，请谨慎操作并确保客户有足够余额。'
+
+  return (
+    <DrawerShell
+      title={title}
+      onClose={onClose}
+      footer={(
+        <div className="grid grid-cols-2 gap-[8px]">
+          <button type="button" onClick={onClose} className="h-[38px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">取消</button>
+          <button type="button" className={`h-[38px] rounded-[5px] text-[13px] font-semibold text-white ${confirmClass}`}>{isDeposit ? '确认入金' : '确认出金'}</button>
+        </div>
+      )}
+    >
+      <div className="space-y-[14px]">
+        <div className={`rounded-[5px] px-[14px] py-[13px] text-[13px] font-semibold leading-[22px] ${toneClass}`}>
+          {message}
+        </div>
+        <DrawerSelectField label="选择客户 *" value="" options={customers.map((customer) => `ID: ${customer.id} / ${customer.email}`)} placeholder="选择客户 *" />
+        <DrawerSelectField label="选择账户 *" value={accountType} onChange={onAccountTypeChange} options={manualAccountOptions} />
+        <DrawerSelectField label="币种 *" value="USD - 美元" options={['USD - 美元', 'HKD - 港币']} />
+        <DrawerSelectField label="打款渠道" value="电汇" options={['电汇', 'FPS', 'ACH']} />
+        {!isDeposit ? <DrawerSelectField label="银行账号 *" value="" options={['WO · 测试银行 · 232232', 'JW · Fidere Partner Bank · 026009593']} placeholder="银行账号 *" /> : null}
+        <DrawerInputField label={isDeposit ? '入金金额 *' : '出金金额 *'} prefix="USD" placeholder="请输入正确的金额" />
+        <DrawerTextareaField label="备注说明 *" placeholder="必填项，用于审计追踪" />
+        <button type="button" className="flex h-[40px] w-full items-center justify-center gap-[8px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">
+          <FileText className="h-[15px] w-[15px]" />
+          上传凭证（可选）
+        </button>
+      </div>
+    </DrawerShell>
+  )
+}
+
+function FiatOverviewPanel({ onOpenManual, onChangeTab }) {
+  const quickActions = [
+    { label: '手动入金', tone: 'bg-[#46c800] hover:bg-[#3bb000]', marked: true, action: () => onOpenManual('deposit') },
+    { label: '手动出金', tone: 'bg-[#ff4c57] hover:bg-[#e53d48]', marked: true, action: () => onOpenManual('withdraw') },
+    { label: '入账认领', tone: 'bg-[#8b4fff] hover:bg-[#7f42f2]', action: () => onChangeTab('入账认领') },
+    { label: '出金审批', tone: 'bg-[#f4a600] hover:bg-[#db9400]', action: () => onChangeTab('出金审批') },
+    { label: '流水查询', tone: 'border border-[#24a8f3] bg-white text-[#24a8f3] hover:bg-[#eaf7ff]', action: () => onChangeTab('流水查询') },
+  ]
+
+  return (
+    <div className="space-y-[21px]">
+      <Panel className="px-[18px] py-[20px]">
+        <div className="text-[16px] font-semibold text-[#20213a]">快捷操作</div>
+        <div className="mt-[18px] flex flex-wrap gap-[12px]">
+          {quickActions.map((action) => (
+            <button
+              key={action.label}
+              type="button"
+              onClick={action.action}
+              className={`inline-flex h-[38px] items-center gap-[8px] rounded-[5px] px-[16px] text-[13px] font-semibold text-white shadow-sm ${action.tone}`}
+            >
+              <Plus className="h-[14px] w-[14px]" />
+              {action.marked ? <QuestionMark inverse /> : null}
+              {action.label}
+            </button>
+          ))}
+        </div>
+      </Panel>
+
+      <div className="grid grid-cols-5 gap-[18px]">
+        <StatCard title="AUM" value="1069225.64" desc="较昨日" tone="green" icon={CircleDot} />
+        <StatCard title="今日净流入" value="0" desc="较昨日" tone="green" icon={LineChart} />
+        <StatCard title="待认领" value="18" desc="较昨日" tone="amber" icon={Clock3} />
+        <StatCard title="待审批" value="10" desc="较昨日" tone="blue" icon={FileCheck2} />
+        <StatCard title="未匹配来账" value="0" desc="全部" tone="violet" icon={Gauge} />
+      </div>
+
+      <div className="grid grid-cols-[0.95fr_0.95fr_1fr] gap-[21px]">
+        <Panel className="h-[278px] p-[18px]">
+          <div className="text-[17px] font-semibold text-[#20213a]">资产分布</div>
+          <div className="mt-[48px] flex items-center justify-center">
+            <div className="relative h-[132px] w-[132px] rounded-full border-[28px] border-[#8d9198]">
+              <div className="absolute right-[-54px] top-[48px] text-[13px] font-semibold text-[#8b4fff]">USD 10.2477%</div>
+            </div>
+          </div>
+        </Panel>
+        <Panel className="h-[278px] p-[18px]">
+          <div className="text-[17px] font-semibold text-[#20213a]">AUM 趋势</div>
+          <div className="mt-[8px] text-[13px] text-[#8a8ca0]">近7天</div>
+          <div className="mt-[28px] h-[150px] border-b border-l border-dashed border-[#d8d9e3] bg-gradient-to-t from-[#d8c7ff] to-[#f5efff]" />
+        </Panel>
+        <Panel className="h-[278px] p-[18px]">
+          <div className="text-[17px] font-semibold text-[#20213a]">资金流动</div>
+          <div className="mt-[8px] text-[13px] text-[#8a8ca0]">入金 vs 出金</div>
+          <div className="mt-[26px] grid h-[150px] grid-cols-6 items-end gap-[13px] border-b border-dashed border-[#d8d9e3]">
+            {[42, 92, 28, 78, 38, 64].map((height, index) => (
+              <div key={index} className="rounded-t-[4px] bg-[#8b4fff]" style={{ height }} />
+            ))}
+          </div>
+        </Panel>
+      </div>
+    </div>
+  )
+}
+
+function FiatFilterPanel({ variant = 'default' }) {
+  return (
+    <Panel className="mt-[21px] px-[15px] py-[18px]">
+      <div className="flex items-center gap-[12px]">
+        <SelectBox label="状态：全部" width="w-[296px]" />
+        {variant === 'incoming' ? <SelectBox label="匹配状态：全部" width="w-[296px]" /> : null}
+        <SelectBox label="开始日期" width="w-[296px]" />
+        <SelectBox label="结束日期" width="w-[296px]" />
+        <SearchBox placeholder={variant === 'incoming' ? '参考号、付款人、备注...' : '客户、收款人...'} width="w-[296px]" />
+      </div>
+      <div className="mt-[18px] flex gap-[10px]">
+        <PrimaryButton icon={Search}>查询</PrimaryButton>
+        <ActionButton icon={Clock3}>重置</ActionButton>
+      </div>
+    </Panel>
+  )
+}
+
+function IncomingClaimDrawer({ record, onClose }) {
+  if (!record) return null
+
+  return (
+    <DrawerShell
+      title="入账认领"
+      onClose={onClose}
+      footer={(
+        <div className="grid grid-cols-2 gap-[8px]">
+          <button type="button" onClick={onClose} className="h-[38px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">取消</button>
+          <button type="button" className="h-[38px] rounded-[5px] bg-[#b0e68d] text-[13px] font-semibold text-white hover:bg-[#87d35d]">确认认领</button>
+        </div>
+      )}
+    >
+      <div className="space-y-[12px]">
+        <div className="rounded-[5px] bg-[#d8f0ff] px-[14px] py-[13px]">
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] text-[#55556e]">来账金额</span>
+            <span className="text-[13px] font-semibold text-[#20213a]">{record.currencyAmount}</span>
+          </div>
+        </div>
+        <div className="rounded-[5px] bg-white px-[12px] py-[12px] shadow-sm">
+          {[
+            ['账户类型', record.accountType],
+            ['付款人', record.payer],
+            ['渠道', record.channel],
+            ['参考号', record.referenceNo],
+            ['提交时间', record.submittedAt],
+            ['匹配客户', record.matchedCustomer],
+          ].map(([label, value]) => (
+            <div key={label} className="border-b border-[#e5e6ef] py-[11px] last:border-b-0">
+              <div className="text-[12px] text-[#66677f]">{label}</div>
+              <div className="mt-[5px] text-[13px] font-semibold text-[#20213a]">{value}</div>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-[5px] border border-[#cfd1dc] bg-white p-[12px]">
+          <div className="flex items-center gap-[10px]">
+            <span className="flex h-[32px] w-[32px] items-center justify-center rounded-full bg-[#4bd20c] text-[13px] font-semibold text-white">{record.matchedCustomer.slice(0, 1).toUpperCase()}</span>
+            <span className="text-[13px] font-semibold text-[#20213a]">{record.matchedCustomer}</span>
+          </div>
+          <div className="mt-[8px] text-[12px] text-[#66677f]">该记录已匹配客户</div>
+        </div>
+        <DrawerTextareaField label="认领备注 *" placeholder="必填项，用于审计追踪" />
+      </div>
+    </DrawerShell>
+  )
+}
+
+function IncomingClaimPanel({ onOpenRecord }) {
+  return (
+    <>
+      <FiatFilterPanel variant="incoming" />
+      <Panel className="mt-[21px] overflow-hidden">
+        <div className="flex items-center justify-between border-b border-[#e5e6ef] px-[18px] py-[14px]">
+          <PrimaryButton icon={FileCheck2}>批量认领</PrimaryButton>
+          <div className="flex gap-[10px]">
+            <SearchBox placeholder="参考号、付款人、备注..." width="w-[256px]" />
+            <ActionButton icon={Clock3}>重置</ActionButton>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-[1180px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+            <thead>
+              <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
+                {['', '提交时间', '账户类型', '币种/金额', '付款人', '渠道', '参考号', '转账凭证', '匹配客户', '匹配状态', '状态', '操作'].map((item) => (
+                  <th key={item} className="px-[18px]">{item}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {incomingClaimRows.map((row) => (
+                <tr key={row.id} className="h-[62px] border-b border-[#e7e8ef] bg-white">
+                  <td className="px-[18px]"><input type="checkbox" className="h-[15px] w-[15px]" /></td>
+                  <td className="px-[18px]">{row.submittedAt}</td>
+                  <td className="px-[18px] font-semibold text-[#20213a]">{row.accountType}</td>
+                  <td className="px-[18px]">{row.currencyAmount}</td>
+                  <td className="px-[18px]">{row.payer}</td>
+                  <td className="px-[18px]">{row.channel}</td>
+                  <td className="px-[18px]">{row.referenceNo}</td>
+                  <td className="px-[18px]">{row.voucher}</td>
+                  <td className="px-[18px]">{row.matchedCustomer}</td>
+                  <td className="px-[18px]"><StatusBadge tone={fiatStatusTone(row.matchStatus)}>{row.matchStatus}</StatusBadge></td>
+                  <td className="px-[18px]"><StatusBadge tone={fiatStatusTone(row.status)}>{row.status}</StatusBadge></td>
+                  <td className="px-[18px]"><ActionButton icon={FileCheck2} onClick={() => onOpenRecord(row)}>查看详情</ActionButton></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+    </>
+  )
+}
+
+function WithdrawalApprovalDrawer({ record, onClose }) {
+  if (!record) return null
+
+  return (
+    <DrawerShell
+      title="出金审批"
+      onClose={onClose}
+      footer={(
+        <div className="grid grid-cols-2 gap-[8px]">
+          <button type="button" className="h-[38px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">拒绝</button>
+          <button type="button" className="h-[38px] rounded-[5px] bg-[#bda2f9] text-[13px] font-semibold text-white hover:bg-[#9b63f5]">批准</button>
+        </div>
+      )}
+    >
+      <div className="space-y-[12px]">
+        <div className="rounded-[5px] bg-[#fff1d6] px-[14px] py-[13px]">
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] text-[#55556e]">出金金额</span>
+            <span className="text-[13px] font-semibold text-[#20213a]">{record.currencyAmount}</span>
+          </div>
+        </div>
+        <div className="rounded-[5px] bg-white px-[12px] py-[12px] shadow-sm">
+          <div className="border-b border-[#e5e6ef] py-[11px]">
+            <div className="text-[12px] text-[#66677f]">客户</div>
+            <div className="mt-[5px] text-[13px] font-semibold text-[#20213a]">{record.customer.name}</div>
+            <div className="mt-[3px] text-[12px] text-[#66677f]">{record.customer.email}</div>
+          </div>
+          {[
+            ['账户类型', record.accountType],
+            ['收款人', record.recipient],
+            ['用途', record.purpose],
+            ['申请时间', record.appliedAt],
+            ['出金手续费', record.fee],
+            ['状态', record.status],
+            ...(record.rejectReason ? [['拒绝原因', record.rejectReason]] : []),
+          ].map(([label, value]) => (
+            <div key={label} className="border-b border-[#e5e6ef] py-[11px] last:border-b-0">
+              <div className="text-[12px] text-[#66677f]">{label}</div>
+              <div className="mt-[5px] text-[13px] font-semibold text-[#20213a]">{value}</div>
+            </div>
+          ))}
+        </div>
+        <DrawerSelectField label="打款渠道 *" value={record.channel} options={['电汇', 'FPS', 'ACH']} />
+        <DrawerSelectField label="打款银行 *" value={record.bank} options={['测试银行', 'WO Bank', 'Fidere Partner Bank']} />
+        <button type="button" className="flex h-[40px] w-full items-center justify-center gap-[8px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">
+          <FileText className="h-[15px] w-[15px]" />
+          选择文件
+        </button>
+        <div className="text-[12px] text-[#66677f]">支持 JPG, PNG 格式，最大 10MB</div>
+        <DrawerTextareaField label="审批备注 *" placeholder="此字段为必填项" />
+      </div>
+    </DrawerShell>
+  )
+}
+
+function WithdrawalApprovalPanel({ onOpenRecord }) {
+  return (
+    <>
+      <FiatFilterPanel />
+      <Panel className="mt-[21px] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-[1180px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+            <thead>
+              <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
+                {['申请时间', '客户', '账户类型', '币种/金额', '出金手续费', '收款人', '用途', '状态', '操作'].map((item) => (
+                  <th key={item} className="px-[18px]">{item}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {withdrawalApprovalRows.map((row) => (
+                <tr key={row.id} className="h-[78px] border-b border-[#e7e8ef] bg-white">
+                  <td className="px-[18px]">{row.appliedAt}</td>
+                  <td className="px-[18px]">
+                    <div className="leading-[1.55]">
+                      <div className="font-semibold text-[#20213a]">{row.customer.name}</div>
+                      <div>ID: {row.customer.id}</div>
+                      <div>{row.customer.email}</div>
+                    </div>
+                  </td>
+                  <td className="px-[18px] font-semibold text-[#20213a]">{row.accountType}</td>
+                  <td className="px-[18px]">{row.currencyAmount}</td>
+                  <td className="px-[18px]">{row.fee}</td>
+                  <td className="px-[18px]">{row.recipient}</td>
+                  <td className="px-[18px]">{row.purpose}</td>
+                  <td className="px-[18px]"><StatusBadge tone={fiatStatusTone(row.status)}>{row.status}</StatusBadge></td>
+                  <td className="px-[18px]"><ActionButton icon={FileCheck2} onClick={() => onOpenRecord(row)}>查看详情</ActionButton></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+    </>
+  )
+}
+
+function FiatTransferPanel({ onOpenRecord }) {
+  return (
+    <>
+      <FiatFilterPanel />
+      <Panel className="mt-[21px] overflow-hidden">
+        <div className="overflow-x-auto">
+        <table className="min-w-[1450px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+          <thead>
+            <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
+              <th className="px-[18px]">申请编号</th>
+              <th className="px-[18px]">客户</th>
+              <th className="px-[18px]">转出账户</th>
+              <th className="px-[18px]">转入账户</th>
+              <th className="px-[18px]">币种</th>
+              <th className="px-[18px]">金额</th>
+              <th className="px-[18px]">手续费</th>
+              <th className="px-[18px]">预估到账</th>
+              <th className="px-[18px]">状态</th>
+              <th className="px-[18px]">提交时间</th>
+              <th className="px-[18px]">完成时间</th>
+              <th className="px-[18px]">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {transferRows.map((row) => (
+              <tr key={row.requestId} className="h-[74px] border-b border-[#e7e8ef] bg-white">
+                <td className="px-[18px] font-semibold text-[#20213a]">{row.requestId}</td>
+                <td className="px-[18px]">
+                  <div className="leading-[1.55]">
+                    <div className="font-semibold text-[#20213a]">{row.customer.name}</div>
+                    <div>ID: {row.customer.id}</div>
+                    <div>{row.customer.email}</div>
+                  </div>
+                </td>
+                <td className="px-[18px]">{row.fromAccount}</td>
+                <td className="px-[18px]">{row.toAccount}</td>
+                <td className="px-[18px]">{row.currency}</td>
+                <td className="px-[18px]">{row.amount}</td>
+                <td className="px-[18px]">{row.fee}</td>
+                <td className="px-[18px]">{row.estimatedArrival}</td>
+                <td className="px-[18px]"><StatusBadge tone={transferStatusTone(row.status)}>{row.status}</StatusBadge></td>
+                <td className="px-[18px]">{row.submittedAt}</td>
+                <td className="px-[18px]">{row.completedAt || ''}</td>
+                <td className="px-[18px]">
+                  {row.status === '待审核' ? (
+                    <ActionButton icon={FileCheck2} onClick={() => onOpenRecord(row)}>审核</ActionButton>
+                  ) : (
+                    <ActionButton icon={Eye} onClick={() => onOpenRecord(row)}>查看详情</ActionButton>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        </div>
+      </Panel>
+    </>
+  )
+}
+
 function FiatAssetManagementPage() {
-  const [activeTab, setActiveTab] = useState('资金互转')
+  const [activeTab, setActiveTab] = useState('总览')
   const [selectedTransfer, setSelectedTransfer] = useState(null)
+  const [manualDrawerType, setManualDrawerType] = useState(null)
+  const [manualAccountType, setManualAccountType] = useState('香港账户')
+  const [selectedIncomingClaim, setSelectedIncomingClaim] = useState(null)
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState(null)
+
+  const openManualDrawer = (type) => {
+    setManualAccountType('香港账户')
+    setManualDrawerType(type)
+  }
 
   return (
     <AdminShell>
@@ -795,81 +1359,35 @@ function FiatAssetManagementPage() {
                 activeTab === tab ? 'border-[#8b4fff] text-[#8b4fff]' : 'border-transparent text-[#4c4c68]'
               }`}
             >
-              {tab}
+              <span className="inline-flex items-center gap-[6px]">
+                {markedFiatTabs.has(tab) ? <QuestionMark active={activeTab === tab} /> : null}
+                {tab}
+              </span>
             </button>
           ))}
         </div>
       </Panel>
 
-      <Panel className="mt-[21px] px-[15px] py-[18px]">
-        <div className="flex items-center gap-[12px]">
-          <SelectBox label="状态：全部" width="w-[296px]" />
-          <SelectBox label="开始日期" width="w-[296px]" />
-          <SelectBox label="结束日期" width="w-[296px]" />
-          <SearchBox placeholder="客户、收款人..." width="w-[296px]" />
-        </div>
-        <div className="mt-[18px] flex gap-[10px]">
-          <PrimaryButton icon={Search}>查询</PrimaryButton>
-          <ActionButton icon={Clock3}>重置</ActionButton>
-        </div>
-      </Panel>
+      <div className="mt-[21px]">
+        {activeTab === '总览' ? <FiatOverviewPanel onOpenManual={openManualDrawer} onChangeTab={setActiveTab} /> : null}
+        {activeTab === '入账认领' ? <IncomingClaimPanel onOpenRecord={setSelectedIncomingClaim} /> : null}
+        {activeTab === '出金审批' ? <WithdrawalApprovalPanel onOpenRecord={setSelectedWithdrawal} /> : null}
+        {activeTab === '资金互转' ? <FiatTransferPanel onOpenRecord={setSelectedTransfer} /> : null}
+        {!['总览', '入账认领', '出金审批', '资金互转'].includes(activeTab) ? (
+          <Panel className="p-[36px] text-center text-[13px] text-[#66677f]">{activeTab} 数据占位，当前原型重点展示总览、入账认领、出金审批和资金互转。</Panel>
+        ) : null}
+      </div>
 
-      <Panel className="mt-[21px] overflow-hidden">
-        {activeTab === '资金互转' ? (
-          <div className="overflow-x-auto">
-          <table className="min-w-[1450px] w-full border-collapse text-left text-[13px] text-[#55556e]">
-            <thead>
-              <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
-                <th className="px-[18px]">申请编号</th>
-                <th className="px-[18px]">客户</th>
-                <th className="px-[18px]">转出账户</th>
-                <th className="px-[18px]">转入账户</th>
-                <th className="px-[18px]">币种</th>
-                <th className="px-[18px]">金额</th>
-                <th className="px-[18px]">手续费</th>
-                <th className="px-[18px]">预估到账</th>
-                <th className="px-[18px]">状态</th>
-                <th className="px-[18px]">提交时间</th>
-                <th className="px-[18px]">完成时间</th>
-                <th className="px-[18px]">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transferRows.map((row) => (
-                <tr key={row.requestId} className="h-[74px] border-b border-[#e7e8ef] bg-white">
-                  <td className="px-[18px] font-semibold text-[#20213a]">{row.requestId}</td>
-                  <td className="px-[18px]">
-                    <div className="leading-[1.55]">
-                      <div className="font-semibold text-[#20213a]">{row.customer.name}</div>
-                      <div>ID: {row.customer.id}</div>
-                      <div>{row.customer.email}</div>
-                    </div>
-                  </td>
-                  <td className="px-[18px]">{row.fromAccount}</td>
-                  <td className="px-[18px]">{row.toAccount}</td>
-                  <td className="px-[18px]">{row.currency}</td>
-                  <td className="px-[18px]">{row.amount}</td>
-                  <td className="px-[18px]">{row.fee}</td>
-                  <td className="px-[18px]">{row.estimatedArrival}</td>
-                  <td className="px-[18px]"><StatusBadge tone={transferStatusTone(row.status)}>{row.status}</StatusBadge></td>
-                  <td className="px-[18px]">{row.submittedAt}</td>
-                  <td className="px-[18px]">{row.completedAt || ''}</td>
-                  <td className="px-[18px]">
-                    {row.status === '待审核' ? (
-                      <ActionButton icon={FileCheck2} onClick={() => setSelectedTransfer(row)}>审核</ActionButton>
-                    ) : (
-                      <ActionButton icon={Eye} onClick={() => setSelectedTransfer(row)}>查看详情</ActionButton>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
-        ) : (
-          <div className="p-[36px] text-center text-[13px] text-[#66677f]">{activeTab} 数据占位，当前原型重点展示资金互转。</div>
-        )}
-      </Panel>
+      {manualDrawerType ? (
+        <ManualFiatDrawer
+          type={manualDrawerType}
+          accountType={manualAccountType}
+          onAccountTypeChange={setManualAccountType}
+          onClose={() => setManualDrawerType(null)}
+        />
+      ) : null}
+      <IncomingClaimDrawer record={selectedIncomingClaim} onClose={() => setSelectedIncomingClaim(null)} />
+      <WithdrawalApprovalDrawer record={selectedWithdrawal} onClose={() => setSelectedWithdrawal(null)} />
       <TransferAuditDrawer record={selectedTransfer} onClose={() => setSelectedTransfer(null)} />
     </AdminShell>
   )
