@@ -76,19 +76,10 @@ export const baasPrototypeEntries = [
     buttonLabel: '进入开户原型',
   },
   {
-    title: '入金流程',
-    description: '外部法币入账、Trust Account 转入、入账匹配和客户可用余额更新。',
-    buttonLabel: '占位入口',
-  },
-  {
-    title: '出金流程',
-    description: '客户发起转出、余额冻结、BaaS 手动执行、回单上传和订单完成。',
-    buttonLabel: '占位入口',
-  },
-  {
     title: '后台审核',
-    description: '开户、入金、出金、异常处理和审计日志的 Admin 操作入口。',
-    buttonLabel: '占位入口',
+    description: '开户审核、法币资产管理、资金互转手续费配置等 Admin 原型入口。',
+    route: '/admin/product-manual/baas-prototype/admin-review',
+    buttonLabel: '进入后台审核原型',
   },
 ]
 

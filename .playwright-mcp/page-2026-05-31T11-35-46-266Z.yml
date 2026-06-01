@@ -1,0 +1,278 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - button "FIDERE TRUST" [ref=e5] [cursor=pointer]:
+      - img [ref=e7]
+      - generic [ref=e9]: FIDERE TRUST
+      - img [ref=e10]
+    - generic [ref=e13]:
+      - img [ref=e14]
+      - img [ref=e18]
+      - img [ref=e25]
+  - complementary [ref=e28]:
+    - navigation [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - img [ref=e32]
+          - text: KYC审核
+        - img [ref=e35]
+      - generic [ref=e37]:
+        - button "案件工作台" [ref=e38] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e43]: 案件工作台
+        - button "开户审核" [ref=e44] [cursor=pointer]:
+          - img [ref=e45]
+          - generic [ref=e48]: 开户审核
+        - button "用户管理" [ref=e49] [cursor=pointer]:
+          - img [ref=e50]
+          - generic [ref=e54]: 用户管理
+        - button "处理中审核" [ref=e55] [cursor=pointer]:
+          - img [ref=e56]
+          - generic [ref=e59]: 处理中审核
+        - button "法币账户审核" [ref=e60] [cursor=pointer]:
+          - img [ref=e61]
+          - generic [ref=e65]: 法币账户审核
+        - button "数字资产地址审核" [ref=e66] [cursor=pointer]:
+          - img [ref=e67]
+          - generic [ref=e71]: 数字资产地址审核
+        - button "信托管理" [ref=e72] [cursor=pointer]:
+          - img [ref=e73]
+          - generic [ref=e76]: 信托管理
+        - button "审核日志" [ref=e77] [cursor=pointer]:
+          - img [ref=e78]
+          - generic [ref=e81]: 审核日志
+      - generic [ref=e82]:
+        - generic [ref=e83]:
+          - img [ref=e84]
+          - text: 运营
+        - img [ref=e87]
+      - generic [ref=e89]:
+        - button "概览" [ref=e90] [cursor=pointer]:
+          - img [ref=e91]
+          - generic [ref=e94]: 概览
+        - button "客户" [ref=e95] [cursor=pointer]:
+          - img [ref=e96]
+          - generic [ref=e99]: 客户
+        - button "资产中心" [ref=e100] [cursor=pointer]:
+          - img [ref=e101]
+          - generic [ref=e104]: 资产中心
+        - button "法币资产管理" [ref=e105] [cursor=pointer]:
+          - img [ref=e106]
+          - generic [ref=e110]: 法币资产管理
+        - button "数字资产管理" [ref=e111] [cursor=pointer]:
+          - img [ref=e112]
+          - generic [ref=e115]: 数字资产管理
+        - button "理财产品" [ref=e116] [cursor=pointer]:
+          - img [ref=e117]
+          - generic [ref=e120]: 理财产品
+        - button "交易管理" [ref=e121] [cursor=pointer]:
+          - img [ref=e122]
+          - generic [ref=e125]: 交易管理
+        - button "费率中心" [ref=e126] [cursor=pointer]:
+          - img [ref=e127]
+          - generic [ref=e131]: 费率中心
+  - main [ref=e132]:
+    - generic [ref=e133]:
+      - generic [ref=e135]:
+        - button "个人用户" [ref=e136] [cursor=pointer]
+        - button "企业用户" [ref=e137] [cursor=pointer]
+      - generic [ref=e138]:
+        - generic [ref=e139]:
+          - generic [ref=e140]: 待处理审核
+          - generic [ref=e141]: "36"
+          - generic [ref=e142]: 较昨日
+          - img [ref=e144]
+        - generic [ref=e147]:
+          - generic [ref=e148]: 今日完成
+          - generic [ref=e149]: "0"
+          - generic [ref=e150]: 较昨日
+          - img [ref=e152]
+        - generic [ref=e155]:
+          - generic [ref=e156]: 累计审核通过
+          - generic [ref=e157]: "20"
+          - generic [ref=e158]: 全部
+          - img [ref=e160]
+        - generic [ref=e163]:
+          - generic [ref=e164]: 当前已拒绝
+          - generic [ref=e165]: "8"
+          - generic [ref=e166]: 全部
+          - img [ref=e168]
+      - generic [ref=e172]:
+        - generic [ref=e173]:
+          - heading "待处理审核" [level=1] [ref=e174]
+          - paragraph [ref=e175]: 待处理的客户身份识别和尽职调查任务
+        - generic [ref=e177]:
+          - img [ref=e178]
+          - textbox [ref=e181]:
+            - /placeholder: 搜索客户名称、审核类型...
+        - table [ref=e183]:
+          - rowgroup [ref=e184]:
+            - row "客户信息 提交日期 状态 操作" [ref=e185]:
+              - columnheader "客户信息" [ref=e186]
+              - columnheader "提交日期" [ref=e187]
+              - columnheader "状态" [ref=e188]
+              - columnheader "操作" [ref=e189]
+          - rowgroup [ref=e190]:
+            - 'row "WW WANYARA WAN ID: 154 xr3kes66@123mails.org 2026-05-29 17:38:14 待审核 查看详情 开始处理" [ref=e191]':
+              - 'cell "WW WANYARA WAN ID: 154 xr3kes66@123mails.org" [ref=e192]':
+                - generic [ref=e193]:
+                  - generic [ref=e194]: WW
+                  - generic [ref=e195]:
+                    - generic [ref=e196]: WANYARA WAN
+                    - generic [ref=e197]: "ID: 154"
+                    - generic [ref=e198]: xr3kes66@123mails.org
+              - cell "2026-05-29 17:38:14" [ref=e199]
+              - cell "待审核" [ref=e200]:
+                - generic [ref=e201]: 待审核
+              - cell "查看详情 开始处理" [ref=e202]:
+                - generic [ref=e203]:
+                  - button "查看详情" [ref=e204] [cursor=pointer]:
+                    - img [ref=e205]
+                    - text: 查看详情
+                  - button "开始处理" [ref=e208] [cursor=pointer]:
+                    - img [ref=e209]
+                    - text: 开始处理
+            - 'row "L LA LA LA ID: 152 tuntonxx@swagpapa.com 2026-05-26 19:43:20 待审核 查看详情 开始处理" [ref=e211]':
+              - 'cell "L LA LA LA ID: 152 tuntonxx@swagpapa.com" [ref=e212]':
+                - generic [ref=e213]:
+                  - generic [ref=e214]: L
+                  - generic [ref=e215]:
+                    - generic [ref=e216]: LA LA LA
+                    - generic [ref=e217]: "ID: 152"
+                    - generic [ref=e218]: tuntonxx@swagpapa.com
+              - cell "2026-05-26 19:43:20" [ref=e219]
+              - cell "待审核" [ref=e220]:
+                - generic [ref=e221]: 待审核
+              - cell "查看详情 开始处理" [ref=e222]:
+                - generic [ref=e223]:
+                  - button "查看详情" [ref=e224] [cursor=pointer]:
+                    - img [ref=e225]
+                    - text: 查看详情
+                  - button "开始处理" [ref=e228] [cursor=pointer]:
+                    - img [ref=e229]
+                    - text: 开始处理
+            - 'row "S SAD SDA ASD ID: 150 axedclon@rulersonline.com 2026-05-22 18:30:29 待审核 查看详情 开始处理" [ref=e231]':
+              - 'cell "S SAD SDA ASD ID: 150 axedclon@rulersonline.com" [ref=e232]':
+                - generic [ref=e233]:
+                  - generic [ref=e234]: S
+                  - generic [ref=e235]:
+                    - generic [ref=e236]: SAD SDA ASD
+                    - generic [ref=e237]: "ID: 150"
+                    - generic [ref=e238]: axedclon@rulersonline.com
+              - cell "2026-05-22 18:30:29" [ref=e239]
+              - cell "待审核" [ref=e240]:
+                - generic [ref=e241]: 待审核
+              - cell "查看详情 开始处理" [ref=e242]:
+                - generic [ref=e243]:
+                  - button "查看详情" [ref=e244] [cursor=pointer]:
+                    - img [ref=e245]
+                    - text: 查看详情
+                  - button "开始处理" [ref=e248] [cursor=pointer]:
+                    - img [ref=e249]
+                    - text: 开始处理
+      - generic [ref=e251]:
+        - generic [ref=e252]:
+          - heading "拒绝用户" [level=2] [ref=e253]
+          - paragraph [ref=e254]: 审核被拒绝的用户申请，可进行重新审核或联系客户
+        - generic [ref=e256]:
+          - img [ref=e257]
+          - textbox [ref=e260]:
+            - /placeholder: 搜索客户名称、审核类型...
+        - table [ref=e262]:
+          - rowgroup [ref=e263]:
+            - row "客户信息 拒绝原因 拒绝时间 审核员 操作" [ref=e264]:
+              - columnheader "客户信息" [ref=e265]
+              - columnheader "拒绝原因" [ref=e266]
+              - columnheader "拒绝时间" [ref=e267]
+              - columnheader "审核员" [ref=e268]
+              - columnheader "操作" [ref=e269]
+          - rowgroup [ref=e270]:
+            - 'row "ID: 94 ollavels@rulersonline.com jujuju 2026-05-20 14:00:28 超 超级管理员 查看详情 重新审核" [ref=e271]':
+              - 'cell "ID: 94 ollavels@rulersonline.com" [ref=e272]':
+                - generic [ref=e273]:
+                  - img [ref=e275]
+                  - generic [ref=e278]:
+                    - generic [ref=e279]: "ID: 94"
+                    - generic [ref=e280]: ollavels@rulersonline.com
+              - cell "jujuju" [ref=e281]:
+                - generic [ref=e282]: jujuju
+              - cell "2026-05-20 14:00:28" [ref=e283]
+              - cell "超 超级管理员" [ref=e284]:
+                - generic [ref=e285]:
+                  - generic [ref=e286]: 超
+                  - text: 超级管理员
+              - cell "查看详情 重新审核" [ref=e287]:
+                - generic [ref=e288]:
+                  - button "查看详情" [ref=e289] [cursor=pointer]:
+                    - img [ref=e290]
+                    - text: 查看详情
+                  - button "重新审核" [ref=e293] [cursor=pointer]:
+                    - img [ref=e294]
+                    - text: 重新审核
+            - 'row "ID: 67 bi__finn@rulersonline.com 2233 2026-05-19 11:04:45 超 超级管理员 查看详情 重新审核" [ref=e297]':
+              - 'cell "ID: 67 bi__finn@rulersonline.com" [ref=e298]':
+                - generic [ref=e299]:
+                  - img [ref=e301]
+                  - generic [ref=e304]:
+                    - generic [ref=e305]: "ID: 67"
+                    - generic [ref=e306]: bi__finn@rulersonline.com
+              - cell "2233" [ref=e307]:
+                - generic [ref=e308]: "2233"
+              - cell "2026-05-19 11:04:45" [ref=e309]
+              - cell "超 超级管理员" [ref=e310]:
+                - generic [ref=e311]:
+                  - generic [ref=e312]: 超
+                  - text: 超级管理员
+              - cell "查看详情 重新审核" [ref=e313]:
+                - generic [ref=e314]:
+                  - button "查看详情" [ref=e315] [cursor=pointer]:
+                    - img [ref=e316]
+                    - text: 查看详情
+                  - button "重新审核" [ref=e319] [cursor=pointer]:
+                    - img [ref=e320]
+                    - text: 重新审核
+            - 'row "ID: 64 shaakilv@mediaholy.com 22213123 2026-05-19 11:00:11 超 超级管理员 查看详情 重新审核" [ref=e323]':
+              - 'cell "ID: 64 shaakilv@mediaholy.com" [ref=e324]':
+                - generic [ref=e325]:
+                  - img [ref=e327]
+                  - generic [ref=e330]:
+                    - generic [ref=e331]: "ID: 64"
+                    - generic [ref=e332]: shaakilv@mediaholy.com
+              - cell "22213123" [ref=e333]:
+                - generic [ref=e334]: "22213123"
+              - cell "2026-05-19 11:00:11" [ref=e335]
+              - cell "超 超级管理员" [ref=e336]:
+                - generic [ref=e337]:
+                  - generic [ref=e338]: 超
+                  - text: 超级管理员
+              - cell "查看详情 重新审核" [ref=e339]:
+                - generic [ref=e340]:
+                  - button "查看详情" [ref=e341] [cursor=pointer]:
+                    - img [ref=e342]
+                    - text: 查看详情
+                  - button "重新审核" [ref=e345] [cursor=pointer]:
+                    - img [ref=e346]
+                    - text: 重新审核
+            - 'row "ID: 63 ipuviI27@rulersonline.com 222 2026-05-19 10:59:30 超 超级管理员 查看详情 重新审核" [ref=e349]':
+              - 'cell "ID: 63 ipuviI27@rulersonline.com" [ref=e350]':
+                - generic [ref=e351]:
+                  - img [ref=e353]
+                  - generic [ref=e356]:
+                    - generic [ref=e357]: "ID: 63"
+                    - generic [ref=e358]: ipuviI27@rulersonline.com
+              - cell "222" [ref=e359]:
+                - generic [ref=e360]: "222"
+              - cell "2026-05-19 10:59:30" [ref=e361]
+              - cell "超 超级管理员" [ref=e362]:
+                - generic [ref=e363]:
+                  - generic [ref=e364]: 超
+                  - text: 超级管理员
+              - cell "查看详情 重新审核" [ref=e365]:
+                - generic [ref=e366]:
+                  - button "查看详情" [ref=e367] [cursor=pointer]:
+                    - img [ref=e368]
+                    - text: 查看详情
+                  - button "重新审核" [ref=e371] [cursor=pointer]:
+                    - img [ref=e372]
+                    - text: 重新审核
+  - button "后台设置" [ref=e375] [cursor=pointer]:
+    - img [ref=e376]

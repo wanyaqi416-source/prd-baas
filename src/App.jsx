@@ -24,6 +24,7 @@ import {
   TransferOutSection,
 } from './components/prd/ManualSections'
 import { ClientAdminVisibility } from './components/prd/ClientAdminVisibility'
+import { BaasAdminReviewPrototype } from './pages/BaasAdminReviewPrototype'
 import { BaasOpeningApplicationPage } from './pages/BaasOpeningApplicationPage'
 import { BaasOpeningPrototype } from './pages/BaasOpeningPrototype'
 import { BaasAdminWorkbenchPrototype } from './pages/BaasAdminWorkbenchPrototype'
@@ -83,6 +84,7 @@ function BaasInterlacePage({ onBack }) {
 
 function App() {
   const [path, navigate] = useCurrentPath()
+  const [baasOpeningInitialStatus, setBaasOpeningInitialStatus] = useState('not_opened')
 
   if (path === '/admin/product-manual/prd-invest') {
     return <PrdInvestPage onBack={() => navigate('/')} />
@@ -111,15 +113,23 @@ function App() {
         onBack={() => navigate('/')}
         onOpenApplication={() => navigate('/admin/product-manual/baas-prototype/account-opening/create')}
         onPrototypeHome={() => navigate('/admin/product-manual/baas-prototype')}
+        initialStatus={baasOpeningInitialStatus}
       />
     )
+  }
+
+  if (path === '/admin/product-manual/baas-prototype/admin-review') {
+    return <BaasAdminReviewPrototype onBack={() => navigate('/admin/product-manual/baas-prototype')} />
   }
 
   if (path === '/admin/product-manual/baas-prototype/account-opening/create') {
     return (
       <BaasOpeningApplicationPage
         onBack={() => navigate('/admin/product-manual/baas-prototype/opening')}
-        onProceedToOpeningStatus={() => navigate('/admin/product-manual/baas-prototype/opening')}
+        onProceedToOpeningStatus={() => {
+          setBaasOpeningInitialStatus('reviewing')
+          navigate('/admin/product-manual/baas-prototype/opening')
+        }}
       />
     )
   }

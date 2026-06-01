@@ -4,7 +4,12 @@ export const personalProfileFields = [
   { key: 'birthday', sourceKey: 'dateOfBirth', label: '出生日期', systemLabel: '出生日期', baasKey: 'birthday' },
   { key: 'gender', sourceKey: 'gender', label: '性别', systemLabel: '性别', baasKey: 'gender', conversion: '男/女 → KYC M/F → BaaS MALE/FEMALE' },
   { key: 'nationality', sourceKey: 'nationality', label: '国籍', systemLabel: '国籍', baasKey: 'nationality', conversion: '三位国家码 → ISO alpha-2 两位国家码' },
+  { key: 'phoneCountryCode', sourceKey: 'phoneCountryCode', label: '电话国家代码', systemLabel: '电话国家代码', baasKey: 'phoneCountryCode', hint: '模拟从 Sumsub / 手机号国家代码读取。' },
   { key: 'phoneNumber', sourceKey: 'phoneNumber', label: '手机号', systemLabel: '手机号', baasKey: 'phone' },
+  { key: 'number', sourceKey: 'number', label: '证件号码', systemLabel: '证件号码', baasKey: 'number', hint: '模拟从 Sumsub 护照资料读取。' },
+  { key: 'issueDate', sourceKey: 'issueDate', label: '证件签发日期', systemLabel: '证件签发日期', baasKey: 'issueDate', hint: '模拟从 Sumsub 护照资料读取。' },
+  { key: 'expiryDate', sourceKey: 'expiryDate', label: '证件到期日', systemLabel: '证件到期日', baasKey: 'expiryDate', hint: '模拟从 Sumsub 护照资料读取。' },
+  { key: 'region', sourceKey: 'region', label: '地区', systemLabel: '地区', baasKey: 'region', hint: '模拟 Sumsub / 护照国家读取，当前 mock 为 HK。' },
   { key: 'addressLine1', sourceKey: 'addressLine1', label: '居住地街道地址', systemLabel: '居住地街道地址', baasKey: 'address.addressLine1' },
   { key: 'city', sourceKey: 'city', label: '居住地城市', systemLabel: '居住地城市', baasKey: 'address.city' },
   {
@@ -20,26 +25,13 @@ export const personalProfileFields = [
 ]
 
 export const personalSupplementFields = [
-  {
-    key: 'phoneCountryCode',
-    label: '电话国家代码',
-    baasKey: 'phoneCountryCode',
-    hint: '用户手机号码的国际拨号代码，仅包含数字，不包含“+”号，长度≤3。例如：86',
-    requirements: ['必需的', '长度≤3', '用户手机号码的国际拨号代码，仅包含数字，不包含“+”号，长度≤3。例如：86'],
-  },
   { key: 'identityType', label: '证件类型', baasKey: 'identityType', inputType: 'select', options: ['PASSPORT'], hint: '页面只允许选择 PASSPORT。' },
-  { key: 'number', label: '证件号码', baasKey: 'number', hint: '如果 Sumsub 已有护照号码，可由后端自动带出。' },
-  { key: 'issueDate', label: '证件签发日期', baasKey: 'issueDate', hint: '格式：yyyy-MM-dd。' },
-  { key: 'expiryDate', label: '证件到期日', baasKey: 'expiryDate', hint: '格式：yyyy-MM-dd。' },
-  { key: 'region', label: '地区', baasKey: 'region', hint: '两位地区/国家代码，例如 HK、US。' },
 ]
 
 export const attachmentFields = [
   { key: 'attachmentIdentity', label: '护照文件', baasKey: 'attachmentIdentity.fileId', required: true, hint: '仅允许上传护照文件。' },
-  { key: 'attachmentIdProof', label: '身份证明文件', baasKey: 'attachmentIdProof.fileId', required: true, hint: 'pdf / jpeg / png 格式，单个文件大小限制 8M。' },
   { key: 'selfie', label: '自拍照', baasKey: 'selfie.fileId', required: true },
   { key: 'attachmentAddress', label: '地址证明', baasKey: 'attachmentAddress.fileId', required: true },
-  { key: 'attachmentFatca', label: 'FATCA 表格', baasKey: 'attachmentFatca.fileId', required: true, hint: 'W8Ben 或 W9。' },
   { key: 'attachmentSourceOfFunds', label: '资金来源证明', baasKey: 'attachmentSourceOfFunds.fileId', required: true },
 ]
 
@@ -63,7 +55,12 @@ export const mockBaasOpeningProfile = {
   birthday: '1990-03-18',
   gender: '女',
   nationality: 'HKG',
+  phoneCountryCode: '852',
   phoneNumber: '91234567',
+  number: 'K1234567',
+  issueDate: '2020-06-01',
+  expiryDate: '2030-06-01',
+  region: 'HK',
   addressLine1: '88 Queens Road Central',
   city: 'Hong Kong',
   state: 'Hong Kong',
@@ -75,17 +72,10 @@ export const mockBaasOpeningProfile = {
 
 export function createEmptyBaasApplication() {
   return {
-    phoneCountryCode: '',
     identityType: '',
-    number: '',
-    issueDate: '',
-    expiryDate: '',
-    region: '',
     attachmentIdentity: createMockUploadedImage('mock_personal_passport_001', 'Passport.png'),
-    attachmentIdProof: createMockUploadedImage('mock_personal_id_proof_001', 'Identity Proof.png'),
     selfie: createMockUploadedImage('mock_personal_selfie_001', 'Selfie.png'),
     attachmentAddress: createMockUploadedImage('mock_personal_address_001', 'Address Proof.png'),
-    attachmentFatca: createMockUploadedImage('mock_personal_fatca_001', 'W8Ben Form.png'),
     attachmentSourceOfFunds: createMockUploadedImage('mock_personal_sof_001', 'Source of Funds.png'),
   }
 }

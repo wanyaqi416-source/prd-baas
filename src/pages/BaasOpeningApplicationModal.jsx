@@ -127,7 +127,7 @@ function SectionHeader({ title, badge, tone = 'secondary', children }) {
         <h4 className="text-base font-bold text-slate-950">{title}</h4>
         {children ? <p className="mt-1 text-sm leading-6 text-slate-500">{children}</p> : null}
       </div>
-      <Badge variant={tone}>{badge}</Badge>
+      {badge ? <Badge variant={tone}>{badge}</Badge> : null}
     </div>
   )
 }
@@ -197,12 +197,9 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-6 py-4">
       {accountType === 'enterprise' ? (
         <div className="flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-600">
-          <span>还有 {activeStats.missing} 项待补充 / {activeStats.revision} 项需修正</span>
+          <span>还有 {activeStats.missing} 项待补充</span>
           <Button type="button" onClick={() => enterpriseActions?.nextItem?.()} variant="outline" size="sm" className="rounded-lg">
             下一项
-          </Button>
-          <Button type="button" onClick={() => enterpriseActions?.openChecklist?.()} variant="outline" size="sm" className="rounded-lg">
-            查看清单
           </Button>
         </div>
       ) : <div />}
@@ -256,29 +253,6 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
               ×
             </button>
           </div>
-          {accountType === 'enterprise' ? (
-            <div className="mt-5 grid gap-3 md:grid-cols-3">
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
-                <div className="text-xs font-semibold text-emerald-700">已获取资料</div>
-                <div className="mt-1 text-2xl font-bold text-emerald-900">{activeStats.acquired} 项</div>
-              </div>
-              <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-xs font-semibold text-amber-700">待补充资料</div>
-                    <div className="mt-1 text-2xl font-bold text-amber-900">{activeStats.missing} 项</div>
-                  </div>
-                  <Button type="button" onClick={() => enterpriseActions?.openChecklist?.()} size="sm" className="rounded-lg bg-amber-600 hover:bg-amber-700">
-                    查看清单
-                  </Button>
-                </div>
-              </div>
-              <div className="rounded-xl border border-red-100 bg-red-50 p-4">
-                <div className="text-xs font-semibold text-red-700">需修正资料</div>
-                <div className="mt-1 text-2xl font-bold text-red-900">{activeStats.revision} 项</div>
-              </div>
-            </div>
-          ) : null}
         </div>
 
         <div className="overflow-auto bg-[#f8fafc] px-6 py-5">
@@ -337,7 +311,7 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
           ) : (
             <div className="mt-5 grid gap-5">
               <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <SectionHeader title="已获取资料" badge={`${sections.acquired.length} 项`} tone="success">
+                <SectionHeader title="已获取资料" tone="success">
                   系统已有资料默认只读展示，页面直接展示已自动带出的模拟资料。
                 </SectionHeader>
                 <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -348,7 +322,7 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
               </section>
 
               <section className="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm">
-                <SectionHeader title="待补充资料" badge={`${pendingCount} 项`} tone="warning">
+                <SectionHeader title="待补充资料" tone="warning">
                   当前系统缺失的 BaaS 必填字段在这里填写或上传；证件类型仅允许 PASSPORT。
                 </SectionHeader>
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">

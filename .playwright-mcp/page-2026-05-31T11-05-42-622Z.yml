@@ -1,0 +1,226 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - button "FIDERE TRUST" [ref=e5] [cursor=pointer]:
+      - img [ref=e7]
+      - generic [ref=e9]: FIDERE TRUST
+      - img [ref=e10]
+    - generic [ref=e13]:
+      - img [ref=e14]
+      - img [ref=e18]
+      - img [ref=e25]
+  - complementary [ref=e28]:
+    - navigation [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - img [ref=e32]
+          - text: KYC审核
+        - img [ref=e35]
+      - generic [ref=e37]:
+        - button "案件工作台" [ref=e38] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e43]: 案件工作台
+        - button "用户管理" [ref=e44] [cursor=pointer]:
+          - img [ref=e45]
+          - generic [ref=e49]: 用户管理
+        - button "处理中审核" [ref=e50] [cursor=pointer]:
+          - img [ref=e51]
+          - generic [ref=e54]: 处理中审核
+        - button "法币账户审核" [ref=e55] [cursor=pointer]:
+          - img [ref=e56]
+          - generic [ref=e60]: 法币账户审核
+        - button "数字资产地址审核" [ref=e61] [cursor=pointer]:
+          - img [ref=e62]
+          - generic [ref=e65]: 数字资产地址审核
+        - button "信托管理" [ref=e66] [cursor=pointer]:
+          - img [ref=e67]
+          - generic [ref=e70]: 信托管理
+        - button "审核日志" [ref=e71] [cursor=pointer]:
+          - img [ref=e72]
+          - generic [ref=e75]: 审核日志
+      - generic [ref=e76]:
+        - generic [ref=e77]:
+          - img [ref=e78]
+          - text: 运营
+        - img [ref=e81]
+      - generic [ref=e83]:
+        - button "概览" [ref=e84] [cursor=pointer]:
+          - img [ref=e85]
+          - generic [ref=e88]: 概览
+        - button "客户" [ref=e89] [cursor=pointer]:
+          - img [ref=e90]
+          - generic [ref=e93]: 客户
+        - button "资产中心" [ref=e94] [cursor=pointer]:
+          - img [ref=e95]
+          - generic [ref=e98]: 资产中心
+        - button "法币资产管理" [ref=e99] [cursor=pointer]:
+          - img [ref=e100]
+          - generic [ref=e104]: 法币资产管理
+        - button "数字资产管理" [ref=e105] [cursor=pointer]:
+          - img [ref=e106]
+          - generic [ref=e109]: 数字资产管理
+        - button "理财产品" [ref=e110] [cursor=pointer]:
+          - img [ref=e111]
+          - generic [ref=e114]: 理财产品
+        - button "交易管理" [ref=e115] [cursor=pointer]:
+          - img [ref=e116]
+          - generic [ref=e119]: 交易管理
+        - button "费率中心" [ref=e120] [cursor=pointer]:
+          - img [ref=e121]
+          - generic [ref=e125]: 费率中心
+  - main [ref=e126]:
+    - generic [ref=e127]:
+      - generic [ref=e128]:
+        - generic [ref=e129]:
+          - generic [ref=e130]: 通过总数
+          - generic [ref=e131]: "89"
+          - generic [ref=e132]: 已通过KYC审核
+          - img [ref=e134]
+        - generic [ref=e138]:
+          - generic [ref=e139]: 活跃账户
+          - generic [ref=e140]: "37"
+          - generic [ref=e141]: 账户已启用
+          - img [ref=e143]
+        - generic [ref=e147]:
+          - generic [ref=e148]: 暂停账户
+          - generic [ref=e149]: "1"
+          - generic [ref=e150]: 账户已暂停
+          - img [ref=e152]
+      - generic [ref=e154]:
+        - generic [ref=e155]:
+          - heading "用户管理" [level=1] [ref=e156]
+          - paragraph [ref=e157]: 已通过KYC审核的活跃用户账户
+        - generic [ref=e158]:
+          - generic [ref=e159]:
+            - img [ref=e160]
+            - textbox [ref=e163]:
+              - /placeholder: 搜索用户名、ID或客户编号...
+          - generic [ref=e164]:
+            - generic [ref=e165]: 账户状态
+            - img [ref=e166]
+        - table [ref=e169]:
+          - rowgroup [ref=e170]:
+            - row "客户信息 申请类型 通过时间 账户状态 最后活动 操作" [ref=e171]:
+              - columnheader "客户信息" [ref=e172]
+              - columnheader "申请类型" [ref=e173]
+              - columnheader "通过时间" [ref=e174]
+              - columnheader "账户状态" [ref=e175]
+              - columnheader "最后活动" [ref=e176]
+              - columnheader "操作" [ref=e177]
+          - rowgroup [ref=e178]:
+            - 'row "jwy jin wu ye ID: 130 orvafrew@123mails.org 个人 2026-05-21 15:19:02 2026-05-28 10:26:51 查看详情 修改密码" [ref=e179]':
+              - 'cell "jwy jin wu ye ID: 130 orvafrew@123mails.org" [ref=e180]':
+                - generic [ref=e181]:
+                  - generic [ref=e182]: jwy
+                  - generic [ref=e183]:
+                    - generic [ref=e184]: jin wu ye
+                    - generic [ref=e185]: "ID: 130"
+                    - generic [ref=e186]: orvafrew@123mails.org
+              - cell "个人" [ref=e187]:
+                - generic [ref=e188]:
+                  - img [ref=e189]
+                  - text: 个人
+              - cell "2026-05-21 15:19:02" [ref=e192]
+              - cell [ref=e193]
+              - cell "2026-05-28 10:26:51" [ref=e194]
+              - cell "查看详情 修改密码" [ref=e195]:
+                - generic [ref=e196]:
+                  - button "查看详情" [ref=e197] [cursor=pointer]:
+                    - img [ref=e198]
+                    - text: 查看详情
+                  - button "修改密码" [ref=e201] [cursor=pointer]:
+                    - img [ref=e202]
+                    - text: 修改密码
+            - 'row "wt wanyara test ID: 120 tougzguy75@pdf-cutter.com 个人 2026-05-20 16:47:23 2026-05-21 17:51:35 查看详情 修改密码" [ref=e205]':
+              - 'cell "wt wanyara test ID: 120 tougzguy75@pdf-cutter.com" [ref=e206]':
+                - generic [ref=e207]:
+                  - generic [ref=e208]: wt
+                  - generic [ref=e209]:
+                    - generic [ref=e210]: wanyara test
+                    - generic [ref=e211]: "ID: 120"
+                    - generic [ref=e212]: tougzguy75@pdf-cutter.com
+              - cell "个人" [ref=e213]:
+                - generic [ref=e214]:
+                  - img [ref=e215]
+                  - text: 个人
+              - cell "2026-05-20 16:47:23" [ref=e218]
+              - cell [ref=e219]
+              - cell "2026-05-21 17:51:35" [ref=e220]
+              - cell "查看详情 修改密码" [ref=e221]:
+                - generic [ref=e222]:
+                  - button "查看详情" [ref=e223] [cursor=pointer]:
+                    - img [ref=e224]
+                    - text: 查看详情
+                  - button "修改密码" [ref=e227] [cursor=pointer]:
+                    - img [ref=e228]
+                    - text: 修改密码
+            - 'row "y yarafivewewe ID: 110 nr5bob@mediaeast.uk 企业 2026-05-19 14:12:22 2026-05-29 15:18:34 查看详情 修改密码" [ref=e231]':
+              - 'cell "y yarafivewewe ID: 110 nr5bob@mediaeast.uk" [ref=e232]':
+                - generic [ref=e233]:
+                  - generic [ref=e234]: "y"
+                  - generic [ref=e235]:
+                    - generic [ref=e236]: yarafivewewe
+                    - generic [ref=e237]: "ID: 110"
+                    - generic [ref=e238]: nr5bob@mediaeast.uk
+              - cell "企业" [ref=e239]:
+                - generic [ref=e240]:
+                  - img [ref=e241]
+                  - text: 企业
+              - cell "2026-05-19 14:12:22" [ref=e244]
+              - cell [ref=e245]
+              - cell "2026-05-29 15:18:34" [ref=e246]
+              - cell "查看详情 修改密码" [ref=e247]:
+                - generic [ref=e248]:
+                  - button "查看详情" [ref=e249] [cursor=pointer]:
+                    - img [ref=e250]
+                    - text: 查看详情
+                  - button "修改密码" [ref=e253] [cursor=pointer]:
+                    - img [ref=e254]
+                    - text: 修改密码
+            - 'row "2 2342 ID: 98 ac1yanch@gongjua.com 企业 2026-05-13 17:13:39 2026-05-19 17:04:53 查看详情 修改密码" [ref=e257]':
+              - 'cell "2 2342 ID: 98 ac1yanch@gongjua.com" [ref=e258]':
+                - generic [ref=e259]:
+                  - generic [ref=e260]: "2"
+                  - generic [ref=e261]:
+                    - generic [ref=e262]: "2342"
+                    - generic [ref=e263]: "ID: 98"
+                    - generic [ref=e264]: ac1yanch@gongjua.com
+              - cell "企业" [ref=e265]:
+                - generic [ref=e266]:
+                  - img [ref=e267]
+                  - text: 企业
+              - cell "2026-05-13 17:13:39" [ref=e270]
+              - cell [ref=e271]
+              - cell "2026-05-19 17:04:53" [ref=e272]
+              - cell "查看详情 修改密码" [ref=e273]:
+                - generic [ref=e274]:
+                  - button "查看详情" [ref=e275] [cursor=pointer]:
+                    - img [ref=e276]
+                    - text: 查看详情
+                  - button "修改密码" [ref=e279] [cursor=pointer]:
+                    - img [ref=e280]
+                    - text: 修改密码
+            - 'row "ll luzhuo lu ID: 86 luzhuo.lu@example.com 个人 2026-05-12 09:28:41 2026-05-18 12:40:08 查看详情 修改密码" [ref=e283]':
+              - 'cell "ll luzhuo lu ID: 86 luzhuo.lu@example.com" [ref=e284]':
+                - generic [ref=e285]:
+                  - generic [ref=e286]: ll
+                  - generic [ref=e287]:
+                    - generic [ref=e288]: luzhuo lu
+                    - generic [ref=e289]: "ID: 86"
+                    - generic [ref=e290]: luzhuo.lu@example.com
+              - cell "个人" [ref=e291]:
+                - generic [ref=e292]:
+                  - img [ref=e293]
+                  - text: 个人
+              - cell "2026-05-12 09:28:41" [ref=e296]
+              - cell [ref=e297]
+              - cell "2026-05-18 12:40:08" [ref=e298]
+              - cell "查看详情 修改密码" [ref=e299]:
+                - generic [ref=e300]:
+                  - button "查看详情" [ref=e301] [cursor=pointer]:
+                    - img [ref=e302]
+                    - text: 查看详情
+                  - button "修改密码" [ref=e305] [cursor=pointer]:
+                    - img [ref=e306]
+                    - text: 修改密码
+  - button "后台设置" [ref=e309] [cursor=pointer]:
+    - img [ref=e310]
