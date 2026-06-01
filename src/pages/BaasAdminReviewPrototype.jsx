@@ -136,6 +136,7 @@ const reviewFieldGroups = [
 
 const attachmentRows = [
   { name: '护照文件', fileName: 'passport-wanyara-wan.pdf', status: '已上传' },
+  { name: '身份证明文件', fileName: 'identity-proof-wanyara-wan.pdf', status: '已上传' },
   { name: '自拍照', fileName: 'selfie-wanyara-wan.jpg', status: '已上传' },
   { name: '地址证明', fileName: 'address-proof-hk.pdf', status: '已上传' },
   { name: '资金来源证明', fileName: 'source-of-funds.pdf', status: '已上传' },
@@ -158,8 +159,10 @@ const transferRows = [
     toAccount: '美国账户',
     currency: 'USD',
     amount: 'USD 1.00',
+    transferAmount: 'USD 1.00',
     fee: 'USD 15.00',
     estimatedArrival: 'USD 0.00',
+    actualArrivalAmount: 'USD 1.00',
     status: '待审核',
     submittedAt: '2026-05-31 18:04',
     completedAt: '',
@@ -171,8 +174,10 @@ const transferRows = [
     toAccount: '香港账户',
     currency: 'USD',
     amount: 'USD 8.00',
+    transferAmount: 'USD 8.00',
     fee: 'USD 15.00',
     estimatedArrival: 'USD 0.00',
+    actualArrivalAmount: 'USD 8.00',
     status: '已完成',
     submittedAt: '2026-05-31 18:16',
     completedAt: '2026-05-31 19:08',
@@ -184,8 +189,10 @@ const transferRows = [
     toAccount: '美国账户',
     currency: 'USD',
     amount: 'USD 3.00',
+    transferAmount: 'USD 3.00',
     fee: 'USD 15.00',
     estimatedArrival: 'USD 0.00',
+    actualArrivalAmount: 'USD 3.00',
     status: '已拒绝',
     submittedAt: '2026-05-31 18:29',
     completedAt: '2026-05-31 19:20',
@@ -214,13 +221,14 @@ const incomingClaimRows = [
     submittedAt: '2026-05-22 18:53:41',
     accountType: '美国账户',
     currencyAmount: 'USD 12',
+    claimableAmount: 'USD 12',
     payer: 'JW',
     channel: '电汇',
     referenceNo: '-',
     voucher: '-',
     matchedCustomer: 'yejin',
     matchStatus: '已匹配',
-    status: '已拒绝',
+    status: '待审核',
   },
   {
     id: 'IC-20260520-001',
@@ -244,7 +252,9 @@ const withdrawalApprovalRows = [
     customer: { name: 'yejin', id: '130', email: 'orvafrew@123mails.org' },
     accountType: '香港账户',
     currencyAmount: 'HKD 10',
+    transferAmount: 'HKD 10',
     fee: 'HKD 2',
+    actualArrivalAmount: 'HKD 8',
     recipient: 'JW',
     purpose: '未知',
     status: '待处理',
@@ -257,7 +267,9 @@ const withdrawalApprovalRows = [
     customer: { name: 'QIXUE', id: '4', email: 'voigtus1@123mails.org' },
     accountType: '美国账户',
     currencyAmount: 'USD 11',
+    transferAmount: 'USD 11',
     fee: 'USD 2.2',
+    actualArrivalAmount: 'USD 8.8',
     recipient: 'YQ',
     purpose: '未知',
     status: '待处理',
@@ -270,7 +282,9 @@ const withdrawalApprovalRows = [
     customer: { name: 'wanyara', id: '120', email: 'wanyara@example.com' },
     accountType: '香港账户',
     currencyAmount: 'USD 4',
+    transferAmount: 'USD 4',
     fee: 'USD 0.8',
+    actualArrivalAmount: 'USD 3.2',
     recipient: 'JW',
     purpose: '未知',
     status: '处理完成',
@@ -283,7 +297,9 @@ const withdrawalApprovalRows = [
     customer: { name: '2342', id: '98', email: 'ac1yanch@gongjua.com' },
     accountType: '美国账户',
     currencyAmount: 'USD 100',
+    transferAmount: 'USD 100',
     fee: 'USD 3',
+    actualArrivalAmount: 'USD 97',
     recipient: '忘记时间',
     purpose: '未知',
     status: '已拒绝',
@@ -304,7 +320,7 @@ const initialFeeConfigs = [
   { id: '65', email: 'vigze5606@justdefinition.com', mode: 'platform', value: '使用平台默认', usePlatformDefault: true },
   { id: '34', email: 'perumily2@mediaholy.com', mode: 'percent', value: '0.20%', usePlatformDefault: false },
   { id: '6', email: 'wanyaqi416@gmail.com', mode: 'fixed', value: 'USD 15.00', usePlatformDefault: false },
-  { id: '4', email: 'voigtus1@123mails.org', mode: 'platform', value: '使用平台默认', usePlatformDefault: true },
+  { id: '4', email: 'voigtus1@123mails.org', mode: 'combo', value: 'USD 10.00 + 0.20%', usePlatformDefault: false },
 ]
 
 const fiatTabs = ['总览', '客户资产', '流水查询', '入账认领', '出金审批', '资金互转', '对账中心']
@@ -406,7 +422,7 @@ function Sidebar({ activePage, onSelect }) {
           <SidebarItem icon={CircleDot} label="数字资产管理" />
           <SidebarItem icon={LineChart} label="理财产品" />
           <SidebarItem icon={CircleDot} label="交易管理" />
-          <SidebarItem icon={Percent} label="资金互转手续费配置" marked active={activePage === 'fee-config'} onClick={() => onSelect('fee-config')} />
+          <SidebarItem icon={Percent} label="提现服务费配置" marked active={activePage === 'fee-config'} onClick={() => onSelect('fee-config')} />
         </div>
       </nav>
     </aside>
@@ -619,11 +635,18 @@ function OpeningReviewPage({ onOpenDetail, onOpenProcess }) {
   )
 }
 
-function ReviewFieldCard({ label, value, note }) {
+function ReviewFieldCard({ label, value, note, editable = false }) {
   return (
     <div className="min-h-[82px] rounded-[5px] border border-[#e2e4ec] bg-[#fbfbfd] p-[14px]">
       <div className="text-[12px] text-[#66677f]">{label}</div>
-      <div className="mt-[8px] text-[13px] font-semibold text-[#24243d]">{value}</div>
+      {editable ? (
+        <input
+          defaultValue={value}
+          className="mt-[8px] h-[34px] w-full rounded-[4px] border border-[#cfd1dc] bg-white px-[10px] text-[13px] font-semibold text-[#24243d] outline-none focus:border-[#8b4fff]"
+        />
+      ) : (
+        <div className="mt-[8px] text-[13px] font-semibold text-[#24243d]">{value}</div>
+      )}
       {note ? <div className="mt-[8px] text-[12px] leading-[18px] text-[#8a8ca0]">{note}</div> : null}
     </div>
   )
@@ -636,7 +659,7 @@ function OpeningReviewDecisionCard() {
         <FileCheck2 className="h-[17px] w-[17px] text-[#8b4fff]" />
         审核决定
       </div>
-      <div className="mt-[14px] text-[12px] text-[#55556e]">请选择审核决定</div>
+      <div className="mt-[14px] text-[12px] leading-[20px] text-[#55556e]">提交审核前可先修改右侧用户资料；确认后保存修改并提交审核结论。</div>
       <label className="mt-[10px] flex h-[46px] items-center justify-between rounded-[5px] border border-[#8b4fff] bg-white px-[12px] text-[13px] font-semibold text-[#20213a]">
         <span>通过审核</span>
         <ChevronDown className="h-[16px] w-[16px] text-[#55556e]" />
@@ -644,7 +667,7 @@ function OpeningReviewDecisionCard() {
       <textarea className="mt-[10px] h-[94px] w-full resize-none rounded-[5px] border border-[#d8d9e3] bg-white px-[12px] py-[10px] text-[13px] outline-none focus:border-[#8b4fff]" placeholder="审核备注" />
       <button type="button" className="mt-[12px] flex h-[38px] w-full items-center justify-center gap-[8px] rounded-[5px] bg-[#bda2f9] text-[13px] font-semibold text-white hover:bg-[#9b63f5]">
         <FileCheck2 className="h-[15px] w-[15px]" />
-        确认提交
+        保存修改并提交审核
       </button>
     </Panel>
   )
@@ -704,7 +727,7 @@ function OpeningReviewDetailPage({ onBack, mode = 'detail' }) {
               </div>
               <div className="grid grid-cols-3 gap-[10px]">
                 {group.fields.map((field) => (
-                  <ReviewFieldCard key={field.label} {...field} />
+                  <ReviewFieldCard key={field.label} {...field} editable={isProcess} />
                 ))}
               </div>
             </Panel>
@@ -808,9 +831,8 @@ function TransferAuditDrawer({ record, onClose }) {
     ['转出账户', record.fromAccount],
     ['转入账户', record.toAccount],
     ['币种', record.currency],
-    ['金额', record.amount],
-    ['手续费', record.fee],
-    ['预估到账', record.estimatedArrival],
+    ['转账金额', record.transferAmount || record.amount],
+    ['实际到账金额', record.actualArrivalAmount || record.estimatedArrival],
     ['提交时间', record.submittedAt],
   ]
 
@@ -842,7 +864,7 @@ function TransferAuditDrawer({ record, onClose }) {
                 <span className="flex h-[26px] w-[26px] items-center justify-center rounded-[5px] bg-[#f4a600] text-[13px] font-bold text-white">!</span>
                 <span className="text-[13px] text-[#55556e]">资金互转申请</span>
               </div>
-              <div className="text-[13px] font-semibold text-[#20213a]">{record.amount}</div>
+              <div className="text-[13px] font-semibold text-[#20213a]">{record.transferAmount || record.amount}</div>
             </div>
           </div>
 
@@ -1079,6 +1101,7 @@ function FiatFilterPanel({ variant = 'default' }) {
 
 function IncomingClaimDrawer({ record, onClose }) {
   if (!record) return null
+  const isPending = record.status === '待审核'
 
   return (
     <DrawerShell
@@ -1094,9 +1117,23 @@ function IncomingClaimDrawer({ record, onClose }) {
       <div className="space-y-[12px]">
         <div className="rounded-[5px] bg-[#d8f0ff] px-[14px] py-[13px]">
           <div className="flex items-center justify-between">
-            <span className="text-[13px] text-[#55556e]">来账金额</span>
+            <span className="text-[13px] text-[#55556e]">原始来账金额</span>
             <span className="text-[13px] font-semibold text-[#20213a]">{record.currencyAmount}</span>
           </div>
+          {isPending ? (
+            <label className="mt-[12px] block">
+              <span className="text-[12px] font-semibold text-[#2586d9]">可认领入账金额</span>
+              <input
+                defaultValue={record.claimableAmount || record.currencyAmount}
+                className="mt-[7px] h-[38px] w-full rounded-[4px] border border-[#8ac9ff] bg-white px-[10px] text-[13px] font-semibold text-[#20213a] outline-none focus:border-[#2586d9]"
+              />
+            </label>
+          ) : (
+            <div className="mt-[9px] flex items-center justify-between border-t border-[#bde5ff] pt-[9px]">
+              <span className="text-[13px] text-[#55556e]">实际入账金额</span>
+              <span className="text-[13px] font-semibold text-[#20213a]">{record.claimableAmount || record.currencyAmount}</span>
+            </div>
+          )}
         </div>
         <div className="rounded-[5px] bg-white px-[12px] py-[12px] shadow-sm">
           {[
@@ -1189,8 +1226,12 @@ function WithdrawalApprovalDrawer({ record, onClose }) {
       <div className="space-y-[12px]">
         <div className="rounded-[5px] bg-[#fff1d6] px-[14px] py-[13px]">
           <div className="flex items-center justify-between">
-            <span className="text-[13px] text-[#55556e]">出金金额</span>
-            <span className="text-[13px] font-semibold text-[#20213a]">{record.currencyAmount}</span>
+            <span className="text-[13px] text-[#55556e]">转账金额</span>
+            <span className="text-[13px] font-semibold text-[#20213a]">{record.transferAmount || record.currencyAmount}</span>
+          </div>
+          <div className="mt-[9px] flex items-center justify-between border-t border-[#ffd894] pt-[9px]">
+            <span className="text-[13px] text-[#55556e]">实际到账金额</span>
+            <span className="text-[13px] font-semibold text-[#20213a]">{record.actualArrivalAmount || record.currencyAmount}</span>
           </div>
         </div>
         <div className="rounded-[5px] bg-white px-[12px] py-[12px] shadow-sm">
@@ -1201,10 +1242,12 @@ function WithdrawalApprovalDrawer({ record, onClose }) {
           </div>
           {[
             ['账户类型', record.accountType],
+            ['转账金额', record.transferAmount || record.currencyAmount],
+            ['实际到账金额', record.actualArrivalAmount || record.currencyAmount],
             ['收款人', record.recipient],
             ['用途', record.purpose],
             ['申请时间', record.appliedAt],
-            ['出金手续费', record.fee],
+            ['出金服务费', record.fee],
             ['状态', record.status],
             ...(record.rejectReason ? [['拒绝原因', record.rejectReason]] : []),
           ].map(([label, value]) => (
@@ -1236,7 +1279,7 @@ function WithdrawalApprovalPanel({ onOpenRecord }) {
           <table className="min-w-[1180px] w-full border-collapse text-left text-[13px] text-[#55556e]">
             <thead>
               <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
-                {['申请时间', '客户', '账户类型', '币种/金额', '出金手续费', '收款人', '用途', '状态', '操作'].map((item) => (
+                {['申请时间', '客户', '账户类型', '转账金额', '出金服务费', '实际到账金额', '收款人', '用途', '状态', '操作'].map((item) => (
                   <th key={item} className="px-[18px]">{item}</th>
                 ))}
               </tr>
@@ -1253,8 +1296,9 @@ function WithdrawalApprovalPanel({ onOpenRecord }) {
                     </div>
                   </td>
                   <td className="px-[18px] font-semibold text-[#20213a]">{row.accountType}</td>
-                  <td className="px-[18px]">{row.currencyAmount}</td>
+                  <td className="px-[18px]">{row.transferAmount || row.currencyAmount}</td>
                   <td className="px-[18px]">{row.fee}</td>
+                  <td className="px-[18px]">{row.actualArrivalAmount || row.currencyAmount}</td>
                   <td className="px-[18px]">{row.recipient}</td>
                   <td className="px-[18px]">{row.purpose}</td>
                   <td className="px-[18px]"><StatusBadge tone={fiatStatusTone(row.status)}>{row.status}</StatusBadge></td>
@@ -1275,7 +1319,7 @@ function FiatTransferPanel({ onOpenRecord }) {
       <FiatFilterPanel />
       <Panel className="mt-[21px] overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="min-w-[1450px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+        <table className="min-w-[1360px] w-full border-collapse text-left text-[13px] text-[#55556e]">
           <thead>
             <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
               <th className="px-[18px]">申请编号</th>
@@ -1283,9 +1327,8 @@ function FiatTransferPanel({ onOpenRecord }) {
               <th className="px-[18px]">转出账户</th>
               <th className="px-[18px]">转入账户</th>
               <th className="px-[18px]">币种</th>
-              <th className="px-[18px]">金额</th>
-              <th className="px-[18px]">手续费</th>
-              <th className="px-[18px]">预估到账</th>
+              <th className="px-[18px]">转账金额</th>
+              <th className="px-[18px]">实际到账金额</th>
               <th className="px-[18px]">状态</th>
               <th className="px-[18px]">提交时间</th>
               <th className="px-[18px]">完成时间</th>
@@ -1306,9 +1349,8 @@ function FiatTransferPanel({ onOpenRecord }) {
                 <td className="px-[18px]">{row.fromAccount}</td>
                 <td className="px-[18px]">{row.toAccount}</td>
                 <td className="px-[18px]">{row.currency}</td>
-                <td className="px-[18px]">{row.amount}</td>
-                <td className="px-[18px]">{row.fee}</td>
-                <td className="px-[18px]">{row.estimatedArrival}</td>
+                <td className="px-[18px]">{row.transferAmount || row.amount}</td>
+                <td className="px-[18px]">{row.actualArrivalAmount || row.estimatedArrival}</td>
                 <td className="px-[18px]"><StatusBadge tone={transferStatusTone(row.status)}>{row.status}</StatusBadge></td>
                 <td className="px-[18px]">{row.submittedAt}</td>
                 <td className="px-[18px]">{row.completedAt || ''}</td>
@@ -1396,6 +1438,7 @@ function FiatAssetManagementPage() {
 function modeLabel(mode) {
   if (mode === 'percent') return '百分比'
   if (mode === 'fixed') return '固定金额'
+  if (mode === 'combo') return '固定手续费 + 百分比'
   return '平台默认'
 }
 
@@ -1406,7 +1449,7 @@ function FeeConfigModal({ draft, onChange, onClose, onSave, editingFee }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-[8px] text-[15px] font-semibold text-[#20213a]">
             <Plus className="h-[16px] w-[16px]" />
-            {editingFee ? '编辑资金互转手续费配置' : '新增资金互转手续费配置'}
+            {editingFee ? '编辑提现服务费配置' : '新增提现服务费配置'}
           </div>
           <button type="button" onClick={onClose} className="rounded-[4px] p-[7px] text-[#66677f] hover:bg-[#f6f7fb]">
             <X className="h-[16px] w-[16px]" />
@@ -1421,11 +1464,17 @@ function FeeConfigModal({ draft, onChange, onClose, onSave, editingFee }) {
             <option value="platform">使用平台默认</option>
             <option value="percent">百分比</option>
             <option value="fixed">固定金额</option>
+            <option value="combo">固定手续费 + 百分比</option>
           </select>
           {draft.mode !== 'platform' ? (
-            <input value={draft.value} onChange={(event) => onChange({ ...draft, value: event.target.value })} className="h-[48px] w-full rounded-[4px] border border-[#cfd1dc] px-[12px] text-[13px] outline-none" placeholder={draft.mode === 'percent' ? '百分比值，例如 0.3' : '固定金额，例如 15.00'} />
+            <input
+              value={draft.value}
+              onChange={(event) => onChange({ ...draft, value: event.target.value })}
+              className="h-[48px] w-full rounded-[4px] border border-[#cfd1dc] px-[12px] text-[13px] outline-none"
+              placeholder={draft.mode === 'percent' ? '百分比值，例如 0.3' : draft.mode === 'combo' ? '固定金额 + 百分比，例如 10.00 + 0.20' : '固定金额，例如 15.00'}
+            />
           ) : null}
-          <div className="rounded-[5px] bg-[#e7f5ff] px-[14px] py-[12px] text-[13px] text-[#2586d9]">未单独设置的用户，将默认使用平台级资金互转手续费配置。</div>
+          <div className="rounded-[5px] bg-[#e7f5ff] px-[14px] py-[12px] text-[13px] text-[#2586d9]">未单独设置的用户，将默认使用平台级提现服务费配置；可配置固定金额、百分比，或固定手续费 + 百分比组合。</div>
         </div>
 
         <div className="mt-[18px] flex justify-end gap-[10px]">
@@ -1458,7 +1507,14 @@ function FeeConfigPage() {
   }
 
   const saveConfig = () => {
-    const value = draft.mode === 'platform' ? '使用平台默认' : draft.mode === 'percent' ? `${draft.value}%` : `USD ${draft.value}`
+    const normalizedDraftValue = String(draft.value || '').replace(/%+$/g, '')
+    const value = draft.mode === 'platform'
+      ? '使用平台默认'
+      : draft.mode === 'percent'
+        ? `${normalizedDraftValue}%`
+        : draft.mode === 'combo'
+          ? `USD ${normalizedDraftValue}%`
+          : `USD ${draft.value}`
     const nextConfig = {
       id: selectedCustomer.id,
       email: selectedCustomer.email,
@@ -1479,16 +1535,16 @@ function FeeConfigPage() {
   return (
     <AdminShell>
       <Panel className="px-[18px] py-[22px]">
-        <PageTitle title="资金互转手续费配置" subtitle="设置平台级默认手续费，并为指定用户配置百分比或固定金额。" />
+        <PageTitle title="提现服务费配置" subtitle="设置平台级默认服务费，并为指定用户配置固定金额、百分比或组合收费。" />
       </Panel>
 
       <div className="mt-[21px] grid grid-cols-[360px_1fr] gap-[18px]">
         <Panel className="p-[18px]">
           <div className="mb-[16px] flex items-center gap-[8px] text-[14px] font-semibold text-[#20213a]">
             <Percent className="h-[17px] w-[17px] text-[#8b4fff]" />
-            平台级手续费设置
+            平台级服务费设置
           </div>
-          <div className="grid grid-cols-2 gap-[10px]">
+          <div className="grid grid-cols-3 gap-[10px]">
             <div className="rounded-[5px] border border-[#8b4fff] bg-[#f6f0ff] p-[14px]">
               <div className="text-[12px] text-[#66677f]">固定金额</div>
               <div className="mt-[8px] text-[22px] font-bold text-[#20213a]">USD 15.00</div>
@@ -1499,13 +1555,18 @@ function FeeConfigPage() {
               <div className="mt-[8px] text-[22px] font-bold text-[#20213a]">0.30%</div>
               <div className="mt-[6px] text-[12px] text-[#66677f]">备选配置</div>
             </div>
+            <div className="rounded-[5px] border border-[#e2e4ec] bg-white p-[14px]">
+              <div className="text-[12px] text-[#66677f]">固定 + 百分比</div>
+              <div className="mt-[8px] text-[18px] font-bold text-[#20213a]">USD 10 + 0.20%</div>
+              <div className="mt-[6px] text-[12px] text-[#66677f]">组合配置</div>
+            </div>
           </div>
-          <div className="mt-[14px] rounded-[5px] bg-[#f6f7fb] p-[14px] text-[13px] leading-[22px] text-[#66677f]">未设置用户将默认使用平台级固定金额 USD 15.00。</div>
+          <div className="mt-[14px] rounded-[5px] bg-[#f6f7fb] p-[14px] text-[13px] leading-[22px] text-[#66677f]">未设置用户将默认使用平台级固定金额 USD 15.00；服务费规则用于提现/法币转出场景。</div>
         </Panel>
 
         <Panel className="px-[15px] pb-[18px] pt-[21px]">
           <div className="flex items-center justify-between px-[4px]">
-            <PageTitle title="用户级配置" subtitle="支持按用户覆盖平台默认手续费规则" />
+            <PageTitle title="用户级配置" subtitle="支持按用户覆盖平台默认服务费规则" />
             <PrimaryButton icon={Plus} onClick={openCreate}>新增</PrimaryButton>
           </div>
           <div className="mt-[21px] flex items-center gap-[12px]">
@@ -1520,7 +1581,7 @@ function FeeConfigPage() {
                   <th className="px-[18px]">用户 ID</th>
                   <th className="px-[18px]">邮箱</th>
                   <th className="px-[18px]">计费方式</th>
-                  <th className="px-[18px]">固定金额或百分比</th>
+                  <th className="px-[18px]">服务费规则</th>
                   <th className="px-[18px]">是否使用平台默认</th>
                   <th className="px-[18px]">操作</th>
                 </tr>

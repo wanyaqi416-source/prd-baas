@@ -30,6 +30,7 @@ export const personalSupplementFields = [
 
 export const attachmentFields = [
   { key: 'attachmentIdentity', label: '护照文件', baasKey: 'attachmentIdentity.fileId', required: true, hint: '仅允许上传护照文件。' },
+  { key: 'identityProof', label: '身份证明文件', baasKey: 'identityProof.fileId', required: true },
   { key: 'selfie', label: '自拍照', baasKey: 'selfie.fileId', required: true },
   { key: 'attachmentAddress', label: '地址证明', baasKey: 'attachmentAddress.fileId', required: true },
   { key: 'attachmentSourceOfFunds', label: '资金来源证明', baasKey: 'attachmentSourceOfFunds.fileId', required: true },
@@ -72,8 +73,9 @@ export const mockBaasOpeningProfile = {
 
 export function createEmptyBaasApplication() {
   return {
-    identityType: '',
+    identityType: 'PASSPORT',
     attachmentIdentity: createMockUploadedImage('mock_personal_passport_001', 'Passport.png'),
+    identityProof: createMockUploadedImage('mock_personal_identity_proof_001', 'Identity Proof.png'),
     selfie: createMockUploadedImage('mock_personal_selfie_001', 'Selfie.png'),
     attachmentAddress: createMockUploadedImage('mock_personal_address_001', 'Address Proof.png'),
     attachmentSourceOfFunds: createMockUploadedImage('mock_personal_sof_001', 'Source of Funds.png'),

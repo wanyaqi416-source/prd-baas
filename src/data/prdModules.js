@@ -77,7 +77,7 @@ export const baasPrototypeEntries = [
   },
   {
     title: '后台审核',
-    description: '开户审核、法币资产管理、资金互转手续费配置等 Admin 原型入口。',
+    description: '开户审核、法币资产管理、提现服务费配置等 Admin 原型入口。',
     route: '/admin/product-manual/baas-prototype/admin-review',
     buttonLabel: '进入后台审核原型',
   },

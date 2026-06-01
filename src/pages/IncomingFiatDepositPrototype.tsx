@@ -249,6 +249,14 @@ export function IncomingFiatDepositPrototype({ onBack }: { onBack: () => void })
   const activeRemittingBank = whitelistBanks[selectedRemittingBankId]
   const activeRecords = records[accountType][currency]
 
+  const changeAccountType = (nextType: AccountType) => {
+    setAccountType(nextType)
+    if (nextType === 'us') {
+      setCurrency('USD')
+      form.setFieldsValue({ currency: 'USD' })
+    }
+  }
+
   const balanceHint = useMemo(() => {
     const pending = activeRecords
       .filter((record) => record.status === 'UNDER_REVIEW')
@@ -260,7 +268,7 @@ export function IncomingFiatDepositPrototype({ onBack }: { onBack: () => void })
   }, [activeRecords])
 
   const submitDeposit = (values: { amount: number; currency: Currency; purpose: string; source_of_funds: string; reference_note?: string }) => {
-    const submitCurrency = values.currency
+    const submitCurrency = accountType === 'us' ? 'USD' : values.currency
     const receivingBank = receivingBankAccounts[accountType][submitCurrency]
     const nextRecord: IncomingRecord = {
       id: `TXN-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${Date.now().toString(16).slice(-8)}`,
@@ -419,7 +427,7 @@ export function IncomingFiatDepositPrototype({ onBack }: { onBack: () => void })
               <span className="text-sm font-semibold text-slate-700">选择账户</span>
               <Tabs
                 activeKey={accountType}
-                onChange={(key) => setAccountType(key as AccountType)}
+                onChange={(key) => changeAccountType(key as AccountType)}
                 items={[
                   { key: 'hk', label: '香港账户' },
                   { key: 'us', label: '美国账户' },
@@ -435,29 +443,6 @@ export function IncomingFiatDepositPrototype({ onBack }: { onBack: () => void })
         <Row gutter={[20, 20]} align="top">
           <Col xs={24} lg={16}>
             <Space direction="vertical" size={20} style={{ width: '100%' }}>
-              <Card
-                title={<Space><BankOutlined />选择打款银行</Space>}
-                extra={<Select value={selectedRemittingBankId} onChange={setSelectedRemittingBankId} style={{ width: 260 }} placeholder="选择银行" options={Object.values(whitelistBanks).map((bank) => ({ value: bank.id, label: bank.label }))} />}
-                className="rounded-2xl border-blue-300 shadow-[0_8px_24px_rgba(37,99,235,0.16)]"
-              >
-                <Row gutter={28}>
-                  <Col xs={24} md={12}>
-                    <Typography.Title level={5}>白名单银行信息</Typography.Title>
-                    <FieldRow label="银行名称" value={activeRemittingBank.bank_name} />
-                    <FieldRow label="SWIFT代码" value={activeRemittingBank.swift_code} />
-                    <FieldRow label="路由号码" value={activeRemittingBank.routing_number} />
-                    <FieldRow label="银行地址" value={activeRemittingBank.bank_address} />
-                  </Col>
-                  <Col xs={24} md={12}>
-                    <Typography.Title level={5}>打款账户信息</Typography.Title>
-                    <FieldRow label="账户名称" value={activeRemittingBank.account_name} />
-                    <FieldRow label="账户号码" value={activeRemittingBank.account_number} />
-                    <FieldRow label="国家/地区" value={activeRemittingBank.country} />
-                    <FieldRow label="城市" value={activeRemittingBank.city} />
-                  </Col>
-                </Row>
-              </Card>
-
               <Card title={<Space><BankOutlined />收款银行信息 · {accountLabels[accountType]}</Space>} className="rounded-2xl border-slate-200 shadow-sm">
                 <Row gutter={28}>
                   <Col xs={24} md={12}>
@@ -479,16 +464,28 @@ export function IncomingFiatDepositPrototype({ onBack }: { onBack: () => void })
                 <Form form={form} layout="vertical" onFinish={submitDeposit} initialValues={{ currency }}>
                   <Row gutter={16}>
                     <Col xs={24} md={12}>
-                      <Form.Item name="currency" label="入金币种 *" rules={[{ required: true, message: '请选择入金币种' }]}>
-                        <Select
-                          size="large"
-                          onChange={(value) => setCurrency(value)}
-                          options={[
-                            { value: 'USD', label: 'USD 美元' },
-                            { value: 'HKD', label: 'HKD 港币' },
-                          ]}
-                        />
-                      </Form.Item>
+                      {accountType === 'us' ? (
+                        <>
+                          <Form.Item name="currency" hidden initialValue="USD">
+                            <Input />
+                          </Form.Item>
+                          <div className="mb-6">
+                            <div className="mb-2 text-sm font-semibold text-slate-700">入金币种 *</div>
+                            <div className="flex h-10 items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-950">USD 美元</div>
+                          </div>
+                        </>
+                      ) : (
+                        <Form.Item name="currency" label="入金币种 *" rules={[{ required: true, message: '请选择入金币种' }]}>
+                          <Select
+                            size="large"
+                            onChange={(value) => setCurrency(value)}
+                            options={[
+                              { value: 'USD', label: 'USD 美元' },
+                              { value: 'HKD', label: 'HKD 港币' },
+                            ]}
+                          />
+                        </Form.Item>
+                      )}
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="amount" label="入金金额 *" rules={[{ required: true, message: '请输入入金金额' }]}>

@@ -254,17 +254,26 @@ export function IncomingFiatDepositPage({ onBack }: { onBack: () => void }) {
     [accountType, currency, records],
   )
 
+  const handleAccountTypeChange = (nextType: AccountType) => {
+    setAccountType(nextType)
+    if (nextType === 'us') {
+      setCurrency('USD')
+      form.setFieldsValue({ currency: 'USD' })
+    }
+  }
+
   const accountTabItems: TabsProps['items'] = [
     { key: 'hk', label: '香港账户' },
     { key: 'us', label: '美国账户' },
   ]
 
   const handleSubmit = (values: DepositFormValues) => {
-    const nextRecord = createRecord(values, accountType, receivingBankAccounts[accountType][values.currency], remittingBank)
+    const submitCurrency = accountType === 'us' ? 'USD' : values.currency
+    const nextRecord = createRecord({ ...values, currency: submitCurrency }, accountType, receivingBankAccounts[accountType][submitCurrency], remittingBank)
     setRecords((current) => [nextRecord, ...current])
     form.resetFields()
-    form.setFieldsValue({ currency: values.currency })
-    setCurrency(values.currency)
+    form.setFieldsValue({ currency: submitCurrency })
+    setCurrency(submitCurrency)
   }
 
   return (
@@ -338,7 +347,7 @@ export function IncomingFiatDepositPage({ onBack }: { onBack: () => void }) {
                   <Tabs
                     activeKey={accountType}
                     items={accountTabItems}
-                    onChange={(key) => setAccountType(key as AccountType)}
+                    onChange={(key) => handleAccountTypeChange(key as AccountType)}
                     size="small"
                     style={{ marginBottom: -14 }}
                   />
@@ -358,35 +367,6 @@ export function IncomingFiatDepositPage({ onBack }: { onBack: () => void }) {
           <Row gutter={[20, 20]} align="top">
             <Col xs={24} lg={16}>
               <Space direction="vertical" size={18} style={{ width: '100%' }}>
-                <Card title="选择打款银行" style={{ borderRadius: 16 }}>
-                  <Select
-                    value={selectedRemittingBankId}
-                    onChange={setSelectedRemittingBankId}
-                    options={Object.values(whitelistBanks).map((bank) => ({ value: bank.id, label: bank.label }))}
-                    style={{ width: 280, marginBottom: 16 }}
-                  />
-                  <Descriptions title="用户白名单银行信息" column={{ xs: 1, sm: 2 }} size="small">
-                    <Descriptions.Item label="bank_name">
-                      <CopyValue value={remittingBank.bank_name} />
-                    </Descriptions.Item>
-                    <Descriptions.Item label="swift_code">
-                      <CopyValue value={remittingBank.swift_code} />
-                    </Descriptions.Item>
-                    <Descriptions.Item label="routing_number">
-                      <CopyValue value={remittingBank.routing_number} />
-                    </Descriptions.Item>
-                    <Descriptions.Item label="bank_address">
-                      <CopyValue value={remittingBank.bank_address} />
-                    </Descriptions.Item>
-                    <Descriptions.Item label="account_name">
-                      <CopyValue value={remittingBank.account_name} />
-                    </Descriptions.Item>
-                    <Descriptions.Item label="account_number">
-                      <CopyValue value={remittingBank.account_number} />
-                    </Descriptions.Item>
-                  </Descriptions>
-                </Card>
-
                 <Card title={`收款账户信息 · ${accountLabels[accountType]}`} style={{ borderRadius: 16 }}>
                   <Descriptions column={{ xs: 1, sm: 2 }} size="small">
                     <Descriptions.Item label="account_type">
@@ -423,20 +403,34 @@ export function IncomingFiatDepositPage({ onBack }: { onBack: () => void }) {
                   >
                     <Row gutter={14}>
                       <Col xs={24} md={12}>
-                        <Form.Item
-                          label="currency"
-                          name="currency"
-                          rules={[{ required: true, message: '请选择入金币种' }]}
-                        >
-                          <Select
-                            placeholder="请选择"
-                            onChange={(value) => setCurrency(value)}
-                            options={[
-                              { value: 'USD', label: 'USD 美元' },
-                              { value: 'HKD', label: 'HKD 港币' },
-                            ]}
-                          />
-                        </Form.Item>
+                        {accountType === 'us' ? (
+                          <>
+                            <Form.Item name="currency" hidden initialValue="USD">
+                              <Input />
+                            </Form.Item>
+                            <div style={{ marginBottom: 24 }}>
+                              <Text strong>currency</Text>
+                              <div style={{ marginTop: 8, height: 32, border: '1px solid #d9d9d9', borderRadius: 6, padding: '5px 11px', background: '#f8fafc', fontWeight: 700 }}>
+                                USD 美元
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <Form.Item
+                            label="currency"
+                            name="currency"
+                            rules={[{ required: true, message: '请选择入金币种' }]}
+                          >
+                            <Select
+                              placeholder="请选择"
+                              onChange={(value) => setCurrency(value)}
+                              options={[
+                                { value: 'USD', label: 'USD 美元' },
+                                { value: 'HKD', label: 'HKD 港币' },
+                              ]}
+                            />
+                          </Form.Item>
+                        )}
                       </Col>
                       <Col xs={24} md={12}>
                         <Form.Item

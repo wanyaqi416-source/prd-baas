@@ -3,6 +3,7 @@ import {
   Building2,
   Check,
   CircleAlert,
+  CircleHelp,
   Copy,
   FileText,
   Globe2,
@@ -82,25 +83,27 @@ const internalTransferDirections = {
   },
 }
 
-const transferFeeConfig = {
-  fixedAmount: 15,
-  percentRate: 0.0025,
-}
-
 const formatCurrencyAmount = (currency, amount) => `${currency} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-const feeModes = {
-  fixed: {
-    label: '固定值',
-    description: '按单笔固定手续费展示',
-    ruleDisplay: (currency) => formatCurrencyAmount(currency, transferFeeConfig.fixedAmount),
-  },
-  percent: {
-    label: '百分比',
-    description: '按转账金额比例展示',
-    ruleDisplay: () => '0.25%',
-  },
-}
+const defaultFiatTransferPurposeOptions = [
+  'Investment',
+  'Settlement',
+  'Family Support',
+]
+
+const usFiatTransferPurposeOptions = [
+  '充值-为量子账户进行充值',
+  '收款-资金来自海外客户',
+  '收款-资金来自电商平台（如：Amazon/Aliexpress）',
+  '收款-资金来自收单工具（如：Stripe/Paypal）',
+  '收款-资金来自投资人/合伙人',
+  '在自己的企业之间进行资金周转',
+  '付款-至供货商或经销商',
+  '付款-至合同工、自由职业者或员工',
+  '结汇-目前仅支持电商货物类卖家结汇',
+  '换汇-将资金换汇至其他币种',
+  '其他',
+]
 
 const formatTransferTime = () => {
   const now = new Date()
@@ -353,12 +356,30 @@ function QuickActionDock({ status, activeAccount, onOpenAccountInfo, onOpenIncom
   )
 }
 
-function JurisdictionPicker({ onClose, onSelectUs }) {
+function JurisdictionPicker({ balanceMode, onBalanceModeChange, onClose, onSelectUs }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
       <div className="w-full max-w-[520px] rounded-3xl bg-white p-6 shadow-2xl">
         <ModalHeader eyebrow="Open jurisdiction account" title="选择开通账户" onClose={onClose} />
-        <p className="mt-2 text-sm leading-6 text-slate-500">当前可申请美国账户；新加坡账户为后续法域，暂不可提交。</p>
+        <p className="mt-2 text-sm leading-6 text-slate-500">开设美国账户需扣除 USD 500 开户费，提交资料并确认扣费后等待审核。</p>
+        <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+          <div className="text-xs font-semibold text-blue-700">仅原型演示使用：选择美国账户后接口余额判断</div>
+          <div className="mt-3 flex gap-2">
+            {[
+              ['sufficient', '余额充足'],
+              ['insufficient', '余额不足'],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onBalanceModeChange(value)}
+                className={balanceMode === value ? 'inline-flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white' : 'inline-flex h-9 items-center gap-2 rounded-lg bg-white px-3 text-sm font-semibold text-slate-600'}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="mt-6 grid gap-3">
           <button type="button" onClick={onSelectUs} className="flex items-center justify-between rounded-2xl border border-blue-200 bg-blue-50 p-4 text-left hover:border-blue-400">
             <div className="flex items-center gap-3">
@@ -389,96 +410,24 @@ function JurisdictionPicker({ onClose, onSelectUs }) {
   )
 }
 
-function FeeConfirmModal({ balanceMode, onBalanceModeChange, onClose, onConfirm }) {
-  const currentBalance = balanceMode === 'sufficient' ? 'USD 1,200.00' : 'USD 120.00'
-  const rows = [
-    ['扣费账户', '信托账户'],
-    ['扣费币种', 'USD'],
-    ['扣费金额', 'USD 500.00'],
-    ['当前可用余额', currentBalance],
-  ]
-
+function InsufficientBalanceModal({ onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
       <div className="w-full max-w-[480px] rounded-3xl bg-white p-6 shadow-2xl">
-        <ModalHeader eyebrow="Opening fee" title="确认开通并扣费" onClose={onClose} />
-        <p className="mt-2 text-sm leading-6 text-slate-500">开通美国账户将扣除 USD 500 开户费。扣费成功后，系统生成开户申请记录并进入审核中状态。</p>
-        <div className="mt-5 rounded-2xl border border-amber-100 bg-amber-50 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-semibold text-amber-900">开户费用支付状态</span>
-            <Badge variant="warning">PENDING_PAYMENT · 待支付</Badge>
-          </div>
-          <p className="mt-2 text-sm leading-6 text-amber-800">客户尚未确认或费用尚未入账。确认扣费后，系统会根据余额判断进入 PAID 或 FAILED。</p>
-        </div>
-        <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-          <div className="text-xs font-semibold text-blue-700">仅原型演示使用：扣费余额判断</div>
-          <div className="mt-3 flex gap-2">
-            {[
-              ['sufficient', '余额充足'],
-              ['insufficient', '余额不足'],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => onBalanceModeChange(value)}
-                className={balanceMode === value ? 'inline-flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white' : 'inline-flex h-9 items-center gap-2 rounded-lg bg-white px-3 text-sm font-semibold text-slate-600'}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          {rows.map(([label, value]) => (
-            <div key={label} className="flex items-center justify-between border-b border-slate-200 py-3 last:border-b-0">
-              <span className="text-sm text-slate-500">{label}</span>
-              <span className="text-sm font-bold text-slate-950">{value}</span>
-            </div>
-          ))}
-        </div>
-        <div className="mt-6 flex gap-3">
-          <Button type="button" onClick={onConfirm} className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">
-            确认开通并扣费
-          </Button>
-          <Button type="button" onClick={onClose} variant="outline" className="rounded-lg">
-            取消
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function FeeResultModal({ type, onClose, onContinue }) {
-  const success = type === 'success'
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-[480px] rounded-3xl bg-white p-6 shadow-2xl">
-        <ModalHeader eyebrow="Opening fee result" title={success ? '扣费成功' : '扣费失败'} onClose={onClose} />
+        <ModalHeader eyebrow="Opening fee" title="余额不足" onClose={onClose} />
         <div className="mt-5 flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <span className="text-sm font-semibold text-slate-700">开户费用支付状态</span>
-          <Badge variant={success ? 'success' : 'danger'}>{success ? 'PAID · 已支付' : 'FAILED · 失败'}</Badge>
+          <span className="text-sm font-semibold text-slate-700">开户费余额校验</span>
+          <Badge variant="danger">暂不可申请</Badge>
         </div>
-        <div className={success ? 'mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-5' : 'mt-6 rounded-2xl border border-red-100 bg-red-50 p-5'}>
-          <div className={success ? 'text-sm font-semibold text-emerald-900' : 'text-sm font-semibold text-red-900'}>
-            {success ? 'USD 500 开户费已扣除' : 'USD 余额不足，扣费未完成'}
+        <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-5">
+          <div className="text-sm font-semibold text-red-900">
+            当前可用余额低于 USD 500 开户费
           </div>
-          <p className={success ? 'mt-2 text-sm leading-6 text-emerald-800' : 'mt-2 text-sm leading-6 text-red-800'}>
-            {success
-              ? '系统已生成美国账户开户申请记录。下一步进入审核中状态，等待 Fidere Admin 后台处理。'
-              : '当前可用余额为 USD 120.00，低于 USD 500 开户费。扣费失败时不会生成开户申请记录。'}
+          <p className="mt-2 text-sm leading-6 text-red-800">
+            请先充值或换入足够 USD 后再申请。
           </p>
         </div>
-        <div className="mt-6 flex gap-3">
-          {success ? (
-            <Button type="button" onClick={onContinue} className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">
-              查看审核中状态
-            </Button>
-          ) : (
-            <Button type="button" className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">
-              去充值
-            </Button>
-          )}
+        <div className="mt-6 flex justify-end">
           <Button type="button" onClick={onClose} variant="outline" className="rounded-lg">
             关闭
           </Button>
@@ -611,7 +560,7 @@ function AssetAccountCard({ title, subtitle, total, badge, badgeVariant, rows, s
             </tbody>
           </table>
         </div>
-      ) : (
+      ) : statusInfo?.length ? (
         <div className="grid gap-3 p-6 sm:grid-cols-2">
           {statusInfo.map(([label, value, tone]) => (
             <div key={label} className={tone === 'danger' ? 'rounded-2xl border border-red-100 bg-red-50 p-4 sm:col-span-2' : 'rounded-2xl border border-slate-100 bg-slate-50 p-4'}>
@@ -620,7 +569,7 @@ function AssetAccountCard({ title, subtitle, total, badge, badgeVariant, rows, s
             </div>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
@@ -630,7 +579,6 @@ function AssetDistribution({ status }) {
   const showUsCard = status !== 'not_opened'
   const usOpened = status === 'opened'
   const usStatusInfo = [
-    ['当前审核状态', usMeta.label],
     ...(status === 'failed' ? [['拒绝原因', usMeta.reason, 'danger']] : []),
   ]
 
@@ -655,8 +603,8 @@ function AssetDistribution({ status }) {
             title="美国账户"
             subtitle="信托账户下的美国法币资产分类，仅支持 USD。"
             total={usOpened ? '$82430.27' : ''}
-            badge={usOpened ? usMeta.label : ''}
-            badgeVariant={usOpened ? usMeta.badge : undefined}
+            badge={usOpened ? '' : usMeta.label}
+            badgeVariant={usOpened ? undefined : usMeta.badge}
             rows={usOpened ? usAssetRows : []}
             statusInfo={usStatusInfo}
           />
@@ -805,7 +753,8 @@ function ExternalFiatTransferOutDetailPage({ record, onBack, onClose }) {
               - {record.amount}
               <span className="ml-2 text-base font-semibold text-slate-500">{record.currency}</span>
             </div>
-            <div className="mt-3 text-sm text-slate-500">手续费: {record.feeAmount} {record.currency}</div>
+            <div className="mt-3 text-sm text-slate-500">服务费: {record.serviceFeeAmount || record.feeAmount} {record.currency}</div>
+            <div className="mt-1 text-sm font-semibold text-slate-700">实际到账: {record.actualArrivalAmount || record.amount} {record.currency}</div>
           </section>
 
           <section>
@@ -830,6 +779,9 @@ function ExternalFiatTransferOutDetailPage({ record, onBack, onClose }) {
               {[
                 ['创建日期', formatChineseDate(record.createdAt)],
                 ['交易编号', record.id],
+                ['转账金额', `${record.currency} ${record.amount}`],
+                ['实际到账金额', `${record.currency} ${record.actualArrivalAmount || record.amount}`],
+                ['服务费', `${record.currency} ${record.serviceFeeAmount || record.feeAmount}`],
                 ['审核时间', formatChineseDate(record.reviewedAt)],
               ].map(([label, value]) => (
                 <div key={label} className="flex items-center justify-between gap-4 py-2 text-sm">
@@ -893,6 +845,21 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit }) {
   const account = fiatTransferOutAccounts[accountType]
   const selectedBank = fiatTransferOutBanks.find((bank) => bank.id === selectedBankId) || fiatTransferOutBanks[0]
   const scopedRecords = records.filter((record) => record.accountType === accountType && record.currency === currency)
+  const serviceFeeAmount = 2
+  const serviceFeeDisplay = formatCurrencyAmount(currency, serviceFeeAmount)
+  const serviceFeeDescription = '服务费由后台按用户配置，可能包含固定服务费、按转账金额百分比计费，或固定服务费 + 百分比组合。页面金额为预估，最终以后台配置和审核结果为准。'
+  const numericPreviewAmount = Number(amount)
+  const hasValidPreviewAmount = Number.isFinite(numericPreviewAmount) && numericPreviewAmount > 0
+  const actualArrivalPreview = hasValidPreviewAmount
+    ? formatCurrencyAmount(currency, Math.max(numericPreviewAmount - serviceFeeAmount, 0))
+    : '-'
+
+  const changeAccountType = (nextType) => {
+    setAccountType(nextType)
+    if (nextType === 'us') {
+      setCurrency('USD')
+    }
+  }
 
   const openDetail = (record) => {
     setSelectedRecord(record)
@@ -909,6 +876,7 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit }) {
     }
     setError('')
     const createdAt = formatTransferTime()
+    const actualArrivalAmount = Math.max(numericAmount - serviceFeeAmount, 0)
     const record = {
       id: makeTransactionId(),
       accountType,
@@ -921,7 +889,9 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit }) {
       beneficiaryAccount: selectedBank.accountNumber,
       currency,
       amount: numericAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      feeAmount: '2.00',
+      feeAmount: serviceFeeAmount.toFixed(2),
+      serviceFeeAmount: serviceFeeAmount.toFixed(2),
+      actualArrivalAmount: actualArrivalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       purpose: purpose || '-',
       note: note || '-',
       createdAt,
@@ -971,7 +941,7 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit }) {
               <button
                 key={value}
                 type="button"
-                onClick={() => setAccountType(value)}
+                onClick={() => changeAccountType(value)}
                 className={accountType === value ? 'h-10 rounded-xl bg-blue-50 px-4 text-sm font-bold text-slate-950 shadow-sm' : 'h-10 rounded-xl bg-slate-100 px-4 text-sm font-bold text-slate-600 hover:bg-slate-200'}
               >
                 {label}
@@ -986,38 +956,22 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit }) {
               <div className="border-b border-slate-100 px-6 py-4">
                 <h2 className="flex items-center gap-2 text-base font-bold text-slate-950">
                   <WalletCards className="h-5 w-5 text-blue-600" />
-                  转账账户信息
+                  收款人信息
                 </h2>
               </div>
-              <div className="grid gap-6 p-6 md:grid-cols-2">
-                <div>
-                  {[
-                    ['账户名称', account.accountName],
-                    ['账户号码', account.accountNumber],
-                    ['可用余额', account.balance[currency]],
-                    ['扣款币种', currency],
-                  ].map(([label, value]) => (
-                    <div key={label} className="border-b border-slate-100 py-3">
-                      <div className="text-xs text-slate-500">{label}</div>
-                      <div className="mt-1 font-bold text-slate-950">{value}</div>
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <div className="mb-3 text-sm font-bold text-slate-950">收款人信息</div>
-                  {[
-                    ['收款人名称', selectedBank.name],
-                    ['收款人账户', selectedBank.accountNumber],
-                    ['银行名称 / 钱包地址', `${selectedBank.bank}${selectedBank.swift}`],
-                    ['国家/地区', selectedBank.country],
-                    ['SWIFT / Routing / Network', selectedBank.swift],
-                  ].map(([label, value]) => (
-                    <div key={label} className="border-b border-slate-100 py-3">
-                      <div className="text-xs text-slate-500">{label}</div>
-                      <div className="mt-1 font-bold text-slate-950">{value}</div>
-                    </div>
-                  ))}
-                </div>
+              <div className="grid gap-4 p-6 md:grid-cols-2">
+                {[
+                  ['收款人名称', selectedBank.name],
+                  ['收款人账户', selectedBank.accountNumber],
+                  ['银行名称 / 钱包地址', `${selectedBank.bank}${selectedBank.swift}`],
+                  ['国家/地区', selectedBank.country],
+                  ['SWIFT / Routing / Network', selectedBank.swift],
+                ].map(([label, value]) => (
+                  <div key={label} className="border-b border-slate-100 py-3">
+                    <div className="text-xs text-slate-500">{label}</div>
+                    <div className="mt-1 font-bold text-slate-950">{value}</div>
+                  </div>
+                ))}
               </div>
             </section>
 
@@ -1029,6 +983,10 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit }) {
                 </h2>
               </div>
               <div className="p-6">
+                <div className="mb-5 max-w-sm rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
+                  <div className="text-xs font-semibold text-blue-700">可用余额</div>
+                  <div className="mt-1 text-lg font-bold text-slate-950">{account.balance[currency]}</div>
+                </div>
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <div className="text-sm font-bold text-slate-900">选择银行地址</div>
                   <button type="button" className="inline-flex items-center gap-2 text-sm font-bold text-blue-600">
@@ -1084,10 +1042,14 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit }) {
 
                 <div className="mt-5 grid gap-4 md:grid-cols-[1fr_1fr]">
                   <label className="flex h-12 overflow-hidden rounded-full border border-slate-200 bg-white">
-                    <select value={currency} onChange={(event) => setCurrency(event.target.value)} className="w-24 border-r border-slate-200 bg-white px-4 text-sm font-bold outline-none">
-                      <option value="USD">USD</option>
-                      <option value="HKD">HKD</option>
-                    </select>
+                    {accountType === 'us' ? (
+                      <span className="flex w-24 items-center border-r border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-950">USD</span>
+                    ) : (
+                      <select value={currency} onChange={(event) => setCurrency(event.target.value)} className="w-24 border-r border-slate-200 bg-white px-4 text-sm font-bold outline-none">
+                        <option value="USD">USD</option>
+                        <option value="HKD">HKD</option>
+                      </select>
+                    )}
                     <input
                       type="number"
                       min="0"
@@ -1114,14 +1076,21 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit }) {
 
                 <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500">预计手续费</span>
-                    <span className="font-bold text-slate-950">-</span>
+                    <span className="inline-flex items-center gap-1 text-slate-500">
+                      服务费
+                      <span className="group relative inline-flex" title={serviceFeeDescription}>
+                        <CircleHelp className="h-4 w-4 text-slate-400" />
+                        <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden w-72 -translate-x-1/2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs font-semibold leading-5 text-slate-600 shadow-xl group-hover:block">
+                          {serviceFeeDescription}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="font-bold text-slate-950">{serviceFeeDisplay}</span>
                   </div>
                   <div className="mt-2 flex items-center justify-between text-sm">
                     <span className="text-slate-500">预计到账时间</span>
                     <span className="font-bold text-slate-950">1-3 个工作日</span>
                   </div>
-                  <div className="mt-2 text-right text-xs text-slate-400">以实际到账和银行处理结果为准</div>
                 </div>
 
                 <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
@@ -1149,8 +1118,8 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit }) {
                   ['付款账户', account.accountName],
                   ['收款人', selectedBank.name],
                   ['转账金额', amount ? `${currency} ${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'],
-                  ['手续费', '-'],
-                  ['实际扣款', '-'],
+                  ['服务费', serviceFeeDisplay],
+                  ['实际到账金额', actualArrivalPreview],
                 ].map(([label, value]) => (
                   <div key={label} className="border-b border-slate-100 pb-3 last:border-0">
                     <div className="text-xs text-slate-500">{label}</div>
@@ -1174,10 +1143,11 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit }) {
                   {scopedRecords.map((record) => (
                     <button key={record.id} type="button" onClick={() => openDetail(record)} className="block w-full p-5 text-left text-sm hover:bg-blue-50">
                       <div className="flex justify-between gap-3">
-                        <span className="font-bold text-slate-950">{record.currency} {record.amount}</span>
+                        <span className="font-bold text-slate-950">转账 {record.currency} {record.amount}</span>
                         <Badge variant={record.status === 'COMPLETED' ? 'success' : 'warning'}>{record.statusLabel}</Badge>
                       </div>
-                      <div className="mt-2 text-slate-500">{record.accountLabel} · {record.beneficiary} · {record.createdAt}</div>
+                      <div className="mt-2 text-slate-500">实际到账 {record.currency} {record.actualArrivalAmount || record.amount} · {record.accountLabel} · {record.beneficiary}</div>
+                      <div className="mt-1 text-xs text-slate-400">服务费 {record.currency} {record.serviceFeeAmount || record.feeAmount} · {record.createdAt}</div>
                     </button>
                   ))}
                 </div>
@@ -1203,8 +1173,6 @@ function InternalTransferConfirmModal({ draft, onClose, onConfirm }) {
     ['转入账户', draft.targetAccount],
     ['币种', draft.currency],
     ['金额', `${draft.currency} ${draft.amount}`],
-    ['手续费', `预估 ${draft.feeAmountDisplay}`],
-    ['预估到账金额', draft.arrivalAmountDisplay],
   ]
 
   return (
@@ -1236,21 +1204,13 @@ function InternalTransferConfirmModal({ draft, onClose, onConfirm }) {
 function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
   const [currentDirection, setCurrentDirection] = useState(direction)
   const config = internalTransferDirections[currentDirection]
-  const [currency, setCurrency] = useState('USD')
+  const currency = 'USD'
   const [amount, setAmount] = useState('')
-  const [feeMode, setFeeMode] = useState('fixed')
   const [error, setError] = useState('')
   const [confirmDraft, setConfirmDraft] = useState(null)
-  const activeFeeMode = feeModes[feeMode]
   const numericAmount = Number(amount)
   const hasValidAmount = Number.isFinite(numericAmount) && numericAmount > 0
-  const estimatedFeeAmount = hasValidAmount
-    ? (feeMode === 'fixed' ? transferFeeConfig.fixedAmount : numericAmount * transferFeeConfig.percentRate)
-    : 0
-  const estimatedArrivalAmount = hasValidAmount ? Math.max(numericAmount - estimatedFeeAmount, 0) : 0
-  const feeRuleDisplay = activeFeeMode.ruleDisplay(currency)
-  const feeAmountDisplay = formatCurrencyAmount(currency, hasValidAmount ? estimatedFeeAmount : 0)
-  const arrivalAmountDisplay = formatCurrencyAmount(currency, hasValidAmount ? estimatedArrivalAmount : 0)
+  const arrivalAmountDisplay = formatCurrencyAmount(currency, hasValidAmount ? numericAmount : 0)
 
   const submitTransfer = () => {
     const numericAmount = Number(amount)
@@ -1266,11 +1226,8 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
       targetAccount: config.targetAccount,
       currency,
       amount: numericAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      feeMode,
-      feeModeLabel: activeFeeMode.label,
-      feeDisplay: feeRuleDisplay,
-      feeAmountDisplay,
       arrivalAmountDisplay,
+      actualArrivalAmountDisplay: arrivalAmountDisplay,
     })
   }
 
@@ -1300,7 +1257,7 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
         <div className="mb-6">
           <Badge variant="secondary">内部法币转账</Badge>
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">{config.title}</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500">当前为前端原型流程。提交后生成待后台审核记录，实际余额、手续费和审核结果以后台配置与处理为准。</p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">当前为前端原型流程。提交后生成待后台审核记录，实际余额和审核结果以后台处理为准。</p>
         </div>
 
         <div className="grid gap-5 lg:grid-cols-[0.72fr_0.28fr]">
@@ -1330,14 +1287,10 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
             <div className="mt-6 grid gap-5">
               <label className="block">
                 <span className="text-sm font-semibold text-slate-700">币种</span>
-                <select
-                  value={currency}
-                  onChange={(event) => setCurrency(event.target.value)}
-                  className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
-                >
-                  <option value="USD">USD 美元</option>
-                  <option value="HKD">HKD 港币</option>
-                </select>
+                <div className="mt-2 flex h-11 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-900">
+                  USD 美元
+                </div>
+                <div className="mt-2 text-xs leading-5 text-slate-500">资金互转目前仅支持 USD。</div>
               </label>
               <label className="block">
                 <span className="text-sm font-semibold text-slate-700">金额</span>
@@ -1353,54 +1306,11 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
               </label>
             </div>
 
-            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold text-slate-900">手续费模式</div>
-                  <p className="mt-1 text-sm text-slate-500">实际手续费以后台配置为准。</p>
-                </div>
-                <div className="flex rounded-xl border border-slate-200 bg-white p-1">
-                  {Object.entries(feeModes).map(([value, item]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setFeeMode(value)}
-                      className={feeMode === value ? 'h-9 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white' : 'h-9 rounded-lg px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100'}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className={`mt-4 grid gap-3 ${feeMode === 'percent' ? 'md:grid-cols-2' : ''}`}>
-                <div className="rounded-xl bg-white px-4 py-3">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <div className="text-xs font-semibold text-slate-400">手续费规则</div>
-                      <p className="mt-1 text-xs text-slate-500">{activeFeeMode.description}</p>
-                    </div>
-                    <div className="shrink-0 text-right text-lg font-bold text-slate-950">{feeRuleDisplay}</div>
-                  </div>
-                </div>
-                {feeMode === 'percent' ? (
-                  <div className="rounded-xl bg-white px-4 py-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <div className="text-xs font-semibold text-slate-400">预估手续费金额</div>
-                        <p className="mt-1 text-xs text-slate-500">按当前输入金额预估</p>
-                      </div>
-                      <div className="shrink-0 text-right text-lg font-bold text-slate-950">{feeAmountDisplay}</div>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
             <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <div className="text-sm font-semibold text-emerald-900">预估到账金额</div>
-                  <p className="mt-1 text-sm text-emerald-700">按转账金额扣除预估手续费后计算，实际到账以后台审核结果为准。</p>
+                  <p className="mt-1 text-sm text-emerald-700">资金互转不收取手续费，实际到账以后台审核结果为准。</p>
                 </div>
                 <div className="text-2xl font-bold text-emerald-950">{arrivalAmountDisplay}</div>
               </div>
@@ -1477,7 +1387,7 @@ function InternalTransferRecordsPage({ records, onBack, onCreate }) {
               <table className="w-full min-w-[1040px] text-sm">
                 <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-500">
                   <tr>
-                    {['申请编号', '转出账户', '转入账户', '币种', '金额', '手续费', '预估到账', '状态', '提交时间'].map((item) => (
+                    {['申请编号', '转出账户', '转入账户', '币种', '转账金额', '状态', '提交时间'].map((item) => (
                       <th key={item} className="px-6 py-4">{item}</th>
                     ))}
                   </tr>
@@ -1490,8 +1400,6 @@ function InternalTransferRecordsPage({ records, onBack, onCreate }) {
                       <td className="px-6 py-5">{record.targetAccount}</td>
                       <td className="px-6 py-5">{record.currency}</td>
                       <td className="px-6 py-5 font-semibold">{record.currency} {record.amount}</td>
-                      <td className="px-6 py-5">{record.feeAmountDisplay}</td>
-                      <td className="px-6 py-5 font-semibold">{record.arrivalAmountDisplay}</td>
                       <td className="px-6 py-5"><Badge variant="warning">{record.statusLabel}</Badge></td>
                       <td className="px-6 py-5 text-slate-500">{record.createdAt}</td>
                     </tr>
@@ -1510,9 +1418,8 @@ export function BaasOpeningPrototype({ onBack, onOpenApplication, onPrototypeHom
   const [status, setStatus] = useState(initialStatus)
   const [activeAccount, setActiveAccount] = useState('trust')
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [feeConfirmOpen, setFeeConfirmOpen] = useState(false)
   const [feeBalanceMode, setFeeBalanceMode] = useState('sufficient')
-  const [feeResult, setFeeResult] = useState(null)
+  const [balanceWarningOpen, setBalanceWarningOpen] = useState(false)
   const [accountInfoOpen, setAccountInfoOpen] = useState(false)
   const [activeOpenedPage, setActiveOpenedPage] = useState('account')
   const [internalTransferDirection, setInternalTransferDirection] = useState('trust-to-us')
@@ -1527,17 +1434,11 @@ export function BaasOpeningPrototype({ onBack, onOpenApplication, onPrototypeHom
 
   const selectUsAccount = () => {
     setPickerOpen(false)
+    if (feeBalanceMode === 'insufficient') {
+      setBalanceWarningOpen(true)
+      return
+    }
     onOpenApplication()
-  }
-
-  const confirmFee = () => {
-    setFeeConfirmOpen(false)
-    setFeeResult(feeBalanceMode === 'sufficient' ? 'success' : 'failed')
-  }
-
-  const continueAfterFeeSuccess = () => {
-    setFeeResult(null)
-    changeStatus('reviewing')
   }
 
   const openInternalTransfer = (direction) => {
@@ -1612,22 +1513,15 @@ export function BaasOpeningPrototype({ onBack, onOpenApplication, onPrototypeHom
       <main className="mx-auto max-w-[1280px] px-5 py-8">
         <MainContent status={status} activeAccount={activeAccount} onOpenAccountInfo={() => setAccountInfoOpen(true)} />
       </main>
-      {pickerOpen ? <JurisdictionPicker onClose={() => setPickerOpen(false)} onSelectUs={selectUsAccount} /> : null}
-      {feeConfirmOpen ? (
-        <FeeConfirmModal
+      {pickerOpen ? (
+        <JurisdictionPicker
           balanceMode={feeBalanceMode}
           onBalanceModeChange={setFeeBalanceMode}
-          onClose={() => setFeeConfirmOpen(false)}
-          onConfirm={confirmFee}
+          onClose={() => setPickerOpen(false)}
+          onSelectUs={selectUsAccount}
         />
       ) : null}
-      {feeResult ? (
-        <FeeResultModal
-          type={feeResult}
-          onClose={() => setFeeResult(null)}
-          onContinue={continueAfterFeeSuccess}
-        />
-      ) : null}
+      {balanceWarningOpen ? <InsufficientBalanceModal onClose={() => setBalanceWarningOpen(false)} /> : null}
       {accountInfoOpen ? <AccountInfoDrawer onClose={() => setAccountInfoOpen(false)} /> : null}
     </div>
   )

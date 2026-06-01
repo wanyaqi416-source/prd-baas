@@ -1,4 +1,19 @@
-import { Building2, CheckCircle2, Download, FileText, FileUp, UserRound, X } from 'lucide-react'
+import {
+  Banknote,
+  Building2,
+  CheckCircle2,
+  Download,
+  FileText,
+  FileUp,
+  Globe2,
+  Languages,
+  LayoutDashboard,
+  RefreshCw,
+  Sun,
+  UserRound,
+  WalletCards,
+  X,
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { Badge } from '../components/ui/badge'
@@ -43,6 +58,7 @@ const createOpeningFeeRecord = () => {
     debitAccount: '信托账户',
     accountType: '美国账户开户申请',
     createdAt,
+    transactionTime: createdAt,
     chargedAt: createdAt,
     nextStatus: '开户审核中',
     description: '开户资料提交后，开户费扣款成功，申请进入后台审核流程。',
@@ -57,40 +73,47 @@ function ModalShell({ children }) {
   )
 }
 
-function ConfirmSubmitModal({ onCancel, onConfirm }) {
-  return (
-    <ModalShell>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="text-sm font-semibold uppercase tracking-wide text-blue-500">Submit application</div>
-          <h3 className="mt-1 text-2xl font-bold text-slate-950">确认提交开户申请</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-500">当前为前端原型模拟提交，不会调用真实 BaaS API。</p>
-        </div>
-        <button type="button" onClick={onCancel} className="rounded-full p-2 text-slate-400 hover:bg-slate-100">
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-      <div className="mt-6 flex gap-3">
-        <Button type="button" onClick={onConfirm} className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">确认提交</Button>
-        <Button type="button" onClick={onCancel} variant="outline" className="rounded-lg">取消</Button>
-      </div>
-    </ModalShell>
-  )
-}
+function ApplicationTopNav({ onBack }) {
+  const navItems = [
+    [LayoutDashboard, '仪表板'],
+    [WalletCards, '账户'],
+    [Banknote, '卡片'],
+    [Globe2, '投资'],
+    [RefreshCw, '交易'],
+    [FileText, '信托服务'],
+  ]
 
-function SuccessModal({ onProceedToFee, onClose }) {
   return (
-    <ModalShell>
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-        <CheckCircle2 className="h-7 w-7" />
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div className="mx-auto flex h-14 max-w-[1380px] items-center justify-between px-6">
+        <div className="flex items-center gap-7">
+          <button type="button" onClick={onBack} className="text-xl font-bold tracking-tight text-slate-800">
+            FIDERE
+          </button>
+          <nav className="hidden items-center gap-2 text-sm text-slate-500 md:flex">
+            {navItems.map(([Icon, label]) => (
+              <button
+                key={label}
+                type="button"
+                className={label === '账户' ? 'inline-flex h-9 items-center gap-2 rounded-xl bg-blue-600 px-4 font-semibold text-white shadow-sm' : 'inline-flex h-9 items-center gap-2 rounded-xl px-3 font-medium hover:bg-slate-100'}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </nav>
+        </div>
+        <div className="flex items-center gap-4 text-slate-500">
+          <Languages className="h-4 w-4" />
+          <Sun className="h-4 w-4" />
+          <div className="h-7 w-px bg-slate-200" />
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-slate-100">
+            <UserRound className="h-4 w-4" />
+            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white" />
+          </div>
+        </div>
       </div>
-      <h3 className="mt-5 text-2xl font-bold text-slate-950">开户申请已提交</h3>
-      <p className="mt-2 text-sm leading-6 text-slate-500">资料校验通过。本阶段为前端模拟提交，下一步进入开户费扣费确认。</p>
-      <div className="mt-6 flex gap-3">
-        <Button type="button" onClick={onProceedToFee} className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">继续扣费流程</Button>
-        <Button type="button" onClick={onClose} variant="outline" className="rounded-lg">关闭</Button>
-      </div>
-    </ModalShell>
+    </header>
   )
 }
 
@@ -119,13 +142,11 @@ function FatcaSigningModal({ onCancel, onConfirm }) {
   )
 }
 
-function FeeConfirmModal({ balanceMode, onBalanceModeChange, onClose, onConfirm }) {
-  const currentBalance = balanceMode === 'sufficient' ? 'USD 1,200.00' : 'USD 120.00'
+function FeeConfirmModal({ onClose, onConfirm }) {
   const rows = [
     ['扣费账户', '信托账户'],
     ['扣费币种', 'USD'],
     ['扣费金额', 'USD 500.00'],
-    ['当前可用余额', currentBalance],
   ]
 
   return (
@@ -138,24 +159,6 @@ function FeeConfirmModal({ balanceMode, onBalanceModeChange, onClose, onConfirm 
         <button type="button" onClick={onClose} className="rounded-full p-2 text-slate-400 hover:bg-slate-100"><X className="h-5 w-5" /></button>
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-500">开通美国账户将扣除 USD 500 开户费。扣费成功后生成开户交易记录。</p>
-      <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-        <div className="text-xs font-semibold text-blue-700">仅原型演示使用：扣费余额判断</div>
-        <div className="mt-3 flex gap-2">
-          {[
-            ['sufficient', '余额充足'],
-            ['insufficient', '余额不足'],
-          ].map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => onBalanceModeChange(value)}
-              className={balanceMode === value ? 'inline-flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white' : 'inline-flex h-9 items-center gap-2 rounded-lg bg-white px-3 text-sm font-semibold text-slate-600'}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
       <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
         {rows.map(([label, value]) => (
           <div key={label} className="flex items-center justify-between border-b border-slate-200 py-3 last:border-b-0">
@@ -172,19 +175,19 @@ function FeeConfirmModal({ balanceMode, onBalanceModeChange, onClose, onConfirm 
   )
 }
 
-function FeeResultModal({ type, onClose, onContinue }) {
-  const success = type === 'success'
+function FeeResultModal({ type, onClose, onProceedToAccount, onViewPrototypeRecord }) {
   return (
     <ModalShell>
-      <div className={success ? 'flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700' : 'flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-700'}>
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
         <CheckCircle2 className="h-7 w-7" />
       </div>
-      <h3 className="mt-5 text-2xl font-bold text-slate-950">{success ? '扣费成功' : '扣费失败'}</h3>
+      <h3 className="mt-5 text-2xl font-bold text-slate-950">扣费成功</h3>
       <p className="mt-2 text-sm leading-6 text-slate-500">
-        {success ? 'USD 500 开户费已扣除，并生成开户交易记录。' : '当前余额不足，扣费未完成。'}
+        USD 500 开户费已扣除，并生成开户交易记录。
       </p>
       <div className="mt-6 flex gap-3">
-        {success ? <Button type="button" onClick={onContinue} className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">查看开户费交易记录</Button> : null}
+        <Button type="button" onClick={onProceedToAccount} className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">返回账户页面</Button>
+        <Button type="button" onClick={onViewPrototypeRecord} variant="outline" className="rounded-lg">查看开户费交易记录（原型展示）</Button>
         <Button type="button" onClick={onClose} variant="outline" className="rounded-lg">关闭</Button>
       </div>
     </ModalShell>
@@ -252,10 +255,7 @@ function OpeningFeeTransactionDetailPage({ record, onBack, onProceedToOpeningSta
             <h2 className="mb-3 text-sm font-bold text-slate-700">业务信息</h2>
             <div className="rounded-3xl border border-slate-200 bg-white px-5 py-3 shadow-sm">
               <TransactionDetailRow label="交易类型" value={record.type} strong />
-              <TransactionDetailRow label="业务申请" value={record.applicationName} />
               <TransactionDetailRow label="扣费账户" value={record.debitAccount} />
-              <TransactionDetailRow label="账户类型" value={record.accountType} />
-              <TransactionDetailRow label="后续状态" value={record.nextStatus} strong />
             </div>
           </section>
 
@@ -263,8 +263,7 @@ function OpeningFeeTransactionDetailPage({ record, onBack, onProceedToOpeningSta
             <h2 className="mb-3 text-sm font-bold text-slate-700">指示详情</h2>
             <div className="rounded-3xl border border-slate-200 bg-white px-5 py-3 shadow-sm">
               <TransactionDetailRow label="交易编号" value={record.id} strong />
-              <TransactionDetailRow label="创建日期" value={record.createdAt} />
-              <TransactionDetailRow label="扣费时间" value={record.chargedAt} />
+              <TransactionDetailRow label="交易时间" value={record.transactionTime || record.createdAt} />
             </div>
           </section>
 
@@ -275,10 +274,6 @@ function OpeningFeeTransactionDetailPage({ record, onBack, onProceedToOpeningSta
             </div>
           </section>
 
-          <div className="grid grid-cols-2 gap-3 pb-8">
-            <Button type="button" onClick={onBack} variant="outline" className="rounded-lg">返回开户申请</Button>
-            <Button type="button" onClick={onProceedToOpeningStatus} className="rounded-lg bg-blue-600 hover:bg-blue-700">返回开户状态</Button>
-          </div>
         </div>
       </main>
     </div>
@@ -421,10 +416,7 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
   const [supplementValues, setSupplementValues] = useState(createEmptyBaasApplication)
   const [errors, setErrors] = useState({})
   const [notice, setNotice] = useState('')
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
   const [feeConfirmOpen, setFeeConfirmOpen] = useState(false)
-  const [feeBalanceMode, setFeeBalanceMode] = useState('sufficient')
   const [feeResult, setFeeResult] = useState(null)
   const [openingFeeRecord, setOpeningFeeRecord] = useState(null)
   const [openingFeeDetailOpen, setOpeningFeeDetailOpen] = useState(false)
@@ -468,7 +460,7 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
   const submitApplication = () => {
     if (accountType === 'enterprise') {
       const ok = enterpriseActions?.submit?.()
-      if (ok) setConfirmOpen(true)
+      if (ok) setFeeConfirmOpen(true)
       return
     }
 
@@ -484,23 +476,13 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
     }
     // 开发说明：提交后走自动开户流程。Fidere 将 KYC 和 VA 信息给到 BaaS，BaaS 提交给 Interlace；
     // Interlace 分两次判断 KYC 和 VA 是否通过，通过后回传 BaaS，BaaS 再通知 Fidere 审核通过。
-    setConfirmOpen(true)
-  }
-
-  const continueToFee = () => {
-    setSubmitted(false)
     setFeeConfirmOpen(true)
   }
 
   const confirmFee = () => {
     setFeeConfirmOpen(false)
-    if (feeBalanceMode === 'sufficient') {
-      setOpeningFeeRecord(createOpeningFeeRecord())
-      setFeeResult('success')
-      return
-    }
-    setOpeningFeeRecord(null)
-    setFeeResult('failed')
+    setOpeningFeeRecord(createOpeningFeeRecord())
+    setFeeResult('success')
   }
 
   const openOpeningFeeDetail = () => {
@@ -525,7 +507,8 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
 
   return (
     <div className="min-h-screen bg-[#f4f7fb] pb-28 text-slate-950">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <ApplicationTopNav onBack={onBack} />
+      <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex min-h-16 max-w-[1280px] flex-wrap items-center justify-between gap-3 px-5 py-3">
           <div>
             <button type="button" onClick={onBack} className="text-sm font-semibold text-blue-700 hover:text-blue-900">返回开户流程</button>
@@ -570,14 +553,16 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
           <BaasEnterpriseOpeningApplication
             onRegisterActions={setEnterpriseActions}
             onStatsChange={setEnterpriseStats}
-            onSubmitSuccess={() => setConfirmOpen(true)}
+            onSubmitSuccess={() => setFeeConfirmOpen(true)}
           />
         ) : (
           <div className="grid gap-5">
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-base font-bold text-slate-950">已获取资料</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-slate-950">已获取资料</h2>
+                  </div>
                   <p className="mt-1 text-sm leading-6 text-slate-500">当前系统已有字段自动带出，只读展示，供用户确认。</p>
                 </div>
               </div>
@@ -589,7 +574,7 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-base font-bold text-slate-950">待补充资料</h2>
-                  <p className="mt-1 text-sm leading-6 text-slate-500">当前系统缺失的 BaaS 必填字段在这里填写或上传；证件类型仅允许 PASSPORT。</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">当前系统缺失的 BaaS 必填字段在这里填写或上传；证件类型已固定为 PASSPORT 并展示在已获取资料中。</p>
                 </div>
               </div>
               <div className="mt-5 grid gap-3 lg:grid-cols-2">
@@ -623,11 +608,16 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
         </div>
       </footer>
 
-      {confirmOpen ? <ConfirmSubmitModal onCancel={() => setConfirmOpen(false)} onConfirm={() => { setConfirmOpen(false); setSubmitted(true) }} /> : null}
       {fatcaSignOpen ? <FatcaSigningModal onCancel={() => setFatcaSignOpen(false)} onConfirm={() => { setFatcaSigned(true); setErrors((current) => ({ ...current, fatcaSigning: '' })); setFatcaSignOpen(false) }} /> : null}
-      {submitted ? <SuccessModal onClose={() => setSubmitted(false)} onProceedToFee={continueToFee} /> : null}
-      {feeConfirmOpen ? <FeeConfirmModal balanceMode={feeBalanceMode} onBalanceModeChange={setFeeBalanceMode} onClose={() => setFeeConfirmOpen(false)} onConfirm={confirmFee} /> : null}
-      {feeResult ? <FeeResultModal type={feeResult} onClose={() => setFeeResult(null)} onContinue={openOpeningFeeDetail} /> : null}
+      {feeConfirmOpen ? <FeeConfirmModal onClose={() => setFeeConfirmOpen(false)} onConfirm={confirmFee} /> : null}
+      {feeResult ? (
+        <FeeResultModal
+          type={feeResult}
+          onClose={() => setFeeResult(null)}
+          onProceedToAccount={proceedToOpeningStatus}
+          onViewPrototypeRecord={openOpeningFeeDetail}
+        />
+      ) : null}
     </div>
   )
 }
