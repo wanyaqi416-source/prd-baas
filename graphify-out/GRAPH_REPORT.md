@@ -1,16 +1,16 @@
-# Graph Report - fidere_trust_prd  (2026-05-29)
+# Graph Report - fidere_trust_prd  (2026-05-31)
 
 ## Corpus Check
-- 82 files · ~65,724 words
+- 84 files · ~150,413 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 729 nodes · 1317 edges · 48 communities (43 shown, 5 thin omitted)
-- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 76 edges (avg confidence: 0.82)
+- 810 nodes · 1446 edges · 48 communities (44 shown, 4 thin omitted)
+- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 76 edges (avg confidence: 0.82)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `162ab75b`
+- Built from commit: `f9ceca7c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -34,7 +34,6 @@
 - [[_COMMUNITY_Community 16|Community 16]]
 - [[_COMMUNITY_Community 17|Community 17]]
 - [[_COMMUNITY_Community 18|Community 18]]
-- [[_COMMUNITY_Community 19|Community 19]]
 - [[_COMMUNITY_Community 20|Community 20]]
 - [[_COMMUNITY_Community 21|Community 21]]
 - [[_COMMUNITY_Community 26|Community 26]]
@@ -59,16 +58,17 @@
 - [[_COMMUNITY_Community 45|Community 45]]
 - [[_COMMUNITY_Community 46|Community 46]]
 - [[_COMMUNITY_Community 47|Community 47]]
+- [[_COMMUNITY_Community 48|Community 48]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `Badge()` - 38 edges
-2. `Card()` - 36 edges
+1. `Badge()` - 40 edges
+2. `Card()` - 38 edges
 3. `cn()` - 34 edges
-4. `Fidere Trust BaaS / Interlace 美国账户集成系统 PRD` - 22 edges
-5. `CardHeader()` - 21 edges
-6. `CardTitle()` - 21 edges
-7. `CardContent()` - 20 edges
-8. `Button()` - 13 edges
+4. `CardHeader()` - 23 edges
+5. `CardTitle()` - 23 edges
+6. `CardContent()` - 22 edges
+7. `Fidere Trust BaaS / Interlace 美国账户集成系统 PRD` - 22 edges
+8. `Button()` - 15 edges
 9. `SectionHeader()` - 13 edges
 10. `十三、数据库表设计建议` - 13 edges
 
@@ -110,23 +110,23 @@
 - **Transaction Audit Identifiers** — detail_transaction_identifier, detail_created_and_reviewed_dates, detail_copy_identifier_controls [INFERRED 0.84]
 - **Deposit Claim Review Workflow** — shenhe_deposit_claim_filter_panel, shenhe_deposit_claim_search_controls, shenhe_batch_claim_action, shenhe_deposit_claim_records_table, shenhe_match_status_badges, shenhe_processing_status_badges [INFERRED 0.86]
 
-## Communities (48 total, 5 thin omitted)
+## Communities (48 total, 4 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.09
-Nodes (38): mockApplication, transferModules, cn(), money(), ApiWebhookSection(), BalanceModelSection(), FlowNodeDetailPanel(), GuardrailAlert() (+30 more)
+Cohesion: 0.04
+Nodes (17): BaasAdminWorkbenchPrototype(), baasUserOperationApiNotes, clients, convertCurrencyMeta, createAccountApiSteps, createBaasAccountApiNotes, defaultCreateAccountForm, defaultPayeeForm (+9 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.12
-Nodes (22): BaasPrototypeHome(), ClientAdminVisibility(), FlowDiagram(), AccountOpeningModuleSection(), ApiWebhooksSection(), ArchitectureOverviewSection(), AuditLogsSection(), BalanceModelManualSection() (+14 more)
-
-### Community 2 - "Community 2"
-Cohesion: 0.07
-Nodes (18): attachmentFields, createEmptyBaasApplication(), createMockFile(), createMockUploadedImage(), getBaasApplicationSections(), mockBaasOpeningProfile, personalProfileFields, validateBaasApplication() (+10 more)
-
-### Community 3 - "Community 3"
 Cohesion: 0.05
 Nodes (29): PrdInvestPage(), CoreRuleConclusions(), fixedIncomeRules, auditActions, DataModelERD(), ledgerActions, checklist, DevelopmentAcceptanceChecklist() (+21 more)
+
+### Community 2 - "Community 2"
+Cohesion: 0.09
+Nodes (20): attachmentFields, countryMap, createEmptyBaasApplication(), createMockFile(), createMockUploadedImage(), getBaasApplicationSections(), getBaasValue(), getSystemValue() (+12 more)
+
+### Community 3 - "Community 3"
+Cohesion: 0.08
+Nodes (42): mockApplication, transferGuardrails, transferModules, cn(), money(), AdminDemo(), toRows(), ApiWebhookSection() (+34 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.07
@@ -145,8 +145,8 @@ Cohesion: 0.05
 Nodes (19): BaasOpeningPrototype(), bankAccountRows, demoStatuses, feeModes, formatCurrencyAmount(), internalTransferDirections, InternalTransferPage(), transferFeeConfig (+11 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.09
-Nodes (21): developerNotes, exceptionItems, fieldMappings, guardrails, openingDemoSteps, openingFeeAdminActions, openingFeeConfig, openingFeeRecordFields (+13 more)
+Cohesion: 0.05
+Nodes (49): developerNotes, exceptionItems, fieldMappings, guardrails, navItems, openingDemoSteps, openingFeeAdminActions, openingFeeConfig (+41 more)
 
 ### Community 9 - "Community 9"
 Cohesion: 0.11
@@ -188,10 +188,6 @@ Nodes (12): Asset Allocation Card, Asset Trend Chart, Card Based Finance Layout,
 Cohesion: 0.27
 Nodes (11): Account Top Navigation, Bank Wire Transfer Out Page, Beneficiary Bank Panel, Copyable Bank Fields, Currency Selector Tabs, Fee Reminder Banner, Form Validation Support Text, Paying Bank Panel (+3 more)
 
-### Community 19 - "Community 19"
-Cohesion: 0.27
-Nodes (7): baasPrototypeEntries, moduleTypeFilters, prdInvestLegacySections, prdModules, ProductManualHome(), PrdModuleCard(), ProductManualLayout()
-
 ### Community 20 - "Community 20"
 Cohesion: 0.29
 Nodes (8): BaaS Prototype Entry Hub, Legacy Investment PRD Composition, Product Manual Module Search and Filter, Vite Root Mount, BaaS / Interlace PRD Module, BaaS Prototype Entries, PRD Invest Legacy Sections, PRD Portal Module Catalog
@@ -209,16 +205,20 @@ Cohesion: 0.15
 Nodes (13): `account_balances`, `audit_logs`, `baas_manual_entries`, `beneficiaries`, `beneficiary_bank_accounts`, `client_ledger_entries`, `incoming_fiat_deposits`, `internal_funding_events` (+5 more)
 
 ### Community 29 - "Community 29"
-Cohesion: 0.18
-Nodes (10): DemoLot, designReasons, exitFlow, firstVersionRules, formatMoney(), initialDemoLots, phase2Rules, PositionLotStructure() (+2 more)
+Cohesion: 0.06
+Nodes (32): baasPrototypeEntries, moduleTypeFilters, prdInvestLegacySections, prdModules, BaasPrototypeHome(), acceptanceItems, adminNavigationModules, apiDirections (+24 more)
 
 ### Community 30 - "Community 30"
-Cohesion: 0.31
-Nodes (5): navItems, HeaderBar(), PrdLayout(), SidebarNav(), ScrollArea()
+Cohesion: 0.33
+Nodes (6): AccountOverview(), createPaymentPayees(), CreateTransferView(), formatAmount(), GlobalAccountAssetsTab(), TopContextBar()
 
 ### Community 31 - "Community 31"
 Cohesion: 0.20
 Nodes (10): Task 1：PRD 网页手册页面, Task 2：数据模型评审与迁移设计, Task 3：美国账户申请与开户费流程, Task 4：客户可见余额模型, Task 5：收款人与转出订单, Task 6：外部法币入账审核, Task 7：Internal Funding / OTC 后台记录, Task 8：费用、利润与对账 (+2 more)
+
+### Community 32 - "Community 32"
+Cohesion: 0.40
+Nodes (5): AccountPayeesTab(), AddPayeeFlow(), getAccountLabel(), getBaasUserAccountLabel(), getCountryName()
 
 ### Community 33 - "Community 33"
 Cohesion: 0.29
@@ -268,25 +268,29 @@ Nodes (4): P0 必做, P1 可做, 一期目标, 三、Phase 1 MVP 范围
 Cohesion: 0.50
 Nodes (4): 二期仍然保持, 二期可做, 二期目标, 四、Phase 2 MVP 范围
 
+### Community 47 - "Community 47"
+Cohesion: 0.67
+Nodes (3): ConvertView(), getConvertRate(), getDefaultConvertTarget()
+
 ## Knowledge Gaps
-- **217 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+212 more)
+- **244 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+239 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **5 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **4 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Badge()` connect `Community 0` to `Community 1`, `Community 2`, `Community 3`, `Community 5`, `Community 7`, `Community 19`, `Community 29`, `Community 30`?**
-  _High betweenness centrality (0.047) - this node is a cross-community bridge._
-- **Why does `cn()` connect `Community 0` to `Community 2`, `Community 3`, `Community 30`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
-- **Why does `Fidere Trust BaaS / Interlace 美国账户集成系统 PRD` connect `Community 27` to `Community 33`, `Community 34`, `Community 36`, `Community 37`, `Community 38`, `Community 39`, `Community 40`, `Community 41`, `Community 42`, `Community 43`, `Community 44`, `Community 28`, `Community 31`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
+- **Why does `Badge()` connect `Community 3` to `Community 0`, `Community 1`, `Community 2`, `Community 5`, `Community 7`, `Community 8`, `Community 29`?**
+  _High betweenness centrality (0.053) - this node is a cross-community bridge._
+- **Why does `Button()` connect `Community 29` to `Community 0`, `Community 2`, `Community 3`, `Community 5`, `Community 7`?**
+  _High betweenness centrality (0.016) - this node is a cross-community bridge._
+- **Why does `Card()` connect `Community 3` to `Community 8`, `Community 1`, `Community 29`, `Community 0`?**
+  _High betweenness centrality (0.015) - this node is a cross-community bridge._
 - **What connects `name`, `private`, `version` to the rest of the system?**
-  _217 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _244 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.0855464759959142 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.044444444444444446 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.11576354679802955 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05454545454545454 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.06565656565656566 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08534850640113797 - nodes in this community are weakly interconnected._

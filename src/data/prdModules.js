@@ -37,6 +37,21 @@ export const prdModules = [
     buttonLabel: '进入文档',
   },
   {
+    id: 'baas-system-reform',
+    title: 'BaaS系统改造',
+    subtitle: '账户体系、资金冻结、后台审核与 BaaS 执行链路改造',
+    description:
+      '用于承载 BaaS / Interlace 系统改造规划，聚焦客户账户切换、可用余额与冻结金额、内部转账、手续费展示、后台审核、手动执行和审计记录。',
+    category: '账户与资金',
+    status: 'Draft',
+    phase: 'System Reform',
+    route: '/admin/product-manual/baas-system-reform',
+    tags: ['BaaS', '系统改造', '账户体系', '资金冻结', '后台审核', '审计'],
+    source: 'Current Project',
+    moduleType: 'prd',
+    buttonLabel: '进入文档',
+  },
+  {
     id: 'baas-prototype',
     title: 'BaaS 原型',
     subtitle: 'BaaS / Interlace 产品原型入口',

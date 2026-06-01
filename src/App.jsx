@@ -26,7 +26,9 @@ import {
 import { ClientAdminVisibility } from './components/prd/ClientAdminVisibility'
 import { BaasOpeningApplicationPage } from './pages/BaasOpeningApplicationPage'
 import { BaasOpeningPrototype } from './pages/BaasOpeningPrototype'
+import { BaasAdminWorkbenchPrototype } from './pages/BaasAdminWorkbenchPrototype'
 import { BaasPrototypeHome } from './pages/BaasPrototypeHome'
+import { BaasSystemReformPage } from './pages/BaasSystemReformPage'
 import { ProductManualHome } from './pages/ProductManualHome'
 import { PrdInvestPage } from './pages/PrdInvestPage'
 
@@ -88,6 +90,19 @@ function App() {
 
   if (path === '/admin/product-manual/baas-prototype') {
     return <BaasPrototypeHome onBack={() => navigate('/')} onNavigate={navigate} />
+  }
+
+  if (path === '/admin/product-manual/baas-system-reform') {
+    return (
+      <BaasSystemReformPage
+        onBack={() => navigate('/')}
+        onOpenWorkbench={() => navigate('/admin/product-manual/baas-system-reform/workbench')}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/baas-system-reform/workbench') {
+    return <BaasAdminWorkbenchPrototype onBack={() => navigate('/admin/product-manual/baas-system-reform')} />
   }
 
   if (path === '/admin/product-manual/baas-prototype/opening') {
