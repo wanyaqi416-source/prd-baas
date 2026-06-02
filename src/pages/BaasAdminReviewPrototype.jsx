@@ -414,7 +414,7 @@ const initialFeeConfigs = [
 ]
 
 const fiatTabs = ['总览', '客户资产', '流水查询', '入账认领', '出金审批', '资金互转', '对账中心']
-const markedFiatTabs = new Set(['总览', '入账认领', '出金审批', '资金互转'])
+const markedFiatTabs = new Set(['总览', '客户资产', '流水查询', '入账认领', '出金审批', '资金互转'])
 
 function Header({ onBack }) {
   return (
@@ -574,15 +574,16 @@ function SelectBox({ label, width = 'w-[396px]' }) {
   )
 }
 
-function AccountTypeFilter({ value, onChange, width = 'w-[296px]' }) {
+function AccountTypeFilter({ value = '', onChange, width = 'w-[296px]' }) {
   return (
     <label className={`flex h-[50px] ${width} items-center justify-between rounded-[4px] border border-[#cfd1dc] bg-white px-[14px] text-[13px] text-[#4c4c68]`}>
       <span>账户类型</span>
       <select
-        value={value}
+        value={value ?? ''}
         onChange={(event) => onChange?.(event.target.value)}
         className="h-full min-w-[116px] bg-transparent text-right font-semibold text-[#20213a] outline-none"
       >
+        <option value="" disabled hidden>全部类型</option>
         {accountFilterOptions.map((option) => (
           <option key={option} value={option}>{option}</option>
         ))}
@@ -1232,7 +1233,7 @@ function FiatOverviewPanel({ onOpenManual, onChangeTab }) {
   )
 }
 
-function FiatFilterPanel({ variant = 'default', accountType = '香港账户', onAccountTypeChange, action }) {
+function FiatFilterPanel({ variant = 'default', accountType = '', onAccountTypeChange, action }) {
   const isIncoming = variant === 'incoming'
 
   return (
@@ -1319,8 +1320,8 @@ function IncomingClaimDrawer({ record, onClose }) {
 }
 
 function IncomingClaimPanel({ onOpenRecord }) {
-  const [accountType, setAccountType] = useState('香港账户')
-  const filteredRows = incomingClaimRows.filter((row) => row.accountType === accountType)
+  const [accountType, setAccountType] = useState('')
+  const filteredRows = accountType ? incomingClaimRows.filter((row) => row.accountType === accountType) : incomingClaimRows
 
   return (
     <>
@@ -1427,8 +1428,8 @@ function WithdrawalApprovalDrawer({ record, onClose }) {
 }
 
 function WithdrawalApprovalPanel({ onOpenRecord }) {
-  const [accountType, setAccountType] = useState('香港账户')
-  const filteredRows = withdrawalApprovalRows.filter((row) => row.accountType === accountType)
+  const [accountType, setAccountType] = useState('')
+  const filteredRows = accountType ? withdrawalApprovalRows.filter((row) => row.accountType === accountType) : withdrawalApprovalRows
 
   return (
     <>
@@ -1473,8 +1474,8 @@ function WithdrawalApprovalPanel({ onOpenRecord }) {
 }
 
 function FiatTransferPanel({ onOpenRecord }) {
-  const [accountType, setAccountType] = useState('香港账户')
-  const filteredRows = transferRows.filter((row) => row.fromAccount === accountType)
+  const [accountType, setAccountType] = useState('')
+  const filteredRows = accountType ? transferRows.filter((row) => row.fromAccount === accountType) : transferRows
 
   return (
     <>
@@ -1656,12 +1657,8 @@ function FiatLedgerQueryPanel() {
 }
 
 function CustomerAssetsPanel() {
-  const [accountType, setAccountType] = useState('香港账户')
   const [expandedCustomerId, setExpandedCustomerId] = useState(customerAssetRows[0]?.id || '')
-  const filteredRows = useMemo(
-    () => customerAssetRows.filter((row) => row.accountTypes.includes(accountType)),
-    [accountType],
-  )
+  const filteredRows = customerAssetRows
   const expandedCustomer = filteredRows.find((row) => row.id === expandedCustomerId) || filteredRows[0] || customerAssetRows[0]
 
   return (
@@ -1669,7 +1666,6 @@ function CustomerAssetsPanel() {
       <Panel className="px-[15px] py-[18px]">
         <div className="text-[16px] font-semibold text-[#20213a]">筛选条件</div>
         <div className="mt-[15px] flex flex-wrap items-center gap-[12px]">
-          <AccountTypeFilter value={accountType} onChange={setAccountType} width="w-[296px]" />
           <SelectBox label="全部币种" width="w-[296px]" />
           <SearchBox placeholder="客户ID、邮箱、姓名" width="w-[520px]" />
         </div>
@@ -1692,7 +1688,7 @@ function CustomerAssetsPanel() {
             <tbody>
               {filteredRows.map((row) => {
                 const isExpanded = expandedCustomer?.id === row.id
-                const currencyCount = row.accountBalances[accountType]?.length || 0
+                const currencies = [...new Set(Object.values(row.accountBalances).flat().map((balance) => balance.currency))]
 
                 return (
                   <Fragment key={row.id}>
@@ -1712,15 +1708,15 @@ function CustomerAssetsPanel() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-[18px] font-semibold text-[#20213a]">{accountType}</td>
+                      <td className="px-[18px] font-semibold text-[#20213a]">{row.accountTypes.join(' / ')}</td>
                       <td className="px-[18px] font-mono text-[14px] font-semibold text-[#006ee6]">{row.totalUsd}</td>
                       <td className="px-[18px] font-semibold text-[#55556e]">{row.yesterdayChange}</td>
                       <td className="px-[18px]">
                         <div className="flex gap-[8px]">
-                          {(row.accountBalances[accountType] || []).map((balance) => (
-                            <CurrencyPill key={`${row.id}-${accountType}-${balance.currency}`} currency={balance.currency} />
+                          {currencies.map((currency) => (
+                            <CurrencyPill key={`${row.id}-${currency}`} currency={currency} />
                           ))}
-                          <span className="sr-only">{currencyCount}</span>
+                          <span className="sr-only">{currencies.length}</span>
                         </div>
                       </td>
                       <td className="px-[18px]">{row.lastActivity}</td>
@@ -1734,7 +1730,7 @@ function CustomerAssetsPanel() {
                     {isExpanded ? (
                       <tr className="border-b border-[#e7e8ef] bg-white">
                         <td colSpan={8} className="px-[18px] py-[18px]">
-                          <div className="grid grid-cols-2 gap-[16px]">
+                          <div className="space-y-[16px]">
                             <AssetAccountCard title="香港账户" balances={row.accountBalances['香港账户']} />
                             <AssetAccountCard title="美国账户" balances={row.accountBalances['美国账户']} />
                           </div>
