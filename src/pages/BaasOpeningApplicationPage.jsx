@@ -542,7 +542,7 @@ export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, d
               className={accountType === 'enterprise' ? 'flex items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-left' : 'flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left hover:border-amber-200'}
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-amber-700 shadow-sm"><Building2 className="h-5 w-5" /></span>
-              <span><span className="block font-bold text-slate-950">企业开户</span><span className="mt-1 block text-sm text-slate-500">复用企业 KYB 资料，补充缺失文件、股东和授权代表信息。</span></span>
+              <span><span className="block font-bold text-slate-950">企业开户</span><span className="mt-1 block text-sm text-slate-500">复用企业 KYB 资料，补充企业信息、法人代表和股东信息。</span></span>
             </button>
           </div>
         </section>

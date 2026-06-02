@@ -290,7 +290,7 @@ export function BaasOpeningApplicationModal({ onClose, onProceedToFee }) {
                 </span>
                 <span>
                   <span className="block font-bold text-slate-950">企业开户</span>
-                  <span className="mt-1 block text-sm text-slate-500">复用企业 KYB 资料，补充缺失文件、股东和授权代表信息。</span>
+                  <span className="mt-1 block text-sm text-slate-500">复用企业 KYB 资料，补充企业信息、法人代表和股东信息。</span>
                 </span>
               </button>
             </div>
