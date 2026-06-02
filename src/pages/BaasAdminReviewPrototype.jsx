@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import {
   BriefcaseBusiness,
   CalendarDays,
@@ -18,6 +18,7 @@ import {
   ListChecks,
   PauseCircle,
   Percent,
+  Pencil,
   Play,
   Plus,
   Search,
@@ -202,6 +203,8 @@ const transferRows = [
 
 const manualAccountOptions = ['香港账户', '美国账户']
 
+const accountFilterOptions = ['香港账户', '美国账户']
+
 const incomingClaimRows = [
   {
     id: 'IC-20260522-001',
@@ -242,6 +245,93 @@ const incomingClaimRows = [
     matchedCustomer: 'luluzhuo',
     matchStatus: '已匹配',
     status: '处理完成',
+  },
+]
+
+const fiatLedgerRows = [
+  { id: 'LEDGER-20260525-001', time: '2026-05-25 16:01:10', customer: 'yejin', customerId: '130', accountType: '香港账户', currencyAmount: 'HKD 10', type: '出金', channel: '其他', referenceNo: '-', status: '待处理' },
+  { id: 'LEDGER-20260525-002', time: '2026-05-25 14:49:52', customer: 'QIXUE', customerId: '4', accountType: '美国账户', currencyAmount: 'USD 11', type: '出金', channel: '其他', referenceNo: '-', status: '待处理' },
+  { id: 'LEDGER-20260525-003', time: '2026-05-25 14:23:43', customer: 'QIXUE', customerId: '4', accountType: '美国账户', currencyAmount: 'USD 11', type: '出金', channel: '其他', referenceNo: '-', status: '待处理' },
+  { id: 'LEDGER-20260525-004', time: '2026-05-25 10:49:22', customer: 'yejin', customerId: '130', accountType: '香港账户', currencyAmount: 'USD 1', type: '出金', channel: '其他', referenceNo: '-', status: '待处理' },
+  { id: 'LEDGER-20260523-001', time: '2026-05-23 09:18:20', customer: 'wanyara', customerId: '120', accountType: '香港账户', currencyAmount: 'HKD 100', type: '入金', channel: '电汇', referenceNo: 'REF-HK-100', status: '处理完成' },
+  { id: 'LEDGER-20260520-001', time: '2026-05-20 11:05:44', customer: '2342', customerId: '98', accountType: '美国账户', currencyAmount: 'USD 20', type: '入金', channel: 'ACH', referenceNo: 'REF-US-020', status: '处理完成' },
+]
+
+const customerAssetRows = [
+  {
+    id: '130',
+    initials: 'j',
+    name: 'jin wu ye',
+    email: 'orvafrew@123mails.org',
+    type: '个人',
+    accountTypes: ['香港账户', '美国账户'],
+    totalUsd: '107.72',
+    yesterdayChange: '0',
+    lastActivity: '2026-05-25 07:36',
+    accountBalances: {
+      香港账户: [
+        { currency: 'HKD', available: '1.58', frozen: '12', inTransit: '0', total: '13.58', recentIn: '0', recentOut: '0' },
+        { currency: 'USD', available: '11', frozen: '1.2', inTransit: '0', total: '12.2', recentIn: '0', recentOut: '0' },
+      ],
+      美国账户: [
+        { currency: 'USD', available: '95.72', frozen: '0', inTransit: '0', total: '95.72', recentIn: '20', recentOut: '11' },
+      ],
+    },
+    recentFlows: [
+      { time: '2026-05-25 08:01:10', accountType: '香港账户', currencyAmount: 'HKD 10', direction: '出金', channel: '其他', status: '待处理' },
+      { time: '2026-05-25 03:29:03', accountType: '美国账户', currencyAmount: 'USD 1', direction: '出金', channel: '未知', status: '处理完成' },
+      { time: '2026-05-25 03:28:18', accountType: '美国账户', currencyAmount: 'USD 2', direction: '入金', channel: '未知', status: '处理完成' },
+    ],
+  },
+  {
+    id: '4',
+    initials: 'Q',
+    name: 'QIXUE',
+    email: 'voigtus1@123mails.org',
+    type: '个人',
+    accountTypes: ['美国账户'],
+    totalUsd: '44.00',
+    yesterdayChange: '0',
+    lastActivity: '2026-05-25 14:49',
+    accountBalances: {
+      香港账户: [
+        { currency: 'HKD', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
+        { currency: 'USD', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
+      ],
+      美国账户: [
+        { currency: 'USD', available: '44', frozen: '0', inTransit: '0', total: '44', recentIn: '0', recentOut: '22' },
+      ],
+    },
+    recentFlows: [
+      { time: '2026-05-25 14:49:52', accountType: '美国账户', currencyAmount: 'USD 11', direction: '出金', channel: '其他', status: '待处理' },
+      { time: '2026-05-25 14:23:43', accountType: '美国账户', currencyAmount: 'USD 11', direction: '出金', channel: '其他', status: '待处理' },
+      { time: '2026-05-20 11:05:44', accountType: '美国账户', currencyAmount: 'USD 20', direction: '入金', channel: 'ACH', status: '处理完成' },
+    ],
+  },
+  {
+    id: '120',
+    initials: 'w',
+    name: 'wanyara test',
+    email: 'wanyara@example.com',
+    type: '个人',
+    accountTypes: ['香港账户'],
+    totalUsd: '12.00',
+    yesterdayChange: '0',
+    lastActivity: '2026-05-23 09:18',
+    accountBalances: {
+      香港账户: [
+        { currency: 'HKD', available: '100', frozen: '0', inTransit: '0', total: '100', recentIn: '100', recentOut: '0' },
+        { currency: 'USD', available: '12', frozen: '0', inTransit: '0', total: '12', recentIn: '0', recentOut: '0' },
+      ],
+      美国账户: [
+        { currency: 'USD', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
+      ],
+    },
+    recentFlows: [
+      { time: '2026-05-23 09:18:20', accountType: '香港账户', currencyAmount: 'HKD 100', direction: '入金', channel: '电汇', status: '处理完成' },
+      { time: '2026-05-22 14:16:09', accountType: '香港账户', currencyAmount: 'USD 4', direction: '出金', channel: '其他', status: '处理完成' },
+      { time: '2026-05-21 13:55:10', accountType: '香港账户', currencyAmount: 'HKD 8', direction: '出金', channel: 'FPS', status: '处理完成' },
+    ],
   },
 ]
 
@@ -484,6 +574,23 @@ function SelectBox({ label, width = 'w-[396px]' }) {
   )
 }
 
+function AccountTypeFilter({ value, onChange, width = 'w-[296px]' }) {
+  return (
+    <label className={`flex h-[50px] ${width} items-center justify-between rounded-[4px] border border-[#cfd1dc] bg-white px-[14px] text-[13px] text-[#4c4c68]`}>
+      <span>账户类型</span>
+      <select
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
+        className="h-full min-w-[116px] bg-transparent text-right font-semibold text-[#20213a] outline-none"
+      >
+        {accountFilterOptions.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
 function StatusBadge({ children, tone = 'blue' }) {
   const className = {
     blue: 'bg-[#e7f5ff] text-[#2586d9]',
@@ -636,16 +743,61 @@ function OpeningReviewPage({ onOpenDetail, onOpenProcess }) {
 }
 
 function ReviewFieldCard({ label, value, note, editable = false }) {
+  const [displayValue, setDisplayValue] = useState(value)
+  const [draftValue, setDraftValue] = useState(value)
+  const [isEditing, setIsEditing] = useState(false)
+  const shownValue = editable ? displayValue : value
+
+  const startEditing = () => {
+    setDraftValue(displayValue)
+    setIsEditing(true)
+  }
+
+  const confirmEditing = () => {
+    setDisplayValue(draftValue)
+    setIsEditing(false)
+  }
+
+  const cancelEditing = () => {
+    setDraftValue(displayValue)
+    setIsEditing(false)
+  }
+
   return (
-    <div className="min-h-[82px] rounded-[5px] border border-[#e2e4ec] bg-[#fbfbfd] p-[14px]">
-      <div className="text-[12px] text-[#66677f]">{label}</div>
-      {editable ? (
+    <div className={`min-h-[82px] rounded-[5px] border p-[14px] transition ${
+      editable && isEditing
+        ? 'border-[#8b4fff] bg-white shadow-[0_0_0_1px_rgba(139,79,255,0.12)]'
+        : 'border-[#e2e4ec] bg-[#fbfbfd]'
+    }`}>
+      <div className="flex items-center justify-between gap-[10px]">
+        <span className="text-[12px] text-[#66677f]">{label}</span>
+        {editable ? (
+          <span className="flex items-center gap-[8px]">
+            {isEditing ? (
+              <>
+                <button type="button" onClick={confirmEditing} className="text-[#4bd20c]" aria-label="确认修改">
+                  <CheckCircle2 className="h-[15px] w-[15px]" strokeWidth={2.2} />
+                </button>
+                <button type="button" onClick={cancelEditing} className="text-[#ff4e59]" aria-label="取消修改">
+                  <XCircle className="h-[15px] w-[15px]" strokeWidth={2.2} />
+                </button>
+              </>
+            ) : (
+              <button type="button" onClick={startEditing} className="text-[#8b4fff]" aria-label="编辑字段">
+                <Pencil className="h-[14px] w-[14px]" strokeWidth={2} />
+              </button>
+            )}
+          </span>
+        ) : null}
+      </div>
+      {editable && isEditing ? (
         <input
-          defaultValue={value}
-          className="mt-[8px] h-[34px] w-full rounded-[4px] border border-[#cfd1dc] bg-white px-[10px] text-[13px] font-semibold text-[#24243d] outline-none focus:border-[#8b4fff]"
+          value={draftValue}
+          onChange={(event) => setDraftValue(event.target.value)}
+          className="mt-[8px] h-[34px] w-full rounded-[4px] border border-[#8b4fff] bg-white px-[10px] text-[13px] font-semibold text-[#24243d] outline-none"
         />
       ) : (
-        <div className="mt-[8px] text-[13px] font-semibold text-[#24243d]">{value}</div>
+        <div className="mt-[8px] text-[13px] font-semibold text-[#24243d]">{shownValue}</div>
       )}
       {note ? <div className="mt-[8px] text-[12px] leading-[18px] text-[#8a8ca0]">{note}</div> : null}
     </div>
@@ -664,8 +816,7 @@ function OpeningReviewDecisionCard() {
         <span>通过审核</span>
         <ChevronDown className="h-[16px] w-[16px] text-[#55556e]" />
       </label>
-      <textarea className="mt-[10px] h-[94px] w-full resize-none rounded-[5px] border border-[#d8d9e3] bg-white px-[12px] py-[10px] text-[13px] outline-none focus:border-[#8b4fff]" placeholder="审核备注" />
-      <button type="button" className="mt-[12px] flex h-[38px] w-full items-center justify-center gap-[8px] rounded-[5px] bg-[#bda2f9] text-[13px] font-semibold text-white hover:bg-[#9b63f5]">
+      <button type="button" className="mt-[14px] flex h-[38px] w-full items-center justify-center gap-[8px] rounded-[5px] bg-[#bda2f9] text-[13px] font-semibold text-white hover:bg-[#9b63f5]">
         <FileCheck2 className="h-[15px] w-[15px]" />
         保存修改并提交审核
       </button>
@@ -1081,19 +1232,23 @@ function FiatOverviewPanel({ onOpenManual, onChangeTab }) {
   )
 }
 
-function FiatFilterPanel({ variant = 'default' }) {
+function FiatFilterPanel({ variant = 'default', accountType = '香港账户', onAccountTypeChange, action }) {
+  const isIncoming = variant === 'incoming'
+
   return (
     <Panel className="mt-[21px] px-[15px] py-[18px]">
-      <div className="flex items-center gap-[12px]">
+      <div className="flex flex-wrap items-center gap-[12px]">
+        <AccountTypeFilter value={accountType} onChange={onAccountTypeChange} />
         <SelectBox label="状态：全部" width="w-[296px]" />
-        {variant === 'incoming' ? <SelectBox label="匹配状态：全部" width="w-[296px]" /> : null}
+        {isIncoming ? <SelectBox label="匹配状态：全部" width="w-[296px]" /> : null}
         <SelectBox label="开始日期" width="w-[296px]" />
         <SelectBox label="结束日期" width="w-[296px]" />
-        <SearchBox placeholder={variant === 'incoming' ? '参考号、付款人、备注...' : '客户、收款人...'} width="w-[296px]" />
+        {!isIncoming ? <SearchBox placeholder="客户、收款人..." width="w-[296px]" /> : null}
       </div>
-      <div className="mt-[18px] flex gap-[10px]">
+      <div className="mt-[18px] flex flex-wrap gap-[10px]">
+        {action}
         <PrimaryButton icon={Search}>查询</PrimaryButton>
-        <ActionButton icon={Clock3}>重置</ActionButton>
+        {!isIncoming ? <ActionButton icon={Clock3}>重置</ActionButton> : null}
       </div>
     </Panel>
   )
@@ -1164,17 +1319,18 @@ function IncomingClaimDrawer({ record, onClose }) {
 }
 
 function IncomingClaimPanel({ onOpenRecord }) {
+  const [accountType, setAccountType] = useState('香港账户')
+  const filteredRows = incomingClaimRows.filter((row) => row.accountType === accountType)
+
   return (
     <>
-      <FiatFilterPanel variant="incoming" />
+      <FiatFilterPanel
+        variant="incoming"
+        accountType={accountType}
+        onAccountTypeChange={setAccountType}
+        action={<PrimaryButton icon={FileCheck2}>批量认领</PrimaryButton>}
+      />
       <Panel className="mt-[21px] overflow-hidden">
-        <div className="flex items-center justify-between border-b border-[#e5e6ef] px-[18px] py-[14px]">
-          <PrimaryButton icon={FileCheck2}>批量认领</PrimaryButton>
-          <div className="flex gap-[10px]">
-            <SearchBox placeholder="参考号、付款人、备注..." width="w-[256px]" />
-            <ActionButton icon={Clock3}>重置</ActionButton>
-          </div>
-        </div>
         <div className="overflow-x-auto">
           <table className="min-w-[1180px] w-full border-collapse text-left text-[13px] text-[#55556e]">
             <thead>
@@ -1185,7 +1341,7 @@ function IncomingClaimPanel({ onOpenRecord }) {
               </tr>
             </thead>
             <tbody>
-              {incomingClaimRows.map((row) => (
+              {filteredRows.map((row) => (
                 <tr key={row.id} className="h-[62px] border-b border-[#e7e8ef] bg-white">
                   <td className="px-[18px]"><input type="checkbox" className="h-[15px] w-[15px]" /></td>
                   <td className="px-[18px]">{row.submittedAt}</td>
@@ -1271,9 +1427,12 @@ function WithdrawalApprovalDrawer({ record, onClose }) {
 }
 
 function WithdrawalApprovalPanel({ onOpenRecord }) {
+  const [accountType, setAccountType] = useState('香港账户')
+  const filteredRows = withdrawalApprovalRows.filter((row) => row.accountType === accountType)
+
   return (
     <>
-      <FiatFilterPanel />
+      <FiatFilterPanel accountType={accountType} onAccountTypeChange={setAccountType} />
       <Panel className="mt-[21px] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-[1180px] w-full border-collapse text-left text-[13px] text-[#55556e]">
@@ -1285,7 +1444,7 @@ function WithdrawalApprovalPanel({ onOpenRecord }) {
               </tr>
             </thead>
             <tbody>
-              {withdrawalApprovalRows.map((row) => (
+              {filteredRows.map((row) => (
                 <tr key={row.id} className="h-[78px] border-b border-[#e7e8ef] bg-white">
                   <td className="px-[18px]">{row.appliedAt}</td>
                   <td className="px-[18px]">
@@ -1314,9 +1473,12 @@ function WithdrawalApprovalPanel({ onOpenRecord }) {
 }
 
 function FiatTransferPanel({ onOpenRecord }) {
+  const [accountType, setAccountType] = useState('香港账户')
+  const filteredRows = transferRows.filter((row) => row.fromAccount === accountType)
+
   return (
     <>
-      <FiatFilterPanel />
+      <FiatFilterPanel accountType={accountType} onAccountTypeChange={setAccountType} />
       <Panel className="mt-[21px] overflow-hidden">
         <div className="overflow-x-auto">
         <table className="min-w-[1360px] w-full border-collapse text-left text-[13px] text-[#55556e]">
@@ -1336,7 +1498,7 @@ function FiatTransferPanel({ onOpenRecord }) {
             </tr>
           </thead>
           <tbody>
-            {transferRows.map((row) => (
+            {filteredRows.map((row) => (
               <tr key={row.requestId} className="h-[74px] border-b border-[#e7e8ef] bg-white">
                 <td className="px-[18px] font-semibold text-[#20213a]">{row.requestId}</td>
                 <td className="px-[18px]">
@@ -1367,6 +1529,227 @@ function FiatTransferPanel({ onOpenRecord }) {
         </table>
         </div>
       </Panel>
+    </>
+  )
+}
+
+function CurrencyPill({ currency }) {
+  const toneClass = currency === 'HKD'
+    ? 'bg-[#fff1d6] text-[#f39800]'
+    : 'bg-[#e7f5ff] text-[#237be8]'
+
+  return <span className={`inline-flex rounded-full px-[10px] py-[3px] text-[12px] font-semibold ${toneClass}`}>{currency}</span>
+}
+
+function DirectionBadge({ direction }) {
+  return <StatusBadge tone={direction === '入金' ? 'green' : 'red'}>{direction}</StatusBadge>
+}
+
+function AssetAccountCard({ title, balances }) {
+  return (
+    <div className="rounded-[6px] border border-[#e5e6ef] bg-white p-[18px] shadow-[0_7px_16px_rgba(28,29,42,0.08)]">
+      <div className="flex items-center gap-[9px] text-[15px] font-semibold text-[#20213a]">
+        <WalletCards className="h-[17px] w-[17px] text-[#8b4fff]" strokeWidth={2} />
+        {title}
+      </div>
+      <div className="mt-[14px] overflow-x-auto">
+        <table className="min-w-[620px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+          <thead>
+            <tr className="h-[44px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
+              {['币种', '可用', '冻结', '在途', '总计', '近7日入金', '近7日出金'].map((item) => (
+                <th key={item} className="px-[14px]">{item}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {balances.map((balance) => (
+              <tr key={`${title}-${balance.currency}`} className="h-[48px] border-b border-[#e7e8ef] last:border-b-0">
+                <td className="px-[14px]"><CurrencyPill currency={balance.currency} /></td>
+                <td className="px-[14px] font-semibold text-[#11883a]">{balance.available}</td>
+                <td className="px-[14px] font-semibold text-[#f39800]">{balance.frozen}</td>
+                <td className="px-[14px] font-semibold text-[#237be8]">{balance.inTransit}</td>
+                <td className="px-[14px] font-semibold text-[#55556e]">{balance.total}</td>
+                <td className="px-[14px] font-semibold text-[#11883a]">{balance.recentIn}</td>
+                <td className="px-[14px] font-semibold text-[#ff4f5b]">{balance.recentOut}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function RecentFlowsPanel({ customer }) {
+  const flows = customer?.recentFlows?.slice(0, 3) || []
+
+  return (
+    <Panel className="mt-[21px] overflow-hidden">
+      <div className="px-[18px] py-[16px]">
+        <div className="text-[16px] font-semibold text-[#20213a]">最近3笔流水</div>
+        <div className="mt-[4px] text-[12px] text-[#66677f]">客户ID: {customer?.id || '-'}</div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-[980px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+          <thead>
+            <tr className="h-[50px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
+              {['时间', '账户类型', '币种/金额', '方向', '渠道', '状态'].map((item) => (
+                <th key={item} className="px-[18px]">{item}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {flows.map((flow) => (
+              <tr key={`${flow.time}-${flow.accountType}-${flow.currencyAmount}`} className="h-[52px] border-b border-[#e7e8ef] last:border-b-0">
+                <td className="px-[18px]">{flow.time}</td>
+                <td className="px-[18px] font-semibold text-[#20213a]">{flow.accountType}</td>
+                <td className="px-[18px]">{flow.currencyAmount}</td>
+                <td className="px-[18px]"><DirectionBadge direction={flow.direction} /></td>
+                <td className="px-[18px]">{flow.channel}</td>
+                <td className="px-[18px]"><StatusBadge tone={fiatStatusTone(flow.status)}>{flow.status}</StatusBadge></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
+  )
+}
+
+function FiatLedgerQueryPanel() {
+  const [accountType, setAccountType] = useState('香港账户')
+  const filteredRows = fiatLedgerRows.filter((row) => row.accountType === accountType)
+
+  return (
+    <>
+      <FiatFilterPanel accountType={accountType} onAccountTypeChange={setAccountType} />
+      <Panel className="mt-[21px] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-[1180px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+            <thead>
+              <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
+                {['时间', '客户', '客户ID', '账户类型', '币种/金额', '类型', '渠道', '参考号', '状态'].map((item) => (
+                  <th key={item} className="px-[18px]">{item}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRows.map((row) => (
+                <tr key={row.id} className="h-[56px] border-b border-[#e7e8ef] bg-white">
+                  <td className="px-[18px]">{row.time}</td>
+                  <td className="px-[18px] font-semibold text-[#20213a]">{row.customer}</td>
+                  <td className="px-[18px]">{row.customerId}</td>
+                  <td className="px-[18px] font-semibold text-[#20213a]">{row.accountType}</td>
+                  <td className="px-[18px]">{row.currencyAmount}</td>
+                  <td className="px-[18px]"><DirectionBadge direction={row.type} /></td>
+                  <td className="px-[18px]">{row.channel}</td>
+                  <td className="px-[18px]">{row.referenceNo}</td>
+                  <td className="px-[18px]"><StatusBadge tone={fiatStatusTone(row.status)}>{row.status}</StatusBadge></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+    </>
+  )
+}
+
+function CustomerAssetsPanel() {
+  const [accountType, setAccountType] = useState('香港账户')
+  const [expandedCustomerId, setExpandedCustomerId] = useState(customerAssetRows[0]?.id || '')
+  const filteredRows = useMemo(
+    () => customerAssetRows.filter((row) => row.accountTypes.includes(accountType)),
+    [accountType],
+  )
+  const expandedCustomer = filteredRows.find((row) => row.id === expandedCustomerId) || filteredRows[0] || customerAssetRows[0]
+
+  return (
+    <>
+      <Panel className="px-[15px] py-[18px]">
+        <div className="text-[16px] font-semibold text-[#20213a]">筛选条件</div>
+        <div className="mt-[15px] flex flex-wrap items-center gap-[12px]">
+          <AccountTypeFilter value={accountType} onChange={setAccountType} width="w-[296px]" />
+          <SelectBox label="全部币种" width="w-[296px]" />
+          <SearchBox placeholder="客户ID、邮箱、姓名" width="w-[520px]" />
+        </div>
+        <div className="mt-[18px] flex gap-[10px] border-t border-[#e5e6ef] pt-[18px]">
+          <ActionButton icon={Clock3}>重置</ActionButton>
+          <PrimaryButton icon={Search}>查询</PrimaryButton>
+        </div>
+      </Panel>
+
+      <Panel className="mt-[21px] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-[1180px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+            <thead>
+              <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
+                {['', '客户信息', '账户类型', '总资产 (USD)', '较昨日', '币种数', '最后活动', '操作'].map((item) => (
+                  <th key={item} className="px-[18px]">{item}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRows.map((row) => {
+                const isExpanded = expandedCustomer?.id === row.id
+                const currencyCount = row.accountBalances[accountType]?.length || 0
+
+                return (
+                  <Fragment key={row.id}>
+                    <tr className={`h-[84px] border-b border-[#e7e8ef] ${isExpanded ? 'bg-[#e5f5ff]' : 'bg-white'}`}>
+                      <td className="px-[18px]">
+                        <button type="button" onClick={() => setExpandedCustomerId(row.id)} className="rounded-[4px] p-[5px] text-[#66677f] hover:bg-white">
+                          <ChevronDown className={`h-[16px] w-[16px] transition ${isExpanded ? 'rotate-180' : ''}`} />
+                        </button>
+                      </td>
+                      <td className="px-[18px]">
+                        <div className="flex items-center gap-[12px]">
+                          <span className="flex h-[39px] w-[39px] shrink-0 items-center justify-center rounded-full bg-[#2586d9] text-[14px] font-semibold text-white">{row.initials}</span>
+                          <div className="leading-[1.55]">
+                            <div className="font-semibold text-[#20213a]">{row.name}</div>
+                            <div>{row.id} · {row.type}</div>
+                            <div>{row.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-[18px] font-semibold text-[#20213a]">{accountType}</td>
+                      <td className="px-[18px] font-mono text-[14px] font-semibold text-[#006ee6]">{row.totalUsd}</td>
+                      <td className="px-[18px] font-semibold text-[#55556e]">{row.yesterdayChange}</td>
+                      <td className="px-[18px]">
+                        <div className="flex gap-[8px]">
+                          {(row.accountBalances[accountType] || []).map((balance) => (
+                            <CurrencyPill key={`${row.id}-${accountType}-${balance.currency}`} currency={balance.currency} />
+                          ))}
+                          <span className="sr-only">{currencyCount}</span>
+                        </div>
+                      </td>
+                      <td className="px-[18px]">{row.lastActivity}</td>
+                      <td className="px-[18px]">
+                        <div className="flex gap-[8px]">
+                          <ActionButton icon={FileText}>流水</ActionButton>
+                          <ActionButton icon={Plus}>调整</ActionButton>
+                        </div>
+                      </td>
+                    </tr>
+                    {isExpanded ? (
+                      <tr className="border-b border-[#e7e8ef] bg-white">
+                        <td colSpan={8} className="px-[18px] py-[18px]">
+                          <div className="grid grid-cols-2 gap-[16px]">
+                            <AssetAccountCard title="香港账户" balances={row.accountBalances['香港账户']} />
+                            <AssetAccountCard title="美国账户" balances={row.accountBalances['美国账户']} />
+                          </div>
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+
+      <RecentFlowsPanel customer={expandedCustomer} />
     </>
   )
 }
@@ -1412,10 +1795,12 @@ function FiatAssetManagementPage() {
 
       <div className="mt-[21px]">
         {activeTab === '总览' ? <FiatOverviewPanel onOpenManual={openManualDrawer} onChangeTab={setActiveTab} /> : null}
+        {activeTab === '客户资产' ? <CustomerAssetsPanel /> : null}
+        {activeTab === '流水查询' ? <FiatLedgerQueryPanel /> : null}
         {activeTab === '入账认领' ? <IncomingClaimPanel onOpenRecord={setSelectedIncomingClaim} /> : null}
         {activeTab === '出金审批' ? <WithdrawalApprovalPanel onOpenRecord={setSelectedWithdrawal} /> : null}
         {activeTab === '资金互转' ? <FiatTransferPanel onOpenRecord={setSelectedTransfer} /> : null}
-        {!['总览', '入账认领', '出金审批', '资金互转'].includes(activeTab) ? (
+        {!['总览', '客户资产', '流水查询', '入账认领', '出金审批', '资金互转'].includes(activeTab) ? (
           <Panel className="p-[36px] text-center text-[13px] text-[#66677f]">{activeTab} 数据占位，当前原型重点展示总览、入账认领、出金审批和资金互转。</Panel>
         ) : null}
       </div>
