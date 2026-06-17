@@ -21,6 +21,7 @@ import { useState } from 'react'
 
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
+import { TransactionDetailDrawer, formatDetailCurrencyAmount } from '../components/baas/TransactionDetailDrawer'
 import { IncomingFiatDepositPrototype } from './IncomingFiatDepositPrototype'
 
 const demoStatuses = [
@@ -115,6 +116,76 @@ const formatChineseDate = (text) => {
   const datePart = String(text || '').split(' ')[0]
   const [year, month, day] = datePart.split('-')
   return year && month && day ? `${year}年${Number(month)}月${Number(day)}日` : text
+}
+
+const internalTransferStatusMeta = {
+  COMPLETED: {
+    label: '已完成',
+    badge: 'success',
+    statusTone: 'success',
+    description: '资金互转申请已完成，资金已从转出账户划转至转入账户。',
+  },
+  UNDER_REVIEW: {
+    label: '待审核',
+    badge: 'warning',
+    statusTone: 'warning',
+    description: '资金互转申请已提交，等待后台审核处理。',
+  },
+  PENDING_REVIEW: {
+    label: '待审核',
+    badge: 'warning',
+    statusTone: 'warning',
+    description: '资金互转申请已提交，等待后台审核处理。',
+  },
+  PROCESSING: {
+    label: '处理中',
+    badge: 'warning',
+    statusTone: 'processing',
+    description: '资金互转申请正在处理中，请等待后台处理结果。',
+  },
+  REJECTED: {
+    label: '已拒绝',
+    badge: 'danger',
+    statusTone: 'danger',
+    description: '资金互转申请已被拒绝，具体原因请查看审核结果。',
+  },
+}
+
+const getInternalTransferStatusMeta = (record) => {
+  const rawStatus = String(record?.status || record?.statusLabel || '').toUpperCase()
+  const rawLabel = String(record?.statusLabel || record?.status || '')
+  let meta = internalTransferStatusMeta[rawStatus]
+
+  if (!meta && rawLabel.includes('完成')) meta = internalTransferStatusMeta.COMPLETED
+  if (!meta && (rawLabel.includes('待') || rawLabel.includes('审核'))) meta = internalTransferStatusMeta.UNDER_REVIEW
+  if (!meta && rawLabel.includes('拒')) meta = internalTransferStatusMeta.REJECTED
+  if (!meta && rawLabel.includes('处理')) meta = internalTransferStatusMeta.PROCESSING
+
+  const fallbackMeta = meta || internalTransferStatusMeta.PROCESSING
+  return {
+    ...fallbackMeta,
+    label: record?.statusLabel || fallbackMeta.label,
+  }
+}
+
+const stripCurrencyPrefix = (currency, value) => {
+  if (value === null || value === undefined || value === '') return value
+  const currencyText = String(currency || '').trim()
+  const valueText = String(value).trim()
+  if (currencyText && valueText.toUpperCase().startsWith(currencyText.toUpperCase())) {
+    return valueText.slice(currencyText.length).trim()
+  }
+  if (currencyText && valueText.toUpperCase().endsWith(currencyText.toUpperCase())) {
+    return valueText.slice(0, -currencyText.length).trim()
+  }
+  return value
+}
+
+const formatTransferDetailCurrencyAmount = (currency, value) => {
+  if (value === null || value === undefined || value === '') return '--'
+  const valueText = String(value)
+  if (currency && valueText.trim().toUpperCase().startsWith(String(currency).toUpperCase())) return value
+  return formatDetailCurrencyAmount(currency, value)
 }
 
 const makeTransactionId = () => {
@@ -1235,6 +1306,12 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
     onSubmit({
       ...confirmDraft,
       id: `IT-${Date.now()}`,
+      transactionType: 'internal_transfer',
+      type: '资金互转',
+      customerName: 'Wanyara Wan',
+      customerId: '154',
+      customerEmail: 'xr3kes66@123mails.org',
+      actualArrivalAmount: confirmDraft.amount,
       createdAt: formatTransferTime(),
       status: 'UNDER_REVIEW',
       statusLabel: '待后台审核',
@@ -1350,7 +1427,57 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
   )
 }
 
+function InternalTransferDetailPage({ record, onBack }) {
+  const statusMeta = getInternalTransferStatusMeta(record)
+  const currency = record.currency || record.transferCurrency
+  const amount = stripCurrencyPrefix(currency, record.amount || record.transferAmount)
+  const actualArrivalAmount = stripCurrencyPrefix(
+    currency,
+    record.actualArrivalAmount || record.actualArrivalAmountDisplay || record.arrivalAmountDisplay || record.estimatedArrival || record.amount,
+  )
+  const customer = record.customer || {
+    name: record.customerName,
+    id: record.customerId,
+    email: record.customerEmail,
+  }
+
+  return (
+    <TransactionDetailDrawer
+      title="资金互转详情"
+      subtitle="INTERNAL TRANSFER DETAIL"
+      headerIcon={RefreshCw}
+      statusTone={statusMeta.statusTone}
+      amountTone="neutral"
+      statusLabel={statusMeta.label}
+      amount={amount}
+      currency={currency}
+      customer={customer}
+      businessRows={[
+        { label: '交易类型', value: record.type || '资金互转', strong: true },
+        { label: '转出账户', value: record.sourceAccount || record.fromAccount },
+        { label: '转入账户', value: record.targetAccount || record.toAccount },
+        { label: '币种', value: currency },
+        { label: '转账金额', value: formatTransferDetailCurrencyAmount(currency, amount) },
+        { label: '实际到账金额', value: formatTransferDetailCurrencyAmount(currency, actualArrivalAmount) },
+      ]}
+      instructionRows={[
+        { label: '申请编号', value: record.requestId || record.id, strong: true },
+        { label: '提交时间', value: record.submittedAt || record.createdAt },
+        { label: '完成时间', value: record.completedAt },
+      ]}
+      description={statusMeta.description}
+      onBack={onBack}
+    />
+  )
+}
+
 function InternalTransferRecordsPage({ records, onBack, onCreate }) {
+  const [selectedRecord, setSelectedRecord] = useState(null)
+
+  if (selectedRecord) {
+    return <InternalTransferDetailPage record={selectedRecord} onBack={() => setSelectedRecord(null)} />
+  }
+
   return (
     <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
       <header className="border-b border-slate-200 bg-white">
@@ -1384,26 +1511,34 @@ function InternalTransferRecordsPage({ records, onBack, onCreate }) {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1040px] text-sm">
+              <table className="w-full min-w-[1120px] text-sm">
                 <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-500">
                   <tr>
-                    {['申请编号', '转出账户', '转入账户', '币种', '转账金额', '状态', '提交时间'].map((item) => (
+                    {['申请编号', '转出账户', '转入账户', '币种', '转账金额', '状态', '提交时间', '操作'].map((item) => (
                       <th key={item} className="px-6 py-4">{item}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {records.map((record) => (
-                    <tr key={record.id} className="border-t border-slate-100">
-                      <td className="px-6 py-5 font-semibold text-slate-900">{record.id}</td>
-                      <td className="px-6 py-5">{record.sourceAccount}</td>
-                      <td className="px-6 py-5">{record.targetAccount}</td>
-                      <td className="px-6 py-5">{record.currency}</td>
-                      <td className="px-6 py-5 font-semibold">{record.currency} {record.amount}</td>
-                      <td className="px-6 py-5"><Badge variant="warning">{record.statusLabel}</Badge></td>
-                      <td className="px-6 py-5 text-slate-500">{record.createdAt}</td>
-                    </tr>
-                  ))}
+                  {records.map((record) => {
+                    const statusMeta = getInternalTransferStatusMeta(record)
+                    return (
+                      <tr key={record.id} className="border-t border-slate-100">
+                        <td className="px-6 py-5 font-semibold text-slate-900">{record.id}</td>
+                        <td className="px-6 py-5">{record.sourceAccount}</td>
+                        <td className="px-6 py-5">{record.targetAccount}</td>
+                        <td className="px-6 py-5">{record.currency}</td>
+                        <td className="px-6 py-5 font-semibold">{record.currency} {record.amount}</td>
+                        <td className="px-6 py-5"><Badge variant={statusMeta.badge}>{statusMeta.label}</Badge></td>
+                        <td className="px-6 py-5 text-slate-500">{record.createdAt}</td>
+                        <td className="px-6 py-5">
+                          <Button type="button" onClick={() => setSelectedRecord(record)} variant="outline" size="sm" className="rounded-lg">
+                            详情
+                          </Button>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1414,7 +1549,13 @@ function InternalTransferRecordsPage({ records, onBack, onCreate }) {
   )
 }
 
-export function BaasOpeningPrototype({ onBack, onOpenApplication, onPrototypeHome, initialStatus = 'not_opened' }) {
+export function BaasOpeningPrototype({
+  onBack,
+  onOpenApplication,
+  onPrototypeHome,
+  initialStatus = 'not_opened',
+  IncomingFiatDepositComponent = IncomingFiatDepositPrototype,
+}) {
   const [status, setStatus] = useState(initialStatus)
   const [activeAccount, setActiveAccount] = useState('trust')
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -1456,7 +1597,7 @@ export function BaasOpeningPrototype({ onBack, onOpenApplication, onPrototypeHom
   }
 
   if (status === 'opened' && activeOpenedPage === 'external-fiat-transfer-in') {
-    return <IncomingFiatDepositPrototype onBack={() => setActiveOpenedPage('account')} />
+    return <IncomingFiatDepositComponent onBack={() => setActiveOpenedPage('account')} />
   }
 
   if (status === 'opened' && activeOpenedPage === 'external-fiat-transfer-out') {

@@ -66,6 +66,36 @@ export const prdModules = [
     moduleType: 'prototype',
     buttonLabel: '进入原型',
   },
+  {
+    id: 'system-page-optimization',
+    title: '系统页面优化',
+    subtitle: '从用户任务角度重组开户、入金等关键页面原型',
+    description:
+      '独立承载系统页面优化原型，重点让用户进入页面后清楚当前步骤、下一步操作、需要准备的信息以及提交后的状态反馈。第一版聚焦开户流程与银行电汇入金页面优化。',
+    category: '原型',
+    status: 'Prototype',
+    phase: 'UX Optimization',
+    route: '/admin/product-manual/system-page-optimization',
+    tags: ['原型', '页面优化', '用户流程', '开户', '银行电汇入金', 'BaaS'],
+    source: 'Current Project',
+    moduleType: 'prototype',
+    buttonLabel: '进入优化原型',
+  },
+  {
+    id: 'securities-account-opening',
+    title: '开通券商账户',
+    subtitle: '选择券商、查看券商介绍、确认开户费并提交开户申请',
+    description:
+      '选择券商、查看券商介绍、确认开户费并提交开户申请，第一阶段由平台人工处理开户结果。',
+    category: '投资与账户',
+    status: 'Prototype',
+    phase: 'Prototype Draft',
+    route: '/admin/product-manual/securities-account-opening',
+    tags: ['证券账户', '券商开户', 'IBKR', 'Webull', '开户费', '人工审核'],
+    source: 'Current Project',
+    moduleType: 'prototype',
+    buttonLabel: '进入原型',
+  },
 ]
 
 export const baasPrototypeEntries = [

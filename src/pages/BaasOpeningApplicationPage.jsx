@@ -18,6 +18,7 @@ import { useMemo, useState } from 'react'
 
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
+import { TransactionDetailDrawer } from '../components/baas/TransactionDetailDrawer'
 import {
   createEmptyBaasApplication,
   createMockFile,
@@ -46,6 +47,7 @@ const createOpeningFeeRecord = () => {
   const createdAt = formatOpeningFeeTime()
   return {
     id: makeOpeningFeeTransactionId(),
+    transactionType: 'account_opening_fee',
     type: '开户费扣款',
     statusLabel: '已完成',
     amount: '500.00',
@@ -63,6 +65,34 @@ const createOpeningFeeRecord = () => {
     nextStatus: '开户审核中',
     description: '开户资料提交后，开户费扣款成功，申请进入后台审核流程。',
   }
+}
+
+const createOpeningRefundRecord = (openingFeeRecord) => {
+  const refundedAt = formatOpeningFeeTime()
+  return {
+    ...openingFeeRecord,
+    id: makeOpeningFeeTransactionId(),
+    transactionType: 'account_opening_refund',
+    type: '开户退款',
+    statusLabel: '退款成功',
+    refundStatus: '退款成功',
+    amount: openingFeeRecord.amount,
+    currency: openingFeeRecord.currency,
+    feeAmount: '0.00',
+    creditAccount: openingFeeRecord.creditAccount || openingFeeRecord.debitAccount || '信托账户',
+    originalTransactionType: openingFeeRecord.type || '开户费扣款',
+    originalTransactionId: openingFeeRecord.id,
+    refundReason: openingFeeRecord.rejectReason || '开户申请被拒绝',
+    transactionTime: refundedAt,
+    refundedAt,
+    description: '开户申请审核拒绝，系统已将开户扣费金额退回至原扣费账户。',
+  }
+}
+
+const getOpeningTransactionKind = (record) => {
+  const typeText = String(record?.transactionType || record?.type || '').toLowerCase()
+  if (typeText.includes('account_opening_refund') || typeText.includes('开户退款')) return 'account_opening_refund'
+  return 'account_opening_fee'
 }
 
 function ModalShell({ children }) {
@@ -194,89 +224,57 @@ function FeeResultModal({ type, onClose, onProceedToAccount, onViewPrototypeReco
   )
 }
 
-function TransactionDetailRow({ label, value, strong = false }) {
+function OpeningFeeTransactionDetailPage({ record, onBack }) {
+  const initialType = getOpeningTransactionKind(record) === 'account_opening_refund' ? 'rejected' : 'completed'
+  const [activeType, setActiveType] = useState(initialType)
+  const refundRecord = useMemo(() => createOpeningRefundRecord(record), [record])
+  const activeRecord = activeType === 'rejected' ? refundRecord : record
+  const isRefund = getOpeningTransactionKind(activeRecord) === 'account_opening_refund'
+
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-slate-100 py-3 last:border-b-0">
-      <span className="text-sm text-slate-500">{label}</span>
-      <span className={strong ? 'max-w-[220px] text-right text-sm font-bold text-slate-950' : 'max-w-[220px] text-right text-sm font-semibold text-slate-700'}>{value}</span>
-    </div>
-  )
-}
-
-function OpeningFeeTransactionDetailPage({ record, onBack, onProceedToOpeningStatus }) {
-  return (
-    <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
-      <main className="mx-auto min-h-screen max-w-[460px] bg-[#f7faff] shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-              <FileText className="h-5 w-5" />
-            </span>
-            <div>
-              <h1 className="text-base font-bold text-slate-950">开户费 详情</h1>
-              <div className="text-xs font-bold uppercase tracking-wide text-slate-400">TRANSACTION DETAIL</div>
-            </div>
-          </div>
-          <button type="button" onClick={onBack} className="rounded-full p-2 text-slate-400 hover:bg-slate-100">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="space-y-6 px-6 py-6">
-          <section className="rounded-3xl border border-slate-200 bg-white px-6 py-8 text-center shadow-sm">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-emerald-100 bg-emerald-50 text-emerald-600">
-              <CheckCircle2 className="h-6 w-6" />
-            </div>
-            <div className="mt-5 text-sm text-slate-500">{record.statusLabel}</div>
-            <div className="mt-3 text-3xl font-bold text-red-500">
-              - {record.amount}
-              <span className="ml-2 text-base font-semibold text-slate-500">{record.currency}</span>
-            </div>
-            <div className="mt-3 text-sm text-slate-500">手续费: {record.feeAmount} {record.currency}</div>
-          </section>
-
-          <section>
-            <h2 className="mb-3 text-sm font-bold text-slate-700">客户</h2>
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-4">
-                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-slate-500">
-                  <UserRound className="h-6 w-6" />
-                </span>
-                <div>
-                  <div className="font-bold text-slate-950">{record.customerName}</div>
-                  <div className="mt-1 text-sm text-slate-500">ID: {record.customerId}</div>
-                  <div className="mt-1 text-sm text-slate-500">{record.customerEmail}</div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="mb-3 text-sm font-bold text-slate-700">业务信息</h2>
-            <div className="rounded-3xl border border-slate-200 bg-white px-5 py-3 shadow-sm">
-              <TransactionDetailRow label="交易类型" value={record.type} strong />
-              <TransactionDetailRow label="扣费账户" value={record.debitAccount} />
-            </div>
-          </section>
-
-          <section>
-            <h2 className="mb-3 text-sm font-bold text-slate-700">指示详情</h2>
-            <div className="rounded-3xl border border-slate-200 bg-white px-5 py-3 shadow-sm">
-              <TransactionDetailRow label="交易编号" value={record.id} strong />
-              <TransactionDetailRow label="交易时间" value={record.transactionTime || record.createdAt} />
-            </div>
-          </section>
-
-          <section>
-            <h2 className="mb-3 text-sm font-bold text-slate-700">说明</h2>
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-600 shadow-sm">
-              {record.description}
-            </div>
-          </section>
-
-        </div>
-      </main>
-    </div>
+    <TransactionDetailDrawer
+      title={isRefund ? '开户退款详情' : '开户费 详情'}
+      subtitle={isRefund ? 'ACCOUNT OPENING REFUND DETAIL' : 'TRANSACTION DETAIL'}
+      headerIcon={FileText}
+      statusTone="success"
+      amountTone={isRefund ? 'credit' : 'success'}
+      amountPrefix={isRefund ? '+' : '-'}
+      statusLabel={activeRecord.statusLabel}
+      amount={activeRecord.amount}
+      currency={activeRecord.currency}
+      feeLabel="手续费"
+      feeAmount={activeRecord.feeAmount}
+      customer={{
+        name: activeRecord.customerName,
+        id: activeRecord.customerId,
+        email: activeRecord.customerEmail,
+      }}
+      businessRows={isRefund ? [
+        { label: '交易类型', value: activeRecord.type, strong: true },
+        { label: '入账账户', value: activeRecord.creditAccount },
+        { label: '原交易类型', value: activeRecord.originalTransactionType },
+        { label: '退款原因', value: activeRecord.refundReason },
+      ] : [
+        { label: '交易类型', value: activeRecord.type, strong: true },
+        { label: '扣费账户', value: activeRecord.debitAccount },
+      ]}
+      instructionRows={isRefund ? [
+        { label: '交易编号', value: activeRecord.id, strong: true },
+        { label: '原扣费交易编号', value: activeRecord.originalTransactionId },
+        { label: '退款时间', value: activeRecord.refundedAt || activeRecord.transactionTime || activeRecord.createdAt },
+      ] : [
+        { label: '交易编号', value: activeRecord.id, strong: true },
+        { label: '交易时间', value: activeRecord.transactionTime || activeRecord.createdAt },
+      ]}
+      description={activeRecord.description}
+      tabs={[
+        { id: 'completed', label: '已完成' },
+        { id: 'rejected', label: '已拒绝' },
+      ]}
+      activeTab={activeType}
+      onTabChange={setActiveType}
+      onBack={onBack}
+    />
   )
 }
 

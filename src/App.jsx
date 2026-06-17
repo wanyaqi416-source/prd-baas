@@ -29,9 +29,12 @@ import { BaasOpeningApplicationPage } from './pages/BaasOpeningApplicationPage'
 import { BaasOpeningPrototype } from './pages/BaasOpeningPrototype'
 import { BaasAdminWorkbenchPrototype } from './pages/BaasAdminWorkbenchPrototype'
 import { BaasPrototypeHome } from './pages/BaasPrototypeHome'
+import { BaasSystemPageOptimizationPrototype } from './pages/BaasSystemPageOptimizationPrototype'
 import { BaasSystemReformPage } from './pages/BaasSystemReformPage'
+import { OptimizedIncomingFiatDepositPrototype } from './pages/OptimizedIncomingFiatDepositPrototype'
 import { ProductManualHome } from './pages/ProductManualHome'
 import { PrdInvestPage } from './pages/PrdInvestPage'
+import { SecuritiesAccountOpeningPrototype } from './pages/SecuritiesAccountOpeningPrototype'
 
 function useCurrentPath() {
   const [path, setPath] = useState(window.location.pathname)
@@ -85,6 +88,7 @@ function BaasInterlacePage({ onBack }) {
 function App() {
   const [path, navigate] = useCurrentPath()
   const [baasOpeningInitialStatus, setBaasOpeningInitialStatus] = useState('not_opened')
+  const [optimizedOpeningInitialStatus, setOptimizedOpeningInitialStatus] = useState('not_opened')
 
   if (path === '/admin/product-manual/prd-invest') {
     return <PrdInvestPage onBack={() => navigate('/')} />
@@ -92,6 +96,14 @@ function App() {
 
   if (path === '/admin/product-manual/baas-prototype') {
     return <BaasPrototypeHome onBack={() => navigate('/')} onNavigate={navigate} />
+  }
+
+  if (path === '/admin/product-manual/system-page-optimization') {
+    return <BaasSystemPageOptimizationPrototype onBack={() => navigate('/')} onNavigate={navigate} />
+  }
+
+  if (path === '/admin/product-manual/securities-account-opening') {
+    return <SecuritiesAccountOpeningPrototype onBack={() => navigate('/')} />
   }
 
   if (path === '/admin/product-manual/baas-system-reform') {
@@ -105,6 +117,34 @@ function App() {
 
   if (path === '/admin/product-manual/baas-system-reform/workbench') {
     return <BaasAdminWorkbenchPrototype onBack={() => navigate('/admin/product-manual/baas-system-reform')} />
+  }
+
+  if (path === '/admin/product-manual/system-page-optimization/opening') {
+    return (
+      <BaasOpeningPrototype
+        onBack={() => navigate('/admin/product-manual/system-page-optimization')}
+        onOpenApplication={() => navigate('/admin/product-manual/system-page-optimization/account-opening/create')}
+        onPrototypeHome={() => navigate('/admin/product-manual/system-page-optimization')}
+        initialStatus={optimizedOpeningInitialStatus}
+        IncomingFiatDepositComponent={OptimizedIncomingFiatDepositPrototype}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/system-page-optimization/incoming-fiat-deposit') {
+    return <OptimizedIncomingFiatDepositPrototype onBack={() => navigate('/admin/product-manual/system-page-optimization')} />
+  }
+
+  if (path === '/admin/product-manual/system-page-optimization/account-opening/create') {
+    return (
+      <BaasOpeningApplicationPage
+        onBack={() => navigate('/admin/product-manual/system-page-optimization/opening')}
+        onProceedToOpeningStatus={() => {
+          setOptimizedOpeningInitialStatus('reviewing')
+          navigate('/admin/product-manual/system-page-optimization/opening')
+        }}
+      />
+    )
   }
 
   if (path === '/admin/product-manual/baas-prototype/opening') {
