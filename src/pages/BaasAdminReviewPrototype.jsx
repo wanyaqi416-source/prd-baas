@@ -1235,7 +1235,7 @@ function DrawerSelectField({ label, value, onChange, options, placeholder }) {
   )
 }
 
-function DrawerInputField({ label, placeholder = '', prefix = '', value, onChange, type = 'text' }) {
+function DrawerInputField({ label, placeholder = '', prefix = '', value, onChange, type = 'text', readOnly = false }) {
   const inputProps = value === undefined
     ? {}
     : {
@@ -1248,7 +1248,13 @@ function DrawerInputField({ label, placeholder = '', prefix = '', value, onChang
       <span className="mb-[-8px] ml-[10px] inline-block bg-white px-[4px] text-[12px] text-[#66677f]">{label}</span>
       <div className="flex h-[54px] items-center rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] text-[14px] text-[#24243d]">
         {prefix ? <span className="mr-[8px] font-semibold">{prefix}</span> : null}
-        <input type={type} className="h-full min-w-0 flex-1 bg-transparent outline-none" placeholder={placeholder} {...inputProps} />
+        <input
+          type={type}
+          readOnly={readOnly}
+          className={`h-full min-w-0 flex-1 bg-transparent outline-none ${readOnly ? 'cursor-default text-[#55556e]' : ''}`}
+          placeholder={placeholder}
+          {...inputProps}
+        />
       </div>
     </label>
   )
@@ -1332,13 +1338,18 @@ function BrokerageDrawerSection({ title, children }) {
   )
 }
 
-function BrokerageAccountForm({ value, onChange }) {
-  const updateField = (field, nextValue) => onChange({ ...value, [field]: nextValue })
+function BrokerageAccountForm({ value, onChange, lockedBrokerName = '' }) {
+  const displayBrokerName = lockedBrokerName || value.brokerName
+  const updateField = (field, nextValue) => onChange({ ...value, brokerName: displayBrokerName, [field]: nextValue })
 
   return (
     <BrokerageDrawerSection title="券商账户信息（客户可见）">
       <div className="space-y-[13px]">
-        <DrawerInputField label="券商名称 *" value={value.brokerName} onChange={(nextValue) => updateField('brokerName', nextValue)} />
+        {lockedBrokerName ? (
+          <BrokerageReadOnlyField label="券商名称 *" value={displayBrokerName} />
+        ) : (
+          <DrawerInputField label="券商名称 *" value={displayBrokerName} onChange={(nextValue) => updateField('brokerName', nextValue)} />
+        )}
         <DrawerInputField label="账户名称 *" value={value.accountName} onChange={(nextValue) => updateField('accountName', nextValue)} placeholder="XXX Trust Account" />
         <DrawerInputField label="券商账户号码 *" value={value.accountNumber} onChange={(nextValue) => updateField('accountNumber', nextValue)} placeholder="请输入券商账户号码" />
         <DrawerInputField label="账户币种 *" value={value.currency} onChange={(nextValue) => updateField('currency', nextValue)} placeholder="USD" />
@@ -1354,12 +1365,6 @@ function canReuploadBrokerageMaterial(application, material) {
   if (application.brokerId === 'webull') return material.id === 'basic_profile'
   if (application.brokerId === 'ibkr') return material.id === 'address_proof'
   return false
-}
-
-function getLatestBrokerageReturnReason(application) {
-  if (application.openingStatus !== '需补充资料') return ''
-  const returnLog = [...application.statusLogs].reverse().find((log) => log.to === '需补充资料')
-  return returnLog?.remark || ''
 }
 
 function BrokeragePageSection({ title, icon: Icon = FileText, children }) {
@@ -1404,6 +1409,38 @@ function BrokerageUserSummaryGrid({ application }) {
       <BrokerageReadOnlyField label="所选券商" value={application.brokerName} />
       <BrokerageReadOnlyField label="当前开户状态" value={application.openingStatus} />
     </div>
+  )
+}
+
+function getBrokerageVisibleAccount(application) {
+  if (application.accountInfo) return { ...application.accountInfo, brokerName: application.brokerName }
+
+  return {
+    brokerName: application.brokerName,
+    accountName: '-',
+    accountNumber: '-',
+    currency: '-',
+    openedAt: '-',
+    accountStatus: application.openingStatus,
+    remark: '-',
+  }
+}
+
+function BrokerageVisibleAccountInfoSection({ application }) {
+  const visibleAccount = getBrokerageVisibleAccount(application)
+
+  return (
+    <BrokeragePageSection title="券商账户信息（客户可见）" icon={WalletCards}>
+      <div className="grid grid-cols-3 gap-[10px]">
+        <BrokerageReadOnlyField label="券商名称" value={visibleAccount.brokerName} />
+        <BrokerageReadOnlyField label="账户名称" value={visibleAccount.accountName} />
+        <BrokerageReadOnlyField label="券商账户号码（对应 Fidere 的信托编号）" value={visibleAccount.accountNumber} />
+        <BrokerageReadOnlyField label="账户币种" value={visibleAccount.currency} />
+        <BrokerageReadOnlyField label="开户日期" value={visibleAccount.openedAt} />
+        <BrokerageReadOnlyField label="账户状态" value={visibleAccount.accountStatus} />
+        <BrokerageReadOnlyField label="备注信息" value={visibleAccount.remark} />
+      </div>
+    </BrokeragePageSection>
   )
 }
 
@@ -1522,17 +1559,7 @@ function BrokerageTimelineLogs({ logs }) {
 }
 
 function BrokerageApplicationDetailPage({ application, onBack, onStartProcess }) {
-  const isOpened = application.openingStatus === '已开户'
-  const returnReason = getLatestBrokerageReturnReason(application)
-  const visibleAccount = application.accountInfo || {
-    brokerName: application.brokerShortName,
-    accountName: '-',
-    accountNumber: '-',
-    currency: '-',
-    openedAt: '-',
-    accountStatus: application.openingStatus,
-    remark: '-',
-  }
+  const showVisibleAccountInfo = ['已开户', '已拒绝'].includes(application.openingStatus)
 
   return (
     <AdminShell>
@@ -1548,27 +1575,9 @@ function BrokerageApplicationDetailPage({ application, onBack, onStartProcess })
 
           <BrokeragePageSection title="用户资料" icon={ShieldCheck}>
             <BrokerageUserSummaryGrid application={application} />
-            {returnReason ? (
-              <div className="mt-[12px] rounded-[5px] border border-[#ffe0bc] bg-[#fff8ed] px-[14px] py-[12px] text-[12px] leading-[20px] text-[#9a5a16]">
-                <div className="font-semibold text-[#c96f18]">退回原因</div>
-                <div className="mt-[4px]">{returnReason}</div>
-              </div>
-            ) : null}
           </BrokeragePageSection>
 
-          {isOpened ? (
-            <BrokeragePageSection title="券商账户信息（客户可见）" icon={WalletCards}>
-              <div className="grid grid-cols-3 gap-[10px]">
-                <BrokerageReadOnlyField label="券商名称" value={visibleAccount.brokerName} />
-                <BrokerageReadOnlyField label="账户名称" value={visibleAccount.accountName} />
-                <BrokerageReadOnlyField label="券商账户号码（对应 Fidere 的信托编号）" value={visibleAccount.accountNumber} />
-                <BrokerageReadOnlyField label="账户币种" value={visibleAccount.currency} />
-                <BrokerageReadOnlyField label="开户日期" value={visibleAccount.openedAt} />
-                <BrokerageReadOnlyField label="账户状态" value={visibleAccount.accountStatus} />
-                <BrokerageReadOnlyField label="备注信息" value={visibleAccount.remark} />
-              </div>
-            </BrokeragePageSection>
-          ) : null}
+          {showVisibleAccountInfo ? <BrokerageVisibleAccountInfoSection application={application} /> : null}
 
           <BrokeragePageSection title="用户上传文件 / 第三方签署文件" icon={FileText}>
             <BrokerageMaterialsGrid application={application} mode="view" />
@@ -1581,7 +1590,7 @@ function BrokerageApplicationDetailPage({ application, onBack, onStartProcess })
 
 function BrokerageApplicationProcessPage({ application, onBack, onSave }) {
   const initialAccount = application.accountInfo || {
-    brokerName: application.brokerShortName,
+    brokerName: application.brokerName,
     accountName: '',
     accountNumber: '',
     currency: 'USD',
@@ -1595,6 +1604,7 @@ function BrokerageApplicationProcessPage({ application, onBack, onSave }) {
   const [accountForm, setAccountForm] = useState(initialAccount)
   const showAccountForm = nextStatus === '已开户'
   const showReturnReason = nextStatus === '需补充资料'
+  const showRejectedVisibleAccountInfo = application.openingStatus === '已拒绝' && !showAccountForm
 
   const saveChanges = () => {
     if (showReturnReason && !statusRemark.trim()) {
@@ -1614,7 +1624,7 @@ function BrokerageApplicationProcessPage({ application, onBack, onSave }) {
 
     onSave(application.id, {
       openingStatus: nextStatus,
-      accountInfo: showAccountForm ? accountForm : application.accountInfo,
+      accountInfo: showAccountForm ? { ...accountForm, brokerName: application.brokerName } : application.accountInfo,
       statusLogs: [...application.statusLogs, nextLog],
     })
   }
@@ -1698,11 +1708,13 @@ function BrokerageApplicationProcessPage({ application, onBack, onSave }) {
             <BrokerageUserSummaryGrid application={application} />
           </BrokeragePageSection>
 
+          {showRejectedVisibleAccountInfo ? <BrokerageVisibleAccountInfoSection application={application} /> : null}
+
           <BrokeragePageSection title="文件与第三方签署" icon={FileText}>
             <BrokerageMaterialsGrid application={application} mode="process" onReuploadMaterial={reuploadMaterial} />
           </BrokeragePageSection>
 
-          {showAccountForm ? <BrokerageAccountForm value={accountForm} onChange={setAccountForm} /> : null}
+          {showAccountForm ? <BrokerageAccountForm value={accountForm} onChange={setAccountForm} lockedBrokerName={application.brokerName} /> : null}
 
         </div>
       </div>
@@ -1712,7 +1724,7 @@ function BrokerageApplicationProcessPage({ application, onBack, onSave }) {
 
 function BrokerageApplicationDrawer({ application, onClose, onSave }) {
   const initialAccount = application.accountInfo || {
-    brokerName: application.brokerShortName,
+    brokerName: application.brokerName,
     accountName: '',
     accountNumber: '',
     currency: 'USD',
@@ -1746,7 +1758,7 @@ function BrokerageApplicationDrawer({ application, onClose, onSave }) {
 
     onSave(application.id, {
       openingStatus: nextStatus,
-      accountInfo: showAccountForm ? accountForm : application.accountInfo,
+      accountInfo: showAccountForm ? { ...accountForm, brokerName: application.brokerName } : application.accountInfo,
       statusLogs: [...application.statusLogs, nextLog],
     })
   }
@@ -1830,7 +1842,7 @@ function BrokerageApplicationDrawer({ application, onClose, onSave }) {
           </div>
         </BrokerageDrawerSection>
 
-        {showAccountForm ? <BrokerageAccountForm value={accountForm} onChange={setAccountForm} /> : null}
+        {showAccountForm ? <BrokerageAccountForm value={accountForm} onChange={setAccountForm} lockedBrokerName={application.brokerName} /> : null}
 
         <BrokerageDrawerSection title="状态流转日志">
           <BrokerageTimelineLogs logs={application.statusLogs} />
@@ -1889,7 +1901,7 @@ export function BrokerageApplicationManagementPage({ applications = initialBroke
   const [selectedApplicationId, setSelectedApplicationId] = useState('')
   const [pageMode, setPageMode] = useState('list')
   const [lastRefreshedAt, setLastRefreshedAt] = useState('2026-06-22 15:33:08')
-  const pageSize = 4
+  const pageSize = 10
 
   const userTypeApplications = useMemo(() => applications.filter((application) => getBrokerageCustomerType(application) === activeUserType), [applications, activeUserType])
 
