@@ -217,7 +217,7 @@ const transferRows = [
     transferType: '信托转券商',
     customer: { name: 'jin wu ye', id: '130', email: 'orvafrew@123mails.org' },
     fromAccount: '香港账户',
-    toAccount: 'Webull账户',
+    toAccount: 'Webull 微牛证券账户',
     currency: 'USD',
     amount: 'USD 500.00',
     transferAmount: 'USD 500.00',
@@ -232,7 +232,7 @@ const transferRows = [
     requestId: 'IT-1780221843264',
     transferType: '券商转信托',
     customer: { name: 'WANYARA WAN', id: '154', email: 'xr3kes66@123mails.org' },
-    fromAccount: 'IBKR账户',
+    fromAccount: 'IBKR 盈透证券账户',
     toAccount: '香港账户',
     currency: 'USD',
     amount: 'USD 320.00',
@@ -246,9 +246,9 @@ const transferRows = [
   },
 ]
 
-const manualAccountOptions = ['香港账户', '美国账户', 'IBKR账户', 'Webull账户']
+const manualAccountOptions = ['香港账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户']
 
-const accountFilterOptions = ['香港账户', '美国账户', 'IBKR账户', 'Webull账户']
+const accountFilterOptions = ['香港账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户']
 
 const incomingClaimRows = [
   {
@@ -294,7 +294,7 @@ const incomingClaimRows = [
   {
     id: 'IC-20260622-001',
     submittedAt: '2026-06-22 10:22:11',
-    accountType: 'Webull账户',
+    accountType: 'Webull 微牛证券账户',
     currencyAmount: 'USD 500',
     claimableAmount: 'USD 500',
     payer: 'FIDERE TRUST USD',
@@ -308,7 +308,7 @@ const incomingClaimRows = [
   {
     id: 'IC-20260622-002',
     submittedAt: '2026-06-22 11:08:35',
-    accountType: 'IBKR账户',
+    accountType: 'IBKR 盈透证券账户',
     currencyAmount: 'USD 320',
     claimableAmount: 'USD 320',
     payer: 'FIDERE TRUST USD',
@@ -330,7 +330,7 @@ const fiatLedgerRows = [
   { id: 'LEDGER-20260520-001', time: '2026-05-20 11:05:44', customer: '2342', customerId: '98', accountType: '美国账户', currencyAmount: 'USD 20', type: '入金', channel: 'ACH', referenceNo: 'REF-US-020', status: '处理完成' },
 ]
 
-const fiatAssetAccountCardTypes = ['香港账户', '美国账户', 'IBKR账户', 'Webull账户']
+const fiatAssetAccountCardTypes = ['香港账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户']
 
 const emptyFiatAccountBalances = [
   { currency: 'USD', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
@@ -344,7 +344,7 @@ const customerAssetRows = [
     name: 'jin wu ye',
     email: 'orvafrew@123mails.org',
     type: '个人',
-    accountTypes: ['香港账户', '美国账户', 'IBKR账户', 'Webull账户'],
+    accountTypes: ['香港账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户'],
     totalUsd: '107.72',
     yesterdayChange: '0',
     lastActivity: '2026-05-25 07:36',
@@ -356,11 +356,11 @@ const customerAssetRows = [
       美国账户: [
         { currency: 'USD', available: '95.72', frozen: '0', inTransit: '0', total: '95.72', recentIn: '20', recentOut: '11' },
       ],
-      IBKR账户: [
+      'IBKR 盈透证券账户': [
         { currency: 'USD', available: '320.00', frozen: '0', inTransit: '0', total: '320.00', recentIn: '320', recentOut: '0' },
         { currency: 'HKD', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
       ],
-      Webull账户: [
+      'Webull 微牛证券账户': [
         { currency: 'USD', available: '500.00', frozen: '0', inTransit: '0', total: '500.00', recentIn: '500', recentOut: '0' },
         { currency: 'HKD', available: '80.00', frozen: '0', inTransit: '0', total: '80.00', recentIn: '80', recentOut: '0' },
       ],
@@ -377,7 +377,7 @@ const customerAssetRows = [
     name: 'QIXUE',
     email: 'voigtus1@123mails.org',
     type: '个人',
-    accountTypes: ['美国账户', 'IBKR账户'],
+    accountTypes: ['美国账户', 'IBKR 盈透证券账户'],
     totalUsd: '44.00',
     yesterdayChange: '0',
     lastActivity: '2026-05-25 14:49',
@@ -389,7 +389,7 @@ const customerAssetRows = [
       美国账户: [
         { currency: 'USD', available: '44', frozen: '0', inTransit: '0', total: '44', recentIn: '0', recentOut: '22' },
       ],
-      IBKR账户: [
+      'IBKR 盈透证券账户': [
         { currency: 'USD', available: '120.00', frozen: '0', inTransit: '0', total: '120.00', recentIn: '120', recentOut: '0' },
         { currency: 'HKD', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
       ],
@@ -406,7 +406,7 @@ const customerAssetRows = [
     name: 'wanyara test',
     email: 'wanyara@example.com',
     type: '个人',
-    accountTypes: ['香港账户', 'Webull账户'],
+    accountTypes: ['香港账户', 'Webull 微牛证券账户'],
     totalUsd: '12.00',
     yesterdayChange: '0',
     lastActivity: '2026-05-23 09:18',
@@ -418,7 +418,7 @@ const customerAssetRows = [
       美国账户: [
         { currency: 'USD', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
       ],
-      Webull账户: [
+      'Webull 微牛证券账户': [
         { currency: 'USD', available: '260.00', frozen: '0', inTransit: '0', total: '260.00', recentIn: '260', recentOut: '0' },
         { currency: 'HKD', available: '120.00', frozen: '0', inTransit: '0', total: '120.00', recentIn: '120', recentOut: '0' },
       ],
@@ -497,7 +497,7 @@ const withdrawalApprovalRows = [
     id: 'WO-20260622-001',
     appliedAt: '2026-06-22 10:41:02',
     customer: { name: 'jin wu ye', id: '130', email: 'orvafrew@123mails.org' },
-    accountType: 'Webull账户',
+    accountType: 'Webull 微牛证券账户',
     currencyAmount: 'USD 240',
     transferAmount: 'USD 240',
     fee: 'USD 0',
@@ -512,7 +512,7 @@ const withdrawalApprovalRows = [
     id: 'WO-20260622-002',
     appliedAt: '2026-06-22 11:27:45',
     customer: { name: 'WANYARA WAN', id: '154', email: 'xr3kes66@123mails.org' },
-    accountType: 'IBKR账户',
+    accountType: 'IBKR 盈透证券账户',
     currencyAmount: 'USD 180',
     transferAmount: 'USD 180',
     fee: 'USD 0',
@@ -564,7 +564,6 @@ function Header({ onBack }) {
     </header>
   )
 }
-
 function SidebarItem({ icon: Icon, label, active = false, marked = false, onClick }) {
   return (
     <button
@@ -700,14 +699,14 @@ function SelectBox({ label, width = 'w-[396px]' }) {
   )
 }
 
-function AccountTypeFilter({ value = '', onChange, width = 'w-[296px]' }) {
+function AccountTypeFilter({ value = '', onChange, width = 'w-[360px]' }) {
   return (
     <label className={`flex h-[50px] ${width} items-center justify-between rounded-[4px] border border-[#cfd1dc] bg-white px-[14px] text-[13px] text-[#4c4c68]`}>
-      <span>账户类型</span>
+      <span className="whitespace-nowrap">账户类型</span>
       <select
         value={value ?? ''}
         onChange={(event) => onChange?.(event.target.value)}
-        className="h-full min-w-[116px] bg-transparent text-right font-semibold text-[#20213a] outline-none"
+        className="h-full min-w-[210px] bg-transparent text-right font-semibold text-[#20213a] outline-none"
       >
         <option value="" disabled hidden>全部类型</option>
         {accountFilterOptions.map((option) => (
@@ -2297,11 +2296,11 @@ function IncomingClaimPanel({ onOpenRecord }) {
       />
       <Panel className="mt-[21px] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-[1180px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+          <table className="min-w-[1380px] w-full border-collapse text-left text-[13px] text-[#55556e]">
             <thead>
               <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
                 {['', '提交时间', '账户类型', '币种/金额', '付款人', '渠道', '参考号', '转账凭证', '匹配客户', '匹配状态', '状态', '操作'].map((item) => (
-                  <th key={item} className={`${item === '匹配状态' || item === '状态' ? 'w-[112px]' : ''} px-[18px]`}>{item}</th>
+                  <th key={item} className={`${item === '账户类型' ? 'w-[190px]' : item === '匹配状态' || item === '状态' ? 'w-[112px]' : ''} whitespace-nowrap px-[18px]`}>{item}</th>
                 ))}
               </tr>
             </thead>
@@ -2310,7 +2309,7 @@ function IncomingClaimPanel({ onOpenRecord }) {
                 <tr key={row.id} className="h-[62px] border-b border-[#e7e8ef] bg-white">
                   <td className="px-[18px]"><input type="checkbox" className="h-[15px] w-[15px]" /></td>
                   <td className="px-[18px]">{row.submittedAt}</td>
-                  <td className="px-[18px] font-semibold text-[#20213a]">{row.accountType}</td>
+                  <td className="w-[190px] whitespace-nowrap px-[18px] font-semibold text-[#20213a]">{row.accountType}</td>
                   <td className="px-[18px]">{row.currencyAmount}</td>
                   <td className="px-[18px]">{row.payer}</td>
                   <td className="px-[18px]">{row.channel}</td>
@@ -2400,11 +2399,11 @@ function WithdrawalApprovalPanel({ onOpenRecord }) {
       <FiatFilterPanel accountType={accountType} onAccountTypeChange={setAccountType} />
       <Panel className="mt-[21px] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-[1180px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+          <table className="min-w-[1380px] w-full border-collapse text-left text-[13px] text-[#55556e]">
             <thead>
               <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
                 {['申请时间', '客户', '账户类型', '转账金额', '出金服务费', '实际到账金额', '收款人', '用途', '状态', '操作'].map((item) => (
-                  <th key={item} className="px-[18px]">{item}</th>
+                  <th key={item} className={`${item === '账户类型' ? 'w-[190px]' : ''} whitespace-nowrap px-[18px]`}>{item}</th>
                 ))}
               </tr>
             </thead>
@@ -2419,7 +2418,7 @@ function WithdrawalApprovalPanel({ onOpenRecord }) {
                       <div>{row.customer.email}</div>
                     </div>
                   </td>
-                  <td className="px-[18px] font-semibold text-[#20213a]">{row.accountType}</td>
+                  <td className="w-[190px] whitespace-nowrap px-[18px] font-semibold text-[#20213a]">{row.accountType}</td>
                   <td className="px-[18px]">{row.transferAmount || row.currencyAmount}</td>
                   <td className="px-[18px]">{row.fee}</td>
                   <td className="px-[18px]">{row.actualArrivalAmount || row.currencyAmount}</td>
@@ -2446,14 +2445,14 @@ function FiatTransferPanel({ onOpenRecord }) {
       <FiatFilterPanel accountType={accountType} onAccountTypeChange={setAccountType} />
       <Panel className="mt-[21px] overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="min-w-[1480px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+        <table className="min-w-[1720px] w-full border-collapse text-left text-[13px] text-[#55556e]">
           <thead>
             <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
               <th className="px-[18px]">申请编号</th>
               <th className="w-[132px] px-[18px]">记录类型</th>
               <th className="px-[18px]">客户</th>
-              <th className="px-[18px]">转出账户</th>
-              <th className="px-[18px]">转入账户</th>
+              <th className="w-[200px] whitespace-nowrap px-[18px]">转出账户</th>
+              <th className="w-[200px] whitespace-nowrap px-[18px]">转入账户</th>
               <th className="px-[18px]">币种</th>
               <th className="px-[18px]">转账金额</th>
               <th className="px-[18px]">实际到账金额</th>
@@ -2475,8 +2474,8 @@ function FiatTransferPanel({ onOpenRecord }) {
                     <div>{row.customer.email}</div>
                   </div>
                 </td>
-                <td className="px-[18px]">{row.fromAccount}</td>
-                <td className="px-[18px]">{row.toAccount}</td>
+                <td className="w-[200px] whitespace-nowrap px-[18px]">{row.fromAccount}</td>
+                <td className="w-[200px] whitespace-nowrap px-[18px]">{row.toAccount}</td>
                 <td className="px-[18px]">{row.currency}</td>
                 <td className="px-[18px]">{row.transferAmount || row.amount}</td>
                 <td className="px-[18px]">{row.actualArrivalAmount || row.estimatedArrival}</td>
@@ -2557,11 +2556,11 @@ function RecentFlowsPanel({ customer }) {
         <div className="mt-[4px] text-[12px] text-[#66677f]">客户ID: {customer?.id || '-'}</div>
       </div>
       <div className="overflow-x-auto">
-        <table className="min-w-[980px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+        <table className="min-w-[1120px] w-full border-collapse text-left text-[13px] text-[#55556e]">
           <thead>
             <tr className="h-[50px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
               {['时间', '账户类型', '币种/金额', '方向', '渠道', '状态'].map((item) => (
-                <th key={item} className="px-[18px]">{item}</th>
+                <th key={item} className={`${item === '账户类型' ? 'w-[190px]' : ''} whitespace-nowrap px-[18px]`}>{item}</th>
               ))}
             </tr>
           </thead>
@@ -2569,7 +2568,7 @@ function RecentFlowsPanel({ customer }) {
             {flows.map((flow) => (
               <tr key={`${flow.time}-${flow.accountType}-${flow.currencyAmount}`} className="h-[52px] border-b border-[#e7e8ef] last:border-b-0">
                 <td className="px-[18px]">{flow.time}</td>
-                <td className="px-[18px] font-semibold text-[#20213a]">{flow.accountType}</td>
+                <td className="w-[190px] whitespace-nowrap px-[18px] font-semibold text-[#20213a]">{flow.accountType}</td>
                 <td className="px-[18px]">{flow.currencyAmount}</td>
                 <td className="px-[18px]"><DirectionBadge direction={flow.direction} /></td>
                 <td className="px-[18px]">{flow.channel}</td>
@@ -2592,11 +2591,11 @@ function FiatLedgerQueryPanel() {
       <FiatFilterPanel accountType={accountType} onAccountTypeChange={setAccountType} />
       <Panel className="mt-[21px] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-[1180px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+          <table className="min-w-[1320px] w-full border-collapse text-left text-[13px] text-[#55556e]">
             <thead>
               <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
                 {['时间', '客户', '客户ID', '账户类型', '币种/金额', '类型', '渠道', '参考号', '状态'].map((item) => (
-                  <th key={item} className="px-[18px]">{item}</th>
+                  <th key={item} className={`${item === '账户类型' ? 'w-[190px]' : ''} whitespace-nowrap px-[18px]`}>{item}</th>
                 ))}
               </tr>
             </thead>
@@ -2606,7 +2605,7 @@ function FiatLedgerQueryPanel() {
                   <td className="px-[18px]">{row.time}</td>
                   <td className="px-[18px] font-semibold text-[#20213a]">{row.customer}</td>
                   <td className="px-[18px]">{row.customerId}</td>
-                  <td className="px-[18px] font-semibold text-[#20213a]">{row.accountType}</td>
+                  <td className="w-[190px] whitespace-nowrap px-[18px] font-semibold text-[#20213a]">{row.accountType}</td>
                   <td className="px-[18px]">{row.currencyAmount}</td>
                   <td className="px-[18px]"><DirectionBadge direction={row.type} /></td>
                   <td className="px-[18px]">{row.channel}</td>
@@ -2643,11 +2642,11 @@ function CustomerAssetsPanel() {
 
       <Panel className="mt-[21px] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-[1180px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+          <table className="min-w-[1500px] w-full border-collapse text-left text-[13px] text-[#55556e]">
             <thead>
               <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
                 {['', '客户信息', '账户类型', '总资产 (USD)', '较昨日', '币种数', '最后活动', '操作'].map((item) => (
-                  <th key={item} className="px-[18px]">{item}</th>
+                  <th key={item} className={`${item === '账户类型' ? 'w-[360px]' : ''} whitespace-nowrap px-[18px]`}>{item}</th>
                 ))}
               </tr>
             </thead>
@@ -2674,7 +2673,7 @@ function CustomerAssetsPanel() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-[18px] font-semibold text-[#20213a]">{row.accountTypes.join(' / ')}</td>
+                      <td className="w-[360px] whitespace-nowrap px-[18px] font-semibold text-[#20213a]">{row.accountTypes.join(' / ')}</td>
                       <td className="px-[18px] font-mono text-[14px] font-semibold text-[#006ee6]">{row.totalUsd}</td>
                       <td className="px-[18px] font-semibold text-[#55556e]">{row.yesterdayChange}</td>
                       <td className="px-[18px]">
