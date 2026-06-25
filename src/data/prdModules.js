@@ -68,18 +68,18 @@ export const prdModules = [
   },
   {
     id: 'securities-brokerage-admin',
-    title: '券商后台管理',
-    subtitle: '券商开户申请列表、资料下载、状态更新与账户信息录入',
+    title: '券商账户原型',
+    subtitle: '券商账户客户端与后台管理原型入口',
     description:
-      '独立承载券商管理后台原型，用于后台人员管理 Webull / IBKR 券商开户申请，下载客户资料，更新开户状态，并在开户完成后录入客户可见的券商账户信息。',
+      '统一承载券商账户客户端与后台管理原型。客户端复用现有账户流程结构，后台管理用于处理券商开户申请、资料下载、状态更新与账户信息录入。',
     category: '原型',
     status: 'Prototype',
     phase: 'Prototype Draft',
-    route: '/admin/product-manual/securities-brokerage-admin',
-    tags: ['券商后台', '开户申请', '资料下载', '账户信息', '人工开户'],
+    route: '/admin/product-manual/securities-account-prototype',
+    tags: ['券商账户', '客户端', '后台管理', '开户申请', '账户信息'],
     source: 'Current Project',
     moduleType: 'prototype',
-    buttonLabel: '进入后台',
+    buttonLabel: '进入原型',
   },
 ]
 

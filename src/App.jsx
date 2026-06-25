@@ -32,6 +32,12 @@ import { BaasPrototypeHome } from './pages/BaasPrototypeHome'
 import { BaasSystemReformPage } from './pages/BaasSystemReformPage'
 import { ProductManualHome } from './pages/ProductManualHome'
 import { PrdInvestPage } from './pages/PrdInvestPage'
+import {
+  SecuritiesBrokerageServicePrototype,
+  SecuritiesAccountClientPrototype,
+  SecuritiesAccountClientStaticPage,
+  SecuritiesAccountPrototypeHome,
+} from './pages/SecuritiesAccountPrototype'
 import { SecuritiesBrokerageAdminPrototype } from './pages/SecuritiesBrokerageAdminPrototype'
 import { initialBrokerageApplications } from './data/securitiesBrokerageApplications'
 
@@ -103,10 +109,48 @@ function App() {
     return <BaasPrototypeHome onBack={() => navigate('/')} onNavigate={navigate} />
   }
 
-  if (path === '/admin/product-manual/securities-brokerage-admin') {
+  if (path === '/admin/product-manual/securities-account-prototype' || path === '/admin/product-manual/securities-brokerage-admin') {
+    return (
+      <SecuritiesAccountPrototypeHome
+        onBack={() => navigate('/')}
+        onNavigate={navigate}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/securities-account-prototype/client') {
+    return (
+      <SecuritiesAccountClientPrototype
+        onBack={() => navigate('/admin/product-manual/securities-account-prototype')}
+        onNavigate={navigate}
+        onPrototypeHome={() => navigate('/admin/product-manual/securities-account-prototype')}
+        brokerageApplications={brokerageApplications}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/securities-account-prototype/client/licai') {
+    return (
+      <SecuritiesAccountClientStaticPage
+        onBack={() => navigate('/admin/product-manual/securities-account-prototype/client')}
+        onNavigate={navigate}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/securities-account-prototype/client/quanshang') {
+    return (
+      <SecuritiesBrokerageServicePrototype
+        onBack={() => navigate('/admin/product-manual/securities-account-prototype/client')}
+        onNavigate={navigate}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/securities-account-prototype/admin') {
     return (
       <SecuritiesBrokerageAdminPrototype
-        onBack={() => navigate('/')}
+        onBack={() => navigate('/admin/product-manual/securities-account-prototype')}
         brokerageApplications={brokerageApplications}
         onUpdateBrokerageApplication={updateBrokerageApplication}
       />

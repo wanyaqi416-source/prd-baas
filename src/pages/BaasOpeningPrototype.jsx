@@ -17,7 +17,7 @@ import {
   WalletCards,
   X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
@@ -83,6 +83,30 @@ const internalTransferDirections = {
     targetBalance: 'USD 96,037.39',
   },
 }
+
+const internalTransferFiatAccounts = [
+  {
+    id: 'hk',
+    kind: 'fiat',
+    name: '香港账户',
+    currencies: ['USD', 'HKD'],
+    balance: {
+      USD: 'USD 96,037.39',
+      HKD: 'HKD 625,106.36',
+    },
+  },
+  {
+    id: 'us',
+    kind: 'fiat',
+    name: '美国账户',
+    currencies: ['USD'],
+    balance: {
+      USD: 'USD 82,430.27',
+    },
+  },
+]
+
+const getInternalTransferBalance = (account, currency) => account?.balance?.[currency] || `${currency} --`
 
 const formatCurrencyAmount = (currency, amount) => `${currency} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
@@ -202,12 +226,12 @@ function ClickMark() {
   )
 }
 
-function DemoBar({ status, onStatusChange, onPrototypeHome }) {
+function DemoBar({ status, onStatusChange, onPrototypeHome, prototypeLabel = 'BaaS 原型' }) {
   return (
     <div className="border-b border-blue-100 bg-blue-50/95 px-5 py-3">
       <div className="mx-auto flex max-w-[1380px] flex-wrap items-center justify-between gap-3">
         <button type="button" onClick={onPrototypeHome} className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-900">
-          返回 BaaS 原型
+          返回 {prototypeLabel}
         </button>
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-blue-700 shadow-sm">仅原型演示使用</span>
@@ -227,7 +251,8 @@ function DemoBar({ status, onStatusChange, onPrototypeHome }) {
   )
 }
 
-function ClientTopNav({ onBack }) {
+export function ClientTopNav({ onBack, activeNavLabel = '账户', investmentMenu = [] }) {
+  const [investmentMenuOpen, setInvestmentMenuOpen] = useState(false)
   const navItems = [
     [LayoutDashboard, '仪表板'],
     [WalletCards, '账户'],
@@ -245,16 +270,51 @@ function ClientTopNav({ onBack }) {
             FIDERE
           </button>
           <nav className="hidden items-center gap-2 text-sm text-slate-500 md:flex">
-            {navItems.map(([Icon, label]) => (
-              <button
-                key={label}
-                type="button"
-                className={label === '账户' ? 'inline-flex h-9 items-center gap-2 rounded-xl bg-blue-600 px-4 font-semibold text-white shadow-sm' : 'inline-flex h-9 items-center gap-2 rounded-xl px-3 font-medium hover:bg-slate-100'}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </button>
-            ))}
+            {navItems.map(([Icon, label]) => {
+              const active = label === activeNavLabel
+              const className = active
+                ? 'inline-flex h-9 items-center gap-2 rounded-xl bg-blue-600 px-4 font-semibold text-white shadow-sm'
+                : 'inline-flex h-9 items-center gap-2 rounded-xl px-3 font-medium hover:bg-slate-100'
+
+              if (label === '投资' && investmentMenu.length) {
+                return (
+                  <div key={label} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setInvestmentMenuOpen((current) => !current)}
+                      className={className}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {label}
+                    </button>
+                    {investmentMenuOpen ? (
+                      <div className="absolute left-0 top-[42px] z-40 min-w-[132px] rounded-xl border border-slate-200 bg-white p-1 text-sm shadow-xl">
+                        {investmentMenu.map((item) => (
+                          <button
+                            key={item.label}
+                            type="button"
+                            onClick={() => {
+                              setInvestmentMenuOpen(false)
+                              item.onClick?.()
+                            }}
+                            className="block h-9 w-full rounded-lg px-3 text-left font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                )
+              }
+
+              return (
+                <button key={label} type="button" className={className}>
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </button>
+              )
+            })}
           </nav>
         </div>
         <div className="flex items-center gap-4 text-slate-500">
@@ -271,7 +331,7 @@ function ClientTopNav({ onBack }) {
   )
 }
 
-function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdiction, onOpenIncomingDeposit, onOpenFiatTransferOut }) {
+function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdiction, onOpenIncomingDeposit, onOpenFiatTransferOut, showGuidanceMarks = true }) {
   const hasUsAccount = status !== 'not_opened'
   const opened = status === 'opened'
   const usMeta = usStatusMeta[status]
@@ -330,12 +390,12 @@ function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdictio
           <div className="mt-7 flex flex-wrap gap-3">
             <button type="button" onClick={opened ? onOpenIncomingDeposit : undefined} className="inline-flex h-11 items-center gap-2 rounded-lg bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm">
               <Banknote className="h-4 w-4" />
-              {opened ? <ClickMark /> : null}
+              {opened && showGuidanceMarks ? <ClickMark /> : null}
               存入资金
             </button>
             <button type="button" onClick={opened ? onOpenFiatTransferOut : undefined} className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#083861] px-5 text-sm font-semibold text-white hover:bg-[#0a4776]">
               <Send className="h-4 w-4" />
-              {opened ? <ClickMark /> : null}
+              {opened && showGuidanceMarks ? <ClickMark /> : null}
               法币转出
             </button>
           </div>
@@ -362,7 +422,7 @@ function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdictio
               className="mt-6 inline-flex h-11 items-center gap-2 rounded-lg bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm hover:bg-sky-400"
             >
               <Globe2 className="h-4 w-4" />
-              <ClickMark />
+              {showGuidanceMarks ? <ClickMark /> : null}
               开设其他法域账户
             </button>
           ) : null}
@@ -372,7 +432,16 @@ function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdictio
   )
 }
 
-function QuickActionDock({ status, activeAccount, onOpenAccountInfo, onOpenIncomingDeposit, onOpenFiatTransferOut, onOpenInternalTransfer }) {
+function QuickActionDock({
+  status,
+  activeAccount,
+  onOpenAccountInfo,
+  onOpenIncomingDeposit,
+  onOpenFiatTransferOut,
+  onOpenInternalTransfer,
+  showGuidanceMarks = true,
+  forceInternalTransferMark = false,
+}) {
   if (activeAccount === 'us' && (status === 'reviewing' || status === 'failed')) {
     return null
   }
@@ -416,7 +485,7 @@ function QuickActionDock({ status, activeAccount, onOpenAccountInfo, onOpenIncom
                 <Icon className="h-5 w-5" />
               </span>
               <span className="mt-1 inline-flex items-center justify-center gap-1">
-                {label === '银行存入' || label === '法币转出' || label === '资金互转' ? <ClickMark /> : null}
+                {(showGuidanceMarks && (label === '银行存入' || label === '法币转出' || label === '资金互转')) || (forceInternalTransferMark && label === '资金互转') ? <ClickMark /> : null}
                 {label}
               </span>
             </button>
@@ -903,7 +972,7 @@ function ExternalFiatTransferOutDetailPage({ record, onBack, onClose }) {
   )
 }
 
-function ExternalFiatTransferOutPage({ onBack, records, onSubmit }) {
+function ExternalFiatTransferOutPage({ onBack, records, onSubmit, topNavProps, showGuidanceMarks = true }) {
   const [view, setView] = useState('form')
   const [selectedRecord, setSelectedRecord] = useState(null)
   const [accountType, setAccountType] = useState('hk')
@@ -990,7 +1059,7 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit }) {
 
   return (
     <div className="min-h-screen bg-[#f4f7fb] pb-24 text-slate-950">
-      <ClientTopNav onBack={onBack} />
+      <ClientTopNav onBack={onBack} {...topNavProps} />
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-4 px-6">
           <button type="button" onClick={onBack} className="text-2xl text-slate-500 hover:text-slate-800">‹</button>
@@ -1149,12 +1218,14 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit }) {
                   <div className="flex items-center justify-between text-sm">
                     <span className="inline-flex items-center gap-1 text-slate-500">
                       服务费
-                      <span className="group relative inline-flex" title={serviceFeeDescription}>
-                        <CircleHelp className="h-4 w-4 text-slate-400" />
-                        <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden w-72 -translate-x-1/2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs font-semibold leading-5 text-slate-600 shadow-xl group-hover:block">
-                          {serviceFeeDescription}
+                      {showGuidanceMarks ? (
+                        <span className="group relative inline-flex" title={serviceFeeDescription}>
+                          <CircleHelp className="h-4 w-4 text-slate-400" />
+                          <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden w-72 -translate-x-1/2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs font-semibold leading-5 text-slate-600 shadow-xl group-hover:block">
+                            {serviceFeeDescription}
+                          </span>
                         </span>
-                      </span>
+                      ) : null}
                     </span>
                     <span className="font-bold text-slate-950">{serviceFeeDisplay}</span>
                   </div>
@@ -1244,6 +1315,7 @@ function InternalTransferConfirmModal({ draft, onClose, onConfirm }) {
     ['转入账户', draft.targetAccount],
     ['币种', draft.currency],
     ['金额', `${draft.currency} ${draft.amount}`],
+    ...(draft.purpose && draft.purpose !== '-' ? [['转账用途', draft.purpose]] : []),
   ]
 
   return (
@@ -1272,16 +1344,53 @@ function InternalTransferConfirmModal({ draft, onClose, onConfirm }) {
   )
 }
 
-function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
+function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords, brokerageAccounts = [] }) {
   const [currentDirection, setCurrentDirection] = useState(direction)
-  const config = internalTransferDirections[currentDirection]
-  const currency = 'USD'
+  const [transferMode, setTransferMode] = useState('fiat')
+  const [currency, setCurrency] = useState('USD')
+  const [sourceAccountId, setSourceAccountId] = useState('hk')
+  const [targetAccountId, setTargetAccountId] = useState('')
   const [amount, setAmount] = useState('')
+  const [purpose, setPurpose] = useState('')
   const [error, setError] = useState('')
   const [confirmDraft, setConfirmDraft] = useState(null)
+  const config = internalTransferDirections[currentDirection]
+  const normalizedBrokerageAccounts = useMemo(() => brokerageAccounts.map((account) => ({
+    id: account.id,
+    kind: 'brokerage',
+    name: account.label || account.brokerName || account.accountName || '券商账户',
+    helper: account.accountNumber ? `账户号码：${account.accountNumber}` : account.accountName,
+    currencies: account.currencies?.length ? account.currencies : ['USD', 'HKD'],
+    balance: account.balance || {
+      USD: 'USD 0.00',
+      HKD: 'HKD 0.00',
+    },
+  })), [brokerageAccounts])
+  const hasBrokerageAccounts = normalizedBrokerageAccounts.length > 0
+  const brokerageCurrencyOptions = sourceAccountId === 'us' || targetAccountId === 'us' ? ['USD'] : ['USD', 'HKD']
+  const effectiveBrokerageCurrency = brokerageCurrencyOptions.includes(currency) ? currency : 'USD'
+  const activeCurrency = transferMode === 'brokerage' ? effectiveBrokerageCurrency : 'USD'
   const numericAmount = Number(amount)
   const hasValidAmount = Number.isFinite(numericAmount) && numericAmount > 0
-  const arrivalAmountDisplay = formatCurrencyAmount(currency, hasValidAmount ? numericAmount : 0)
+  const arrivalAmountDisplay = formatCurrencyAmount(activeCurrency, hasValidAmount ? numericAmount : 0)
+  const brokerageTransferAccounts = useMemo(() => [
+    ...internalTransferFiatAccounts,
+    ...normalizedBrokerageAccounts,
+  ], [normalizedBrokerageAccounts])
+  const brokerageSourceOptions = brokerageTransferAccounts.filter((account) => account.currencies.includes(activeCurrency))
+  const brokerageSourceAccount = brokerageSourceOptions.find((account) => account.id === sourceAccountId) || brokerageSourceOptions[0]
+  const brokerageTargetOptions = brokerageTransferAccounts.filter((account) => (
+    account.currencies.includes(activeCurrency)
+    && account.id !== brokerageSourceAccount?.id
+    && account.kind !== brokerageSourceAccount?.kind
+  ))
+  const brokerageTargetAccount = brokerageTargetOptions.find((account) => account.id === targetAccountId) || brokerageTargetOptions[0]
+
+  const switchMode = (nextMode) => {
+    setTransferMode(nextMode)
+    setError('')
+    setConfirmDraft(null)
+  }
 
   const submitTransfer = () => {
     const numericAmount = Number(amount)
@@ -1290,15 +1399,38 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
       return
     }
 
+    if (transferMode === 'brokerage') {
+      if (!brokerageSourceAccount || !brokerageTargetAccount) {
+        setError('当前币种下没有可用的付款账户或收款账户。')
+        return
+      }
+      if (!brokerageSourceAccount.currencies.includes(activeCurrency) || !brokerageTargetAccount.currencies.includes(activeCurrency)) {
+        setError('付款账户与收款账户必须支持相同币种。')
+        return
+      }
+      if (!purpose.trim()) {
+        setError('请填写转账用途。')
+        return
+      }
+    }
+
+    const sourceAccount = transferMode === 'brokerage' ? brokerageSourceAccount.name : config.sourceAccount
+    const targetAccount = transferMode === 'brokerage' ? brokerageTargetAccount.name : config.targetAccount
+
     setError('')
     setConfirmDraft({
-      direction: currentDirection,
-      sourceAccount: config.sourceAccount,
-      targetAccount: config.targetAccount,
-      currency,
+      direction: transferMode === 'brokerage'
+        ? brokerageSourceAccount.kind === 'brokerage' ? 'brokerage-to-fiat' : 'fiat-to-brokerage'
+        : currentDirection,
+      transferMode,
+      sourceAccount,
+      targetAccount,
+      currency: activeCurrency,
       amount: numericAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       arrivalAmountDisplay,
       actualArrivalAmountDisplay: arrivalAmountDisplay,
+      purpose: transferMode === 'brokerage' ? purpose.trim() : '-',
+      type: transferMode === 'brokerage' ? '券商账户转账' : '资金互转',
     })
   }
 
@@ -1307,11 +1439,12 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
       ...confirmDraft,
       id: `IT-${Date.now()}`,
       transactionType: 'internal_transfer',
-      type: '资金互转',
+      type: confirmDraft.type || '资金互转',
       customerName: 'Wanyara Wan',
       customerId: '154',
       customerEmail: 'xr3kes66@123mails.org',
       actualArrivalAmount: confirmDraft.amount,
+      transferPurpose: confirmDraft.purpose,
       createdAt: formatTransferTime(),
       status: 'UNDER_REVIEW',
       statusLabel: '待后台审核',
@@ -1332,43 +1465,126 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
       </header>
       <main className="mx-auto max-w-[1180px] px-5 py-8">
         <div className="mb-6">
-          <Badge variant="secondary">内部法币转账</Badge>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">{config.title}</h1>
+          <Badge variant="secondary">{transferMode === 'brokerage' ? '券商账户转账' : '内部法币转账'}</Badge>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">{transferMode === 'brokerage' ? '券商账户资金互转' : config.title}</h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">当前为前端原型流程。提交后生成待后台审核记录，实际余额和审核结果以后台处理为准。</p>
         </div>
 
         <div className="grid gap-5 lg:grid-cols-[0.72fr_0.28fr]">
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="grid items-center gap-4 md:grid-cols-[1fr_auto_1fr]">
-              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
-                <div className="text-sm font-semibold text-blue-700">转出账户</div>
-                <div className="mt-2 text-xl font-bold text-slate-950">{config.sourceAccount}</div>
-                <div className="mt-2 text-sm text-slate-500">参考余额：{config.sourceBalance}</div>
-              </div>
+            <div className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2">
               <button
                 type="button"
-                onClick={() => setCurrentDirection((current) => (current === 'trust-to-us' ? 'us-to-trust' : 'trust-to-us'))}
-                className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-blue-200 bg-white text-blue-700 shadow-sm hover:bg-blue-50"
-                aria-label="互换转出和转入账户"
-                title="互换转出和转入账户"
+                onClick={() => switchMode('fiat')}
+                className={transferMode === 'fiat' ? 'rounded-xl bg-white px-4 py-2 text-sm font-bold text-blue-700 shadow-sm' : 'rounded-xl px-4 py-2 text-sm font-bold text-slate-500 hover:bg-white'}
               >
-                <RefreshCw className="h-5 w-5" />
+                法币账户互转
               </button>
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
-                <div className="text-sm font-semibold text-emerald-700">转入账户</div>
-                <div className="mt-2 text-xl font-bold text-slate-950">{config.targetAccount}</div>
-                <div className="mt-2 text-sm text-slate-500">参考余额：{config.targetBalance}</div>
-              </div>
+              {hasBrokerageAccounts ? (
+                <button
+                  type="button"
+                  onClick={() => switchMode('brokerage')}
+                  className={transferMode === 'brokerage' ? 'rounded-xl bg-white px-4 py-2 text-sm font-bold text-blue-700 shadow-sm' : 'rounded-xl px-4 py-2 text-sm font-bold text-slate-500 hover:bg-white'}
+                >
+                  券商账户转账
+                </button>
+              ) : null}
             </div>
 
-            <div className="mt-6 grid gap-5">
-              <label className="block">
-                <span className="text-sm font-semibold text-slate-700">币种</span>
-                <div className="mt-2 flex h-11 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-900">
-                  USD 美元
+            {transferMode === 'fiat' ? (
+              <div className="grid items-center gap-4 md:grid-cols-[1fr_auto_1fr]">
+                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+                  <div className="text-sm font-semibold text-blue-700">转出账户</div>
+                  <div className="mt-2 text-xl font-bold text-slate-950">{config.sourceAccount}</div>
+                  <div className="mt-2 text-sm text-slate-500">参考余额：{config.sourceBalance}</div>
                 </div>
-                <div className="mt-2 text-xs leading-5 text-slate-500">资金互转目前仅支持 USD。</div>
-              </label>
+                <button
+                  type="button"
+                  onClick={() => setCurrentDirection((current) => (current === 'trust-to-us' ? 'us-to-trust' : 'trust-to-us'))}
+                  className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-blue-200 bg-white text-blue-700 shadow-sm hover:bg-blue-50"
+                  aria-label="互换转出和转入账户"
+                  title="互换转出和转入账户"
+                >
+                  <RefreshCw className="h-5 w-5" />
+                </button>
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+                  <div className="text-sm font-semibold text-emerald-700">转入账户</div>
+                  <div className="mt-2 text-xl font-bold text-slate-950">{config.targetAccount}</div>
+                  <div className="mt-2 text-sm text-slate-500">参考余额：{config.targetBalance}</div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-5">
+                <div className="grid items-start gap-4 md:grid-cols-2">
+                  <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+                    <label className="block">
+                      <span className="text-sm font-semibold text-blue-700">付款账户</span>
+                      <select
+                        value={brokerageSourceAccount?.id || ''}
+                        onChange={(event) => {
+                          setSourceAccountId(event.target.value)
+                          if (event.target.value === 'us') setCurrency('USD')
+                        }}
+                        className="mt-2 h-11 w-full rounded-xl border border-blue-100 bg-white px-3 text-sm font-semibold text-slate-900 outline-none"
+                      >
+                        {brokerageSourceOptions.map((account) => (
+                          <option key={account.id} value={account.id}>{account.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="mt-3 text-sm text-slate-500">{brokerageSourceAccount?.helper || '当前币种下暂无可用付款账户'}</div>
+                    <div className="mt-2 text-sm font-semibold text-slate-900">参考余额：{getInternalTransferBalance(brokerageSourceAccount, activeCurrency)}</div>
+                  </div>
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+                    <label className="block">
+                      <span className="text-sm font-semibold text-emerald-700">收款账户</span>
+                      <select
+                        value={brokerageTargetAccount?.id || ''}
+                        onChange={(event) => {
+                          setTargetAccountId(event.target.value)
+                          if (event.target.value === 'us') setCurrency('USD')
+                        }}
+                        className="mt-2 h-11 w-full rounded-xl border border-emerald-100 bg-white px-3 text-sm font-semibold text-slate-900 outline-none"
+                      >
+                        {brokerageTargetOptions.map((account) => (
+                          <option key={account.id} value={account.id}>{account.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="mt-3 text-sm text-slate-500">{brokerageTargetAccount?.helper || '当前币种下暂无可用收款账户'}</div>
+                    <div className="mt-2 text-sm font-semibold text-slate-900">参考余额：{getInternalTransferBalance(brokerageTargetAccount, activeCurrency)}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 grid gap-5">
+              {transferMode === 'fiat' ? (
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">币种</span>
+                  <div className="mt-2 flex h-11 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-900">
+                    USD 美元
+                  </div>
+                  <div className="mt-2 text-xs leading-5 text-slate-500">资金互转目前仅支持 USD。</div>
+                </label>
+              ) : (
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">币种</span>
+                  <select
+                    value={activeCurrency}
+                    onChange={(event) => {
+                      setCurrency(event.target.value)
+                      setError('')
+                    }}
+                    className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
+                  >
+                    {brokerageCurrencyOptions.map((option) => (
+                      <option key={option} value={option}>{option === 'USD' ? 'USD 美元' : 'HKD 港币'}</option>
+                    ))}
+                  </select>
+                  <div className="mt-2 text-xs leading-5 text-slate-500">美国账户仅支持 USD；香港账户和券商账户支持 USD / HKD，仅允许同币种转账。</div>
+                </label>
+              )}
               <label className="block">
                 <span className="text-sm font-semibold text-slate-700">金额</span>
                 <input
@@ -1381,6 +1597,17 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
                   className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
                 />
               </label>
+              {transferMode === 'brokerage' ? (
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">转账用途</span>
+                  <input
+                    value={purpose}
+                    onChange={(event) => setPurpose(event.target.value)}
+                    placeholder="例如：证券交易资金调拨"
+                    className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
+                  />
+                </label>
+              ) : null}
             </div>
 
             <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4">
@@ -1412,6 +1639,7 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords }) {
               <div className="rounded-xl bg-white/70 p-3">状态：UNDER_REVIEW</div>
               <div className="rounded-xl bg-white/70 p-3">后台动作：审核通过 / 拒绝</div>
               <div className="rounded-xl bg-white/70 p-3">审计：记录客户提交与确认动作</div>
+              {hasBrokerageAccounts ? <div className="rounded-xl bg-white/70 p-3">券商账户：仅展示已开户账户</div> : null}
             </div>
           </aside>
         </div>
@@ -1459,6 +1687,7 @@ function InternalTransferDetailPage({ record, onBack }) {
         { label: '币种', value: currency },
         { label: '转账金额', value: formatTransferDetailCurrencyAmount(currency, amount) },
         { label: '实际到账金额', value: formatTransferDetailCurrencyAmount(currency, actualArrivalAmount) },
+        ...(record.transferPurpose && record.transferPurpose !== '-' ? [{ label: '转账用途', value: record.transferPurpose }] : []),
       ]}
       instructionRows={[
         { label: '申请编号', value: record.requestId || record.id, strong: true },
@@ -1555,6 +1784,11 @@ export function BaasOpeningPrototype({
   onPrototypeHome,
   initialStatus = 'not_opened',
   IncomingFiatDepositComponent = IncomingFiatDepositPrototype,
+  prototypeLabel = 'BaaS 原型',
+  showGuidanceMarks = true,
+  forceInternalTransferMark = false,
+  investmentMenu = [],
+  brokerageAccounts = [],
 }) {
   const [status, setStatus] = useState(initialStatus)
   const [activeAccount, setActiveAccount] = useState('trust')
@@ -1579,7 +1813,16 @@ export function BaasOpeningPrototype({
       setBalanceWarningOpen(true)
       return
     }
-    onOpenApplication()
+    if (onOpenApplication) {
+      onOpenApplication()
+      return
+    }
+    changeStatus('reviewing')
+  }
+
+  const topNavProps = {
+    investmentMenu,
+    activeNavLabel: '账户',
   }
 
   const openInternalTransfer = (direction) => {
@@ -1606,6 +1849,8 @@ export function BaasOpeningPrototype({
         onBack={() => setActiveOpenedPage('account')}
         records={fiatTransferOutRecords}
         onSubmit={submitFiatTransferOut}
+        topNavProps={topNavProps}
+        showGuidanceMarks={showGuidanceMarks}
       />
     )
   }
@@ -1617,6 +1862,7 @@ export function BaasOpeningPrototype({
         onBack={() => setActiveOpenedPage('account')}
         onSubmit={submitInternalTransfer}
         onViewRecords={() => setActiveOpenedPage('internal-transfer-records')}
+        brokerageAccounts={brokerageAccounts}
       />
     )
   }
@@ -1633,8 +1879,8 @@ export function BaasOpeningPrototype({
 
   return (
     <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
-      <DemoBar status={status} onStatusChange={changeStatus} onPrototypeHome={onPrototypeHome} />
-      <ClientTopNav onBack={onBack} />
+      <DemoBar status={status} onStatusChange={changeStatus} onPrototypeHome={onPrototypeHome} prototypeLabel={prototypeLabel} />
+      <ClientTopNav onBack={onBack} {...topNavProps} />
       <AccountHero
         status={status}
         activeAccount={activeAccount}
@@ -1642,6 +1888,7 @@ export function BaasOpeningPrototype({
         onOpenJurisdiction={() => setPickerOpen(true)}
         onOpenIncomingDeposit={() => setActiveOpenedPage('external-fiat-transfer-in')}
         onOpenFiatTransferOut={() => setActiveOpenedPage('external-fiat-transfer-out')}
+        showGuidanceMarks={showGuidanceMarks}
       />
       <QuickActionDock
         status={status}
@@ -1650,6 +1897,8 @@ export function BaasOpeningPrototype({
         onOpenIncomingDeposit={() => setActiveOpenedPage('external-fiat-transfer-in')}
         onOpenFiatTransferOut={() => setActiveOpenedPage('external-fiat-transfer-out')}
         onOpenInternalTransfer={openInternalTransfer}
+        showGuidanceMarks={showGuidanceMarks}
+        forceInternalTransferMark={forceInternalTransferMark}
       />
       <main className="mx-auto max-w-[1280px] px-5 py-8">
         <MainContent status={status} activeAccount={activeAccount} onOpenAccountInfo={() => setAccountInfoOpen(true)} />
