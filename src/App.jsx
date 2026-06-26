@@ -157,6 +157,20 @@ function App() {
     )
   }
 
+  if (path === '/admin/product-manual/user-transfer-prototype') {
+    return (
+      <BaasOpeningPrototype
+        onBack={() => navigate('/')}
+        onPrototypeHome={() => navigate('/')}
+        initialStatus="opened"
+        prototypeLabel="转账给其他用户原型"
+        showGuidanceMarks={false}
+        enableUserTransfer
+        forceUserTransferMark
+      />
+    )
+  }
+
   if (path === '/admin/product-manual/baas-system-reform') {
     return (
       <BaasSystemReformPage

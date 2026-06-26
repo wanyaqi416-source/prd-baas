@@ -10,6 +10,7 @@ import {
   Landmark,
   Languages,
   LayoutDashboard,
+  Mail,
   RefreshCw,
   Send,
   Sun,
@@ -21,6 +22,7 @@ import { useMemo, useState } from 'react'
 
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
+import { CurrencyIcon } from '../components/baas/CurrencyIcon'
 import { TransactionDetailDrawer, formatDetailCurrencyAmount } from '../components/baas/TransactionDetailDrawer'
 import { IncomingFiatDepositPrototype } from './IncomingFiatDepositPrototype'
 
@@ -93,6 +95,9 @@ const internalTransferFiatAccounts = [
     balance: {
       USD: 'USD 96,037.39',
       HKD: 'HKD 625,106.36',
+      CNY: 'CNY 238,000.00',
+      EUR: 'EUR 18,600.00',
+      SGD: 'SGD 42,800.00',
     },
   },
   {
@@ -109,6 +114,14 @@ const internalTransferFiatAccounts = [
 const getInternalTransferBalance = (account, currency) => account?.balance?.[currency] || `${currency} --`
 
 const formatCurrencyAmount = (currency, amount) => `${currency} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+const trustUserTransferCurrencies = [
+  { value: 'HKD', label: 'HKD 港币' },
+  { value: 'USD', label: 'USD 美元' },
+  { value: 'CNY', label: 'CNY 人民币' },
+  { value: 'EUR', label: 'EUR 欧元' },
+  { value: 'SGD', label: 'SGD 新币' },
+]
 
 const defaultFiatTransferPurposeOptions = [
   'Investment',
@@ -439,14 +452,32 @@ function QuickActionDock({
   onOpenIncomingDeposit,
   onOpenFiatTransferOut,
   onOpenInternalTransfer,
+  onOpenUserTransfer,
   showGuidanceMarks = true,
   forceInternalTransferMark = false,
+  forceUserTransferMark = false,
+  enableUserTransfer = false,
 }) {
   if (activeAccount === 'us' && (status === 'reviewing' || status === 'failed')) {
     return null
   }
 
   const opened = status === 'opened'
+  const trustOpenedActions = [
+    [Landmark, '银行存入', onOpenIncomingDeposit],
+    [WalletCards, '数字资产存入', undefined],
+    [Send, '法币转出', onOpenFiatTransferOut],
+    [RefreshCw, '资金互转', () => onOpenInternalTransfer('trust-to-us')],
+    ...(enableUserTransfer ? [[Send, '转账给其他用户', onOpenUserTransfer]] : []),
+    [Send, '转账给受益人', undefined],
+  ]
+  const closedActions = [
+    [Landmark, '银行存入', undefined],
+    [WalletCards, '数字资产存入', undefined],
+    ...(enableUserTransfer ? [[Send, '转账给其他用户', onOpenUserTransfer]] : []),
+    [Send, '转账给受益人', undefined],
+    [RefreshCw, '兑换', undefined],
+  ]
   const actions = activeAccount === 'us' && opened
     ? [
         [Banknote, '存入资金', undefined],
@@ -455,19 +486,8 @@ function QuickActionDock({
         [RefreshCw, '兑换', undefined],
       ]
     : activeAccount === 'trust' && opened
-      ? [
-          [Landmark, '银行存入', onOpenIncomingDeposit],
-          [WalletCards, '数字资产存入', undefined],
-          [Send, '法币转出', onOpenFiatTransferOut],
-          [RefreshCw, '资金互转', () => onOpenInternalTransfer('trust-to-us')],
-          [Send, '转账给受益人', undefined],
-        ]
-      : [
-        [Landmark, '银行存入', undefined],
-        [WalletCards, '数字资产存入', undefined],
-        [Send, '转账给受益人', undefined],
-        [RefreshCw, '兑换', undefined],
-      ]
+      ? trustOpenedActions
+      : closedActions
 
   return (
     <section className="mx-auto -mt-7 max-w-[1280px] px-5">
@@ -485,7 +505,7 @@ function QuickActionDock({
                 <Icon className="h-5 w-5" />
               </span>
               <span className="mt-1 inline-flex items-center justify-center gap-1">
-                {(showGuidanceMarks && (label === '银行存入' || label === '法币转出' || label === '资金互转')) || (forceInternalTransferMark && label === '资金互转') ? <ClickMark /> : null}
+                {(showGuidanceMarks && (label === '银行存入' || label === '法币转出' || label === '资金互转')) || (forceInternalTransferMark && label === '资金互转') || (forceUserTransferMark && label === '转账给其他用户') ? <ClickMark /> : null}
                 {label}
               </span>
             </button>
@@ -688,7 +708,14 @@ function AssetAccountCard({ title, subtitle, total, badge, badgeVariant, rows, s
             <tbody>
               {rows.map((row) => (
                 <tr key={row.currency} className="border-t border-slate-100">
-                  <td className="px-6 py-5 font-semibold text-slate-900">{row.currency}<br /><span className="text-xs font-normal text-slate-500">{title}</span></td>
+                  <td className="px-6 py-5">
+                    <div className="inline-flex items-center gap-2 font-semibold text-slate-900">
+                      <CurrencyIcon currency={row.currency} />
+                      <span>{row.currency}</span>
+                    </div>
+                    <br />
+                    <span className="text-xs font-normal text-slate-500">{title}</span>
+                  </td>
                   <td className="px-6 py-5">{row.balance}</td>
                   <td className="px-6 py-5">{row.available}</td>
                   <td className="px-6 py-5">{row.frozen}</td>
@@ -1344,6 +1371,160 @@ function InternalTransferConfirmModal({ draft, onClose, onConfirm }) {
   )
 }
 
+function UserTransferPage({ onBack, topNavProps }) {
+  const [email, setEmail] = useState('')
+  const [currency, setCurrency] = useState('HKD')
+  const [amount, setAmount] = useState('')
+  const [error, setError] = useState('')
+  const [submittedRecord, setSubmittedRecord] = useState(null)
+  const numericAmount = Number(amount)
+  const hasValidAmount = Number.isFinite(numericAmount) && numericAmount > 0
+  const amountDisplay = formatCurrencyAmount(currency, hasValidAmount ? numericAmount : 0)
+
+  const submit = () => {
+    if (!email.trim()) {
+      setError('请输入收款用户邮箱。')
+      return
+    }
+    if (!currency) {
+      setError('请选择币种。')
+      return
+    }
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setError('请输入大于 0 的转账金额。')
+      return
+    }
+
+    setError('')
+    setSubmittedRecord({
+      id: `UT-${Date.now()}`,
+      email: email.trim(),
+      currency,
+      amount: numericAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      statusLabel: '待审核',
+      createdAt: formatTransferTime(),
+    })
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
+      <ClientTopNav onBack={onBack} {...topNavProps} />
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex h-16 max-w-[1180px] items-center justify-between px-5">
+          <button type="button" onClick={onBack} className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-900">
+            返回账户
+          </button>
+          <Badge variant="warning">待后台审核</Badge>
+        </div>
+      </header>
+      <main className="mx-auto max-w-[1180px] px-5 py-8">
+        <div className="mb-6">
+          <Badge variant="secondary">Trust user transfer</Badge>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">转账给其他用户</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500">用于信托用户之间的同平台转账。当前为前端原型，提交后生成本地待审核记录。</p>
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-[0.68fr_0.32fr]">
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="grid gap-5">
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">收款用户邮箱</span>
+                <div className="mt-2 flex h-12 items-center rounded-xl border border-slate-200 bg-white px-3 focus-within:border-blue-500">
+                  <Mail className="mr-2 h-4 w-4 text-blue-500" />
+                  <input
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="请输入收款用户邮箱"
+                    className="min-w-0 flex-1 text-sm font-semibold text-slate-900 outline-none"
+                  />
+                </div>
+              </label>
+              <div className="grid gap-5 md:grid-cols-2">
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">币种</span>
+                  <select
+                    value={currency}
+                    onChange={(event) => setCurrency(event.target.value)}
+                    className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
+                  >
+                    {trustUserTransferCurrencies.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">金额</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={amount}
+                    onChange={(event) => setAmount(event.target.value)}
+                    placeholder="请输入转账金额"
+                    className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
+                  />
+                </label>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-emerald-900">预计转账金额</div>
+                    <p className="mt-1 text-sm text-emerald-700">当前原型不计算手续费，实际处理以后端审核结果为准。</p>
+                  </div>
+                  <div className="text-2xl font-bold text-emerald-950">{amountDisplay}</div>
+                </div>
+              </div>
+
+              {error ? <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div> : null}
+
+              <div className="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-5">
+                <Button type="button" onClick={submit} className="rounded-lg bg-blue-600 px-6 hover:bg-blue-700">
+                  提交审核
+                </Button>
+                <Button type="button" onClick={onBack} variant="outline" className="rounded-lg">
+                  取消
+                </Button>
+              </div>
+            </div>
+          </section>
+
+          <aside className="space-y-5">
+            <section className="rounded-2xl border border-amber-100 bg-amber-50 p-5">
+              <div className="text-sm font-semibold text-amber-900">审核说明</div>
+              <p className="mt-2 text-sm leading-6 text-amber-800">提交后记录进入待审核状态，后台人工处理后客户可查看转账状态。</p>
+              <div className="mt-5 space-y-3 text-sm text-amber-900">
+                <div className="rounded-xl bg-white/70 p-3">支持币种：HKD / USD / CNY / EUR / SGD</div>
+                <div className="rounded-xl bg-white/70 p-3">初始状态：待审核</div>
+              </div>
+            </section>
+            {submittedRecord ? (
+              <section className="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm">
+                <Badge variant="success">已提交</Badge>
+                <h2 className="mt-3 text-lg font-bold text-slate-950">转账申请摘要</h2>
+                <div className="mt-4 space-y-3 text-sm">
+                  {[
+                    ['申请编号', submittedRecord.id],
+                    ['收款邮箱', submittedRecord.email],
+                    ['转账金额', `${submittedRecord.currency} ${submittedRecord.amount}`],
+                    ['状态', submittedRecord.statusLabel],
+                    ['提交时间', submittedRecord.createdAt],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex justify-between gap-4 border-b border-slate-100 pb-3 last:border-0">
+                      <span className="text-slate-500">{label}</span>
+                      <span className="text-right font-bold text-slate-950">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </aside>
+        </div>
+      </main>
+    </div>
+  )
+}
+
 function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords, brokerageAccounts = [] }) {
   const [currentDirection, setCurrentDirection] = useState(direction)
   const [transferMode, setTransferMode] = useState('fiat')
@@ -1367,7 +1548,11 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords, brok
     },
   })), [brokerageAccounts])
   const hasBrokerageAccounts = normalizedBrokerageAccounts.length > 0
-  const brokerageCurrencyOptions = sourceAccountId === 'us' || targetAccountId === 'us' ? ['USD'] : ['USD', 'HKD']
+  const brokerageCurrencyOptions = sourceAccountId === 'us' || targetAccountId === 'us'
+    ? ['USD']
+    : sourceAccountId === 'hk' || targetAccountId === 'hk'
+      ? internalTransferFiatAccounts.find((account) => account.id === 'hk')?.currencies || ['USD', 'HKD']
+      : ['USD', 'HKD']
   const effectiveBrokerageCurrency = brokerageCurrencyOptions.includes(currency) ? currency : 'USD'
   const activeCurrency = transferMode === 'brokerage' ? effectiveBrokerageCurrency : 'USD'
   const numericAmount = Number(amount)
@@ -1388,6 +1573,10 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords, brok
 
   const switchMode = (nextMode) => {
     setTransferMode(nextMode)
+    if (nextMode === 'brokerage') {
+      setSourceAccountId('hk')
+      setTargetAccountId(normalizedBrokerageAccounts[0]?.id || '')
+    }
     setError('')
     setConfirmDraft(null)
   }
@@ -1522,8 +1711,11 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords, brok
                       <select
                         value={brokerageSourceAccount?.id || ''}
                         onChange={(event) => {
-                          setSourceAccountId(event.target.value)
-                          if (event.target.value === 'us') setCurrency('USD')
+                          const nextSourceId = event.target.value
+                          const nextSourceAccount = brokerageTransferAccounts.find((account) => account.id === nextSourceId)
+                          setSourceAccountId(nextSourceId)
+                          setTargetAccountId(nextSourceAccount?.kind === 'brokerage' ? 'hk' : normalizedBrokerageAccounts[0]?.id || '')
+                          if (nextSourceId === 'us') setCurrency('USD')
                         }}
                         className="mt-2 h-11 w-full rounded-xl border border-blue-100 bg-white px-3 text-sm font-semibold text-slate-900 outline-none"
                       >
@@ -1787,6 +1979,8 @@ export function BaasOpeningPrototype({
   prototypeLabel = 'BaaS 原型',
   showGuidanceMarks = true,
   forceInternalTransferMark = false,
+  enableUserTransfer = false,
+  forceUserTransferMark = false,
   investmentMenu = [],
   brokerageAccounts = [],
 }) {
@@ -1828,6 +2022,10 @@ export function BaasOpeningPrototype({
   const openInternalTransfer = (direction) => {
     setInternalTransferDirection(direction)
     setActiveOpenedPage('internal-transfer')
+  }
+
+  const openUserTransfer = () => {
+    setActiveOpenedPage('user-transfer')
   }
 
   const submitInternalTransfer = (record) => {
@@ -1877,6 +2075,15 @@ export function BaasOpeningPrototype({
     )
   }
 
+  if (status === 'opened' && activeOpenedPage === 'user-transfer') {
+    return (
+      <UserTransferPage
+        onBack={() => setActiveOpenedPage('account')}
+        topNavProps={topNavProps}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
       <DemoBar status={status} onStatusChange={changeStatus} onPrototypeHome={onPrototypeHome} prototypeLabel={prototypeLabel} />
@@ -1897,8 +2104,11 @@ export function BaasOpeningPrototype({
         onOpenIncomingDeposit={() => setActiveOpenedPage('external-fiat-transfer-in')}
         onOpenFiatTransferOut={() => setActiveOpenedPage('external-fiat-transfer-out')}
         onOpenInternalTransfer={openInternalTransfer}
+        onOpenUserTransfer={openUserTransfer}
         showGuidanceMarks={showGuidanceMarks}
         forceInternalTransferMark={forceInternalTransferMark}
+        enableUserTransfer={enableUserTransfer}
+        forceUserTransferMark={forceUserTransferMark}
       />
       <main className="mx-auto max-w-[1280px] px-5 py-8">
         <MainContent status={status} activeAccount={activeAccount} onOpenAccountInfo={() => setAccountInfoOpen(true)} />

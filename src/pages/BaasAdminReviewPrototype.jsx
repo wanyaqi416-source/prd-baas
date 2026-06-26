@@ -6,6 +6,7 @@ import {
   ChevronDown,
   CircleDot,
   Clock3,
+  Copy,
   Download,
   Droplet,
   Eye,
@@ -43,6 +44,7 @@ import {
   brokerageOpeningStatusTones,
   initialBrokerageApplications,
 } from '../data/securitiesBrokerageApplications'
+import { CurrencyIcon } from '../components/baas/CurrencyIcon'
 
 const pendingApplications = [
   {
@@ -1234,6 +1236,60 @@ function DrawerSelectField({ label, value, onChange, options, placeholder }) {
   )
 }
 
+function DrawerMultiSelectField({ label, value = [], onChange, options }) {
+  const [open, setOpen] = useState(false)
+  const selectedValues = Array.isArray(value) ? value : []
+  const displayValue = selectedValues.length ? selectedValues.join(' / ') : '请选择'
+
+  const toggleOption = (option) => {
+    const exists = selectedValues.includes(option)
+    const nextValues = exists
+      ? selectedValues.filter((item) => item !== option)
+      : [...selectedValues, option]
+
+    onChange?.(nextValues.length ? nextValues : selectedValues)
+  }
+
+  return (
+    <div className="relative">
+      <span className="mb-[-8px] ml-[10px] inline-block bg-white px-[4px] text-[12px] text-[#66677f]">{label}</span>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex h-[54px] w-full items-center justify-between rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] text-left text-[14px] text-[#24243d] outline-none"
+      >
+        <span className={selectedValues.length ? 'font-semibold' : 'text-[#9a9cab]'}>{displayValue}</span>
+        <ChevronDown className={`h-[16px] w-[16px] text-[#8a8ca0] transition ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open ? (
+        <div className="absolute left-0 right-0 top-[58px] z-30 rounded-[5px] border border-[#cfd1dc] bg-white p-[6px] shadow-[0_12px_28px_rgba(31,35,66,0.14)]">
+          {options.map((option) => {
+            const checked = selectedValues.includes(option)
+
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => toggleOption(option)}
+                className={`flex h-[38px] w-full items-center justify-between rounded-[4px] px-[10px] text-[13px] font-semibold transition ${
+                  checked ? 'bg-[#f0e9ff] text-[#8b4fff]' : 'text-[#4c4c68] hover:bg-[#f6f7fb]'
+                }`}
+              >
+                <span>{option}</span>
+                <span className={`flex h-[16px] w-[16px] items-center justify-center rounded-[4px] border text-[11px] ${
+                  checked ? 'border-[#8b4fff] bg-[#8b4fff] text-white' : 'border-[#cfd1dc] text-transparent'
+                }`}>
+                  ✓
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function DrawerInputField({ label, placeholder = '', prefix = '', value, onChange, type = 'text', readOnly = false }) {
   const inputProps = value === undefined
     ? {}
@@ -1337,9 +1393,40 @@ function BrokerageDrawerSection({ title, children }) {
   )
 }
 
+const brokerageSettlementCurrencyOptions = ['USD', 'HKD']
+
+function normalizeBrokerageSettlementCurrencies(value, fallbackValue = '') {
+  const sourceValues = Array.isArray(value)
+    ? value
+    : String(value || fallbackValue || '')
+      .split(/[,\s/、]+/)
+      .filter(Boolean)
+
+  return brokerageSettlementCurrencyOptions.filter((option) => sourceValues.includes(option))
+}
+
+function formatBrokerageSettlementCurrencies(account) {
+  const values = normalizeBrokerageSettlementCurrencies(account?.settlementCurrencies || account?.settlementCurrency, account?.currency)
+  return values.length ? values.join(' / ') : '-'
+}
+
 function BrokerageAccountForm({ value, onChange, lockedBrokerName = '' }) {
   const displayBrokerName = lockedBrokerName || value.brokerName
-  const updateField = (field, nextValue) => onChange({ ...value, brokerName: displayBrokerName, [field]: nextValue })
+  const selectedSettlementCurrencies = normalizeBrokerageSettlementCurrencies(value.settlementCurrencies || value.settlementCurrency, value.currency)
+  const effectiveSettlementCurrencies = selectedSettlementCurrencies.length ? selectedSettlementCurrencies : ['USD']
+  const updateField = (field, nextValue) => {
+    const nextSettlementCurrencies = normalizeBrokerageSettlementCurrencies(nextValue)
+    const effectiveNextSettlementCurrencies = nextSettlementCurrencies.length ? nextSettlementCurrencies : ['USD']
+    const nextValuePatch = field === 'settlementCurrencies'
+      ? {
+          settlementCurrencies: effectiveNextSettlementCurrencies,
+          settlementCurrency: effectiveNextSettlementCurrencies.join(' / '),
+          currency: effectiveNextSettlementCurrencies[0],
+        }
+      : { [field]: nextValue }
+
+    onChange({ ...value, brokerName: displayBrokerName, ...nextValuePatch })
+  }
 
   return (
     <BrokerageDrawerSection title="券商账户信息（客户可见）">
@@ -1351,10 +1438,11 @@ function BrokerageAccountForm({ value, onChange, lockedBrokerName = '' }) {
         )}
         <DrawerInputField label="账户名称 *" value={value.accountName} onChange={(nextValue) => updateField('accountName', nextValue)} placeholder="XXX Trust Account" />
         <DrawerInputField label="券商账户号码 *" value={value.accountNumber} onChange={(nextValue) => updateField('accountNumber', nextValue)} placeholder="请输入券商账户号码" />
-        <DrawerInputField label="账户币种 *" value={value.currency} onChange={(nextValue) => updateField('currency', nextValue)} placeholder="USD" />
+        <DrawerInputField label="账户类型 *" value={value.accountType} onChange={(nextValue) => updateField('accountType', nextValue)} placeholder="Individual Account" />
+        <DrawerMultiSelectField label="结算币种 *" value={effectiveSettlementCurrencies} onChange={(nextValue) => updateField('settlementCurrencies', nextValue)} options={brokerageSettlementCurrencyOptions} />
         <DrawerInputField label="开户日期 *" type="date" value={value.openedAt} onChange={(nextValue) => updateField('openedAt', nextValue)} />
         <DrawerSelectField label="账户状态 *" value={value.accountStatus} onChange={(nextValue) => updateField('accountStatus', nextValue)} options={brokerageAccountStatuses} />
-        <DrawerTextareaField label="备注信息" value={value.remark} onChange={(nextValue) => updateField('remark', nextValue)} placeholder="该备注将展示给前台客户" />
+        <DrawerTextareaField label="备注信息" value={value.remark} onChange={(nextValue) => updateField('remark', nextValue)} placeholder="该备注用于后台处理记录" />
       </div>
     </BrokerageDrawerSection>
   )
@@ -1387,6 +1475,269 @@ function BrokerageReadOnlyField({ label, value }) {
   )
 }
 
+function formatBrokerageDetailValue(value) {
+  if (Array.isArray(value)) return value.length ? value.join(' / ') : '-'
+  if (value === 0) return '0'
+  return value || '-'
+}
+
+function copyBrokerageValue(value) {
+  const text = formatBrokerageDetailValue(value)
+  if (!text || text === '-') return
+  navigator.clipboard?.writeText(text).catch(() => {})
+}
+
+function BrokerageDetailField({ label, value, copyable = false, wide = false, editable = false, onChange }) {
+  const [editing, setEditing] = useState(false)
+  const [fieldValue, setFieldValue] = useState(formatBrokerageDetailValue(value))
+  const displayValue = formatBrokerageDetailValue(fieldValue)
+  const startEditing = () => {
+    setFieldValue(displayValue === '-' ? '' : displayValue)
+    setEditing(true)
+  }
+  const cancelEditing = () => {
+    setFieldValue(formatBrokerageDetailValue(value))
+    setEditing(false)
+  }
+  const saveEditing = () => {
+    const nextValue = fieldValue.trim() || '-'
+    setFieldValue(nextValue)
+    onChange?.(nextValue)
+    setEditing(false)
+  }
+
+  return (
+    <div className={`${wide ? 'md:col-span-2' : ''} min-h-[76px] rounded-[5px] border border-[#e2e4ec] bg-[#fbfbfd] p-[13px]`}>
+      <div className="flex items-center justify-between gap-[8px]">
+        <div className="text-[12px] text-[#66677f]">{label}</div>
+        <div className="flex items-center gap-[8px]">
+          {editing ? (
+            <>
+              <button type="button" onClick={saveEditing} className="text-[#42c600] hover:text-[#2fa600]" aria-label={`保存${label}`}>
+                <CheckCircle2 className="h-[15px] w-[15px]" />
+              </button>
+              <button type="button" onClick={cancelEditing} className="text-[#f04f5f] hover:text-[#d73f4d]" aria-label={`取消${label}`}>
+                <X className="h-[15px] w-[15px]" />
+              </button>
+            </>
+          ) : (
+            <>
+              {copyable && displayValue !== '-' ? (
+                <button
+                  type="button"
+                  onClick={() => copyBrokerageValue(displayValue)}
+                  className="inline-flex h-[24px] items-center gap-[4px] rounded-[4px] border border-[#d9dcf0] bg-white px-[7px] text-[11px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]"
+                >
+                  <Copy className="h-[12px] w-[12px]" />
+                  复制
+                </button>
+              ) : null}
+              {editable ? (
+                <button type="button" onClick={startEditing} className="text-[#8b4fff] hover:text-[#7f42f2]" aria-label={`修改${label}`}>
+                  <Pencil className="h-[15px] w-[15px]" />
+                </button>
+              ) : null}
+            </>
+          )}
+        </div>
+      </div>
+      {editing ? (
+        <textarea
+          value={fieldValue === '-' ? '' : fieldValue}
+          onChange={(event) => setFieldValue(event.target.value)}
+          className="mt-[8px] h-[58px] w-full resize-none rounded-[4px] border border-[#cfd1dc] bg-white px-[10px] py-[8px] text-[13px] font-semibold leading-[20px] text-[#24243d] outline-none focus:border-[#8b4fff]"
+          placeholder="-"
+        />
+      ) : (
+        <div className="mt-[8px] break-words text-[13px] font-semibold leading-[20px] text-[#24243d]">{displayValue}</div>
+      )}
+    </div>
+  )
+}
+
+function BrokerageDetailGrid({ rows, editable = false, onFieldChange }) {
+  return (
+    <div className="grid grid-cols-1 gap-[10px] md:grid-cols-2">
+      {rows.map((row) => (
+        <BrokerageDetailField
+          key={row.label}
+          label={row.label}
+          value={row.value}
+          copyable={row.copyable}
+          wide={row.wide}
+          editable={editable}
+          onChange={(nextValue) => onFieldChange?.(row.key, nextValue)}
+        />
+      ))}
+    </div>
+  )
+}
+
+function splitBrokerageCustomerName(name = '') {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (!parts.length) return { firstName: '-', middleName: '-', lastName: '-' }
+  if (parts.length === 1) return { firstName: parts[0], middleName: '-', lastName: parts[0] }
+  return {
+    firstName: parts.slice(0, -1).join(' '),
+    middleName: parts.length > 2 ? parts.slice(1, -1).join(' ') : '-',
+    lastName: parts[parts.length - 1],
+  }
+}
+
+function createBrokeragePerson(application, role, index = 0) {
+  const { firstName, middleName, lastName } = splitBrokerageCustomerName(application.customer.name)
+  const phone = application.customer.phone || '-'
+
+  return {
+    lastNameEn: lastName,
+    middleName,
+    firstNameEn: firstName,
+    lastNameCn: application.customer.name?.slice(0, 1) || '-',
+    firstNameCn: application.customer.name?.slice(1) || '-',
+    gender: '-',
+    birthDate: '-',
+    documentType: '-',
+    documentNumber: '-',
+    nationality: '-',
+    phone,
+    address: '-',
+    email: application.customer.email || '-',
+    beneficiaryRatio: '',
+    documentPhoto: {
+      name: '-',
+      status: '未上传',
+      uploadedAt: '-',
+    },
+  }
+}
+
+function getBrokerageOpeningProfile(application) {
+  const settlor = createBrokeragePerson(application, '委托人')
+  const fallbackBeneficiaries = [
+    {
+      ...createBrokeragePerson(application, '受益人', 0),
+      firstNameEn: splitBrokerageCustomerName(application.customer.name).firstName,
+      documentPhoto: {
+        name: `${application.id}-beneficiary-1-id-photo.pdf`,
+        status: '已上传',
+        uploadedAt: application.submittedAt,
+      },
+    },
+    {
+      ...createBrokeragePerson(application, '受益人', 1),
+      firstNameEn: 'Family Beneficiary',
+      lastNameEn: splitBrokerageCustomerName(application.customer.name).lastName,
+      lastNameCn: '受',
+      firstNameCn: '益人',
+      phone: application.customer.phone || '-',
+      documentPhoto: {
+        name: `${application.id}-beneficiary-2-id-photo.pdf`,
+        status: '已上传',
+        uploadedAt: application.submittedAt,
+      },
+    },
+  ]
+
+  return {
+    beneficiaries: application.beneficiaries || fallbackBeneficiaries,
+    settlor,
+  }
+}
+
+function BrokeragePersonRows(person, { includeMailing = false } = {}) {
+  const rows = [
+    { key: 'lastNameEn', label: '姓（英）', value: person?.lastNameEn, copyable: true },
+    { key: 'middleName', label: '中间名', value: person?.middleName, copyable: true },
+    { key: 'firstNameEn', label: '名（英）', value: person?.firstNameEn, copyable: true },
+    { key: 'lastNameCn', label: '姓（中）', value: person?.lastNameCn, copyable: true },
+    { key: 'firstNameCn', label: '名（中）', value: person?.firstNameCn, copyable: true },
+    { key: 'gender', label: '性别', value: person?.gender, copyable: true },
+    { key: 'birthDate', label: '出生日期', value: person?.birthDate },
+    { key: 'documentType', label: '证件类型', value: person?.documentType, copyable: true },
+    { key: 'documentNumber', label: '证件号码', value: person?.documentNumber, copyable: true },
+    { key: 'nationality', label: '国籍', value: person?.nationality, copyable: true },
+    { key: 'phone', label: '电话号码', value: person?.phone, copyable: true },
+  ]
+
+  rows.push({ key: 'address', label: '住宅地址', value: person?.address, copyable: true, wide: true })
+  if (includeMailing) rows.push({ key: 'email', label: '邮箱地址', value: person?.email, copyable: true, wide: true })
+
+  return rows
+}
+
+function BrokerageIdentityFileRow({ file }) {
+  return (
+    <div className="mt-[10px] rounded-[5px] border border-[#e2e4ec] bg-white p-[12px]">
+      <div className="flex items-start justify-between gap-[12px]">
+        <div>
+          <div className="text-[13px] font-semibold text-[#20213a]">证件照片</div>
+          <div className="mt-[5px] text-[12px] text-[#66677f]">{file?.name || '-'}</div>
+        </div>
+        <StatusBadge tone={file?.status === '已上传' ? 'green' : 'gray'}>{file?.status || '未上传'}</StatusBadge>
+      </div>
+      <div className="mt-[10px] flex flex-wrap gap-[8px]">
+        <ActionButton icon={Eye}>查看</ActionButton>
+        <ActionButton icon={Download}>下载</ActionButton>
+      </div>
+    </div>
+  )
+}
+
+function BrokeragePersonSection({ title, person, includeMailing = false, editable = false }) {
+  const [draftPerson, setDraftPerson] = useState(person || {})
+
+  return (
+    <BrokeragePageSection title={title} icon={UserRound}>
+      <BrokerageDetailGrid
+        rows={BrokeragePersonRows(draftPerson, { includeMailing })}
+        editable={editable}
+        onFieldChange={(field, nextValue) => setDraftPerson((current) => ({ ...current, [field]: nextValue }))}
+      />
+      <BrokerageIdentityFileRow file={draftPerson?.documentPhoto} />
+    </BrokeragePageSection>
+  )
+}
+
+function getBrokerageReviewFiles(application) {
+  const materialMap = new Map(application.materials.map((material) => [material.id, material]))
+  const standardFiles = application.brokerId === 'webull'
+    ? [
+        { id: 'basic_profile', name: '账户基础资料', type: '上传资料' },
+        { id: 'authorization_letter', name: '授权书', type: '第三方签署文档' },
+        { id: 'risk_disclosure', name: '风险披露文件', type: '第三方签署文档' },
+      ]
+    : [
+        { id: 'address_proof', name: '地址证明', type: '上传资料' },
+      ]
+
+  const files = standardFiles.map((file) => {
+    const material = materialMap.get(file.id)
+    const uploaded = material?.status === '已上传' || material?.status === '已签署'
+
+    return {
+      ...file,
+      fileName: material?.fileName && material.fileName !== '-' ? material.fileName : '-',
+      status: uploaded ? '已上传' : '未上传',
+      uploadedAt: material?.uploadedAt || (uploaded ? application.submittedAt : '-'),
+      reuploadable: file.id === 'address_proof' || file.id === 'basic_profile',
+    }
+  })
+
+  application.materials.forEach((material) => {
+    if (!files.some((file) => file.id === material.id)) {
+      files.push({
+        ...material,
+        fileName: material.fileName && material.fileName !== '-' ? material.fileName : '-',
+        status: material.status === '已上传' || material.status === '已签署' ? '已上传' : '未上传',
+        uploadedAt: material.status === '已上传' || material.status === '已签署' ? application.submittedAt : '-',
+        reuploadable: canReuploadBrokerageMaterial(application, material),
+      })
+    }
+  })
+
+  return files
+}
+
 function BrokerageProfileInfoRow({ icon: Icon, value, label }) {
   return (
     <div className="flex items-center gap-[12px]">
@@ -1407,21 +1758,33 @@ function BrokerageUserSummaryGrid({ application }) {
       <BrokerageReadOnlyField label="客户名称" value={application.customer.name} />
       <BrokerageReadOnlyField label="所选券商" value={application.brokerName} />
       <BrokerageReadOnlyField label="当前开户状态" value={application.openingStatus} />
+      <BrokerageReadOnlyField label="提交时间" value={application.submittedAt} />
+      <BrokerageReadOnlyField label="用户ID" value={application.customer.id} />
+      <BrokerageReadOnlyField label="手机号" value={application.customer.phone} />
+      <BrokerageReadOnlyField label="邮箱地址" value={application.customer.email} />
     </div>
   )
 }
 
 function getBrokerageVisibleAccount(application) {
-  if (application.accountInfo) return { ...application.accountInfo, brokerName: application.brokerName }
+  if (application.accountInfo) {
+    return {
+      ...application.accountInfo,
+      brokerName: application.brokerName,
+      accountType: application.accountInfo.accountType || 'Individual Account',
+      settlementCurrencies: normalizeBrokerageSettlementCurrencies(application.accountInfo.settlementCurrencies || application.accountInfo.settlementCurrency, application.accountInfo.currency),
+      settlementCurrency: formatBrokerageSettlementCurrencies(application.accountInfo),
+    }
+  }
 
   return {
     brokerName: application.brokerName,
     accountName: '-',
     accountNumber: '-',
-    currency: '-',
+    accountType: '-',
+    settlementCurrency: '-',
     openedAt: '-',
     accountStatus: application.openingStatus,
-    remark: '-',
   }
 }
 
@@ -1433,11 +1796,11 @@ function BrokerageVisibleAccountInfoSection({ application }) {
       <div className="grid grid-cols-3 gap-[10px]">
         <BrokerageReadOnlyField label="券商名称" value={visibleAccount.brokerName} />
         <BrokerageReadOnlyField label="账户名称" value={visibleAccount.accountName} />
-        <BrokerageReadOnlyField label="券商账户号码（对应 Fidere 的信托编号）" value={visibleAccount.accountNumber} />
-        <BrokerageReadOnlyField label="账户币种" value={visibleAccount.currency} />
+        <BrokerageReadOnlyField label="券商账户号码" value={visibleAccount.accountNumber} />
+        <BrokerageReadOnlyField label="账户类型" value={visibleAccount.accountType} />
+        <BrokerageReadOnlyField label="结算币种" value={formatBrokerageSettlementCurrencies(visibleAccount)} />
         <BrokerageReadOnlyField label="开户日期" value={visibleAccount.openedAt} />
         <BrokerageReadOnlyField label="账户状态" value={visibleAccount.accountStatus} />
-        <BrokerageReadOnlyField label="备注信息" value={visibleAccount.remark} />
       </div>
     </BrokeragePageSection>
   )
@@ -1468,29 +1831,54 @@ function BrokerageProfileCard({ application }) {
   )
 }
 
+function getBrokerageReturnReason(application) {
+  return [...(application.statusLogs || [])]
+    .reverse()
+    .find((log) => log.to === '需补充资料')?.remark || ''
+}
+
+function BrokerageReturnReasonCard({ application }) {
+  if (application.openingStatus !== '需补充资料') return null
+
+  return (
+    <Panel className="p-[18px]">
+      <div className="flex items-center gap-[8px] text-[14px] font-semibold text-[#20213a]">
+        <FileText className="h-[17px] w-[17px] text-[#8b4fff]" />
+        退回原因
+      </div>
+      <div className="mt-[12px] rounded-[5px] border border-[#f1d4ff] bg-[#fbf6ff] px-[12px] py-[11px] text-[13px] leading-[22px] text-[#55556e]">
+        {getBrokerageReturnReason(application) || '暂无退回原因'}
+      </div>
+    </Panel>
+  )
+}
+
 function BrokerageMaterialsGrid({ application, mode = 'view', onReuploadMaterial }) {
+  const files = getBrokerageReviewFiles(application)
+
   return (
     <div className="grid grid-cols-2 gap-[10px]">
-      {application.materials.map((material) => {
-        const canReupload = mode === 'process' && canReuploadBrokerageMaterial(application, material)
+      {files.map((material) => {
+        const canReupload = mode === 'process' && material.reuploadable
 
         return (
           <div key={material.id} className="rounded-[5px] border border-[#e2e4ec] bg-white p-[14px]">
             <div className="flex items-start justify-between gap-[12px]">
               <div>
                 <div className="text-[13px] font-semibold text-[#20213a]">{material.name}</div>
-                <div className="mt-[5px] text-[12px] text-[#66677f]">{material.type} · {material.fileName}</div>
+                <div className="mt-[5px] text-[12px] text-[#66677f]">{material.type} · {material.fileName || '未上传'}</div>
+                <div className="mt-[4px] text-[12px] text-[#8a8ca0]">上传时间：{material.uploadedAt || '-'}</div>
               </div>
-              <StatusBadge tone={material.status === '已上传' || material.status === '已签署' ? 'green' : 'gray'}>{material.status}</StatusBadge>
+              <StatusBadge tone={material.status === '已上传' || material.status === '已签署' ? 'green' : 'gray'}>{material.status || '未上传'}</StatusBadge>
             </div>
             <div className="mt-[13px] flex flex-wrap gap-[8px]">
-              <ActionButton icon={Download} onClick={() => downloadApplicationMaterials(application)}>下载</ActionButton>
               <ActionButton icon={Eye}>查看</ActionButton>
+              <ActionButton icon={Download} onClick={() => downloadApplicationMaterials(application)}>下载</ActionButton>
               {canReupload ? <ActionButton icon={UploadCloud} onClick={() => onReuploadMaterial?.(material.id)}>重新上传</ActionButton> : null}
             </div>
             {mode === 'process' && !canReupload ? (
               <div className="mt-[9px] rounded-[4px] bg-[#f6f7fb] px-[10px] py-[8px] text-[12px] text-[#66677f]">
-                {application.brokerId === 'webull' ? '第三方签署文件，仅支持查看或下载。' : '该文件当前不支持后台重新上传。'}
+                {material.type === '签署文件' ? '第三方签署文件，仅支持查看或下载。' : '该文件当前不支持后台重新上传。'}
               </div>
             ) : null}
           </div>
@@ -1557,61 +1945,180 @@ function BrokerageTimelineLogs({ logs }) {
   )
 }
 
-function BrokerageApplicationDetailPage({ application, onBack, onStartProcess }) {
-  const showVisibleAccountInfo = ['已开户', '已拒绝'].includes(application.openingStatus)
-
+function BrokerageReviewSummaryBanner({ application }) {
   return (
-    <AdminShell>
-      <div className="grid grid-cols-[360px_1fr] gap-[18px]">
-        <div className="space-y-[18px]">
-          <BrokerageProfileCard application={application} />
-        </div>
-
-        <div className="space-y-[18px]">
-          <div className="flex items-center justify-between">
-            <ActionButton icon={ChevronDown} onClick={onBack}>返回券商开户管理</ActionButton>
+    <Panel className="border-l-[4px] border-l-[#8b4fff] p-[18px]">
+      <div className="flex items-center justify-between gap-[14px]">
+        <div>
+          <div className="text-[16px] font-semibold text-[#20213a]">开户所需资料汇总</div>
+          <div className="mt-[7px] text-[13px] leading-[22px] text-[#66677f]">
+            运营可根据以下资料在 {application.brokerName || '券商'} 后台手动完成开户，页面仅做只读展示与文件操作。
           </div>
-
-          <BrokeragePageSection title="用户资料" icon={ShieldCheck}>
-            <BrokerageUserSummaryGrid application={application} />
-          </BrokeragePageSection>
-
-          {showVisibleAccountInfo ? <BrokerageVisibleAccountInfoSection application={application} /> : null}
-
-          <BrokeragePageSection title="用户上传文件 / 第三方签署文件" icon={FileText}>
-            <BrokerageMaterialsGrid application={application} mode="view" />
-          </BrokeragePageSection>
         </div>
+        <StatusBadge tone={brokerageOpeningStatusTones[application.openingStatus]}>{application.openingStatus}</StatusBadge>
       </div>
-    </AdminShell>
+    </Panel>
   )
 }
 
-function BrokerageApplicationProcessPage({ application, onBack, onSave }) {
-  const initialAccount = application.accountInfo || {
-    brokerName: application.brokerName,
-    accountName: '',
-    accountNumber: '',
-    currency: 'USD',
-    openedAt: formatAdminDateTime().slice(0, 10),
-    accountStatus: '已开户',
-    remark: '账户已成功开通，可联系客户经理了解后续服务。',
+function BrokerageBeneficiaryCard({ beneficiary, index, editable = false }) {
+  const [draftBeneficiary, setDraftBeneficiary] = useState(beneficiary || {})
+
+  return (
+    <div className="rounded-[6px] border border-[#e2e4ec] bg-white p-[14px]">
+      <div className="mb-[12px] flex items-center justify-between gap-[12px]">
+        <div className="text-[13px] font-semibold text-[#20213a]">受益人 {index + 1}</div>
+      </div>
+      <BrokerageDetailGrid
+        rows={BrokeragePersonRows(draftBeneficiary)}
+        editable={editable}
+        onFieldChange={(field, nextValue) => setDraftBeneficiary((current) => ({ ...current, [field]: nextValue }))}
+      />
+      <BrokerageIdentityFileRow file={draftBeneficiary?.documentPhoto} />
+    </div>
+  )
+}
+
+function BrokerageBeneficiariesSection({ beneficiaries, editable = false }) {
+  return (
+    <BrokeragePageSection title="受益人资料" icon={UsersRound}>
+      <div className="space-y-[12px]">
+        {beneficiaries.map((beneficiary, index) => (
+          <BrokerageBeneficiaryCard
+            key={`${beneficiary.documentNumber || beneficiary.firstNameEn || 'beneficiary'}-${index}`}
+            beneficiary={beneficiary}
+            index={index}
+            editable={editable}
+          />
+        ))}
+      </div>
+    </BrokeragePageSection>
+  )
+}
+
+function BrokerageRejectedReasonSection({ application }) {
+  if (application.openingStatus !== '已拒绝') return null
+
+  const reason = [...(application.statusLogs || [])]
+    .reverse()
+    .find((log) => log.to === '已拒绝')?.remark || '暂无拒绝原因'
+
+  return (
+    <BrokeragePageSection title="拒绝原因" icon={XCircle}>
+      <div className="rounded-[5px] border border-[#ffd7dc] bg-[#fff7f8] px-[14px] py-[12px] text-[13px] leading-[22px] text-[#b52d3b]">
+        {reason}
+      </div>
+    </BrokeragePageSection>
+  )
+}
+
+const brokerageReviewTabs = [
+  { key: 'overview', label: '申请概览' },
+  { key: 'settlor', label: '委托人资料' },
+  { key: 'beneficiaries', label: '受益人资料' },
+  { key: 'documents', label: '文档资料' },
+  { key: 'process', label: '开户处理' },
+]
+
+function BrokerageReviewTabBar({ activeTab, onChange }) {
+  return (
+    <Panel className="px-[12px] py-[10px]">
+      <div className="flex flex-wrap gap-[8px]">
+        {brokerageReviewTabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => onChange(tab.key)}
+            className={`h-[38px] rounded-full px-[15px] text-[13px] font-semibold transition ${
+              activeTab === tab.key
+                ? 'bg-[#8b4fff] text-white shadow-[0_8px_18px_rgba(139,79,255,0.2)]'
+                : 'border border-[#e2e4ec] bg-white text-[#4c4c68] hover:border-[#c7b5ff] hover:text-[#8b4fff]'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    </Panel>
+  )
+}
+
+function BrokerageOverviewTab({ application }) {
+  const feeRows = []
+  if (application.openingFee) feeRows.push({ label: '开户费用', value: application.openingFee })
+  if (application.feeCurrency) feeRows.push({ label: '扣费币种', value: application.feeCurrency })
+  if (application.feeStatus) feeRows.push({ label: '扣费状态', value: application.feeStatus })
+  if (application.transactionNo) feeRows.push({ label: '交易流水号', value: application.transactionNo, copyable: true })
+
+  return (
+    <BrokeragePageSection title="申请概览" icon={ShieldCheck}>
+      <BrokerageDetailGrid
+        rows={[
+          { label: '客户名称', value: application.customer.name, copyable: true },
+          { label: '用户ID', value: application.customer.id, copyable: true },
+          { label: '手机号', value: application.customer.phone, copyable: true },
+          { label: '邮箱地址', value: application.customer.email, copyable: true },
+          { label: '所选券商', value: application.brokerName, copyable: true },
+          { label: '当前开户状态', value: application.openingStatus },
+          { label: '提交时间', value: application.submittedAt, copyable: true },
+          ...feeRows,
+        ]}
+      />
+    </BrokeragePageSection>
+  )
+}
+
+function BrokerageBeneficiariesTab({ beneficiaries, editable = false }) {
+  if (!beneficiaries.length) {
+    return (
+      <BrokeragePageSection title="受益人资料" icon={UsersRound}>
+        <div className="rounded-[5px] border border-[#e2e4ec] bg-[#fbfbfd] px-[14px] py-[16px] text-[13px] font-semibold text-[#66677f]">
+          暂无受益人资料
+        </div>
+      </BrokeragePageSection>
+    )
   }
+
+  return <BrokerageBeneficiariesSection beneficiaries={beneficiaries} editable={editable} />
+}
+
+function BrokerageProcessTab({ application, onSave }) {
+  const initialAccount = application.accountInfo
+    ? {
+        ...application.accountInfo,
+        brokerName: application.brokerName,
+        accountType: application.accountInfo.accountType || 'Individual Account',
+        settlementCurrencies: normalizeBrokerageSettlementCurrencies(application.accountInfo.settlementCurrencies || application.accountInfo.settlementCurrency, application.accountInfo.currency),
+        settlementCurrency: formatBrokerageSettlementCurrencies(application.accountInfo),
+        currency: application.accountInfo.currency || normalizeBrokerageSettlementCurrencies(application.accountInfo.settlementCurrencies || application.accountInfo.settlementCurrency)[0] || 'USD',
+      }
+    : {
+        brokerName: application.brokerName,
+        accountName: '',
+        accountNumber: '',
+        accountType: 'Individual Account',
+        settlementCurrencies: ['USD'],
+        settlementCurrency: 'USD',
+        currency: 'USD',
+        openedAt: formatAdminDateTime().slice(0, 10),
+        accountStatus: '已开户',
+        remark: '',
+      }
   const [nextStatus, setNextStatus] = useState(application.openingStatus)
   const [statusRemark, setStatusRemark] = useState('')
-  const [returnReasonError, setReturnReasonError] = useState('')
+  const [statusError, setStatusError] = useState('')
   const [accountForm, setAccountForm] = useState(initialAccount)
   const showAccountForm = nextStatus === '已开户'
   const showReturnReason = nextStatus === '需补充资料'
-  const showRejectedVisibleAccountInfo = application.openingStatus === '已拒绝' && !showAccountForm
+  const remarkLabel = showReturnReason ? '补充资料说明 *' : '处理备注'
 
   const saveChanges = () => {
     if (showReturnReason && !statusRemark.trim()) {
-      setReturnReasonError('请填写退回原因')
+      setStatusError('请填写补充资料说明')
       return
     }
 
-    setReturnReasonError('')
+    setStatusError('')
     const nextLog = {
       id: `log-${application.id}-${Date.now()}`,
       time: formatAdminDateTime(),
@@ -1621,81 +2128,135 @@ function BrokerageApplicationProcessPage({ application, onBack, onSave }) {
       remark: statusRemark.trim() || (showAccountForm ? '开户完成，券商账户信息已同步给客户。' : '后台手动更新开户状态。'),
     }
 
-    onSave(application.id, {
+    onSave?.(application.id, {
       openingStatus: nextStatus,
       accountInfo: showAccountForm ? { ...accountForm, brokerName: application.brokerName } : application.accountInfo,
       statusLogs: [...application.statusLogs, nextLog],
     })
   }
 
-  const reuploadMaterial = (materialId) => {
-    const uploadedAt = formatAdminDateTime()
-      .replaceAll('-', '')
-      .replaceAll(':', '')
-      .replaceAll(' ', '')
-      .slice(0, 12)
-    const nextMaterials = application.materials.map((material) => {
-      if (material.id !== materialId) return material
-      return {
-        ...material,
-        status: '已上传',
-        fileName: `${material.id}-reuploaded-${uploadedAt}.pdf`,
-        type: '上传资料',
-      }
-    })
-    const nextLog = {
-      id: `log-${application.id}-reupload-${Date.now()}`,
-      time: formatAdminDateTime(),
-      operator: '后台人员',
-      from: application.openingStatus,
-      to: application.openingStatus,
-      remark: '后台重新上传客户开户资料。',
-    }
+  return (
+    <BrokeragePageSection title="开户处理" icon={FileCheck2}>
+      <div className="space-y-[13px]">
+        <DrawerSelectField
+          label="开户状态 *"
+          value={nextStatus}
+          onChange={(nextValue) => {
+            setNextStatus(nextValue)
+            setStatusError('')
+          }}
+          options={brokerageOpeningStatuses}
+        />
+        <DrawerTextareaField
+          label={remarkLabel}
+          value={statusRemark}
+          onChange={(nextValue) => {
+            setStatusRemark(nextValue)
+          if (statusError) setStatusError('')
+        }}
+          placeholder={showReturnReason ? '请填写客户需要补充的资料说明' : '记录本次处理说明'}
+        />
+        {statusError ? <div className="text-[12px] text-[#f04f5f]">{statusError}</div> : null}
+        {showAccountForm ? <BrokerageAccountForm value={accountForm} onChange={setAccountForm} lockedBrokerName={application.brokerName} /> : null}
+        <button type="button" onClick={saveChanges} className="flex h-[38px] w-full items-center justify-center gap-[8px] rounded-[5px] bg-[#bda2f9] text-[13px] font-semibold text-white hover:bg-[#9b63f5]">
+          <FileCheck2 className="h-[15px] w-[15px]" />
+          保存处理结果
+        </button>
+      </div>
+    </BrokeragePageSection>
+  )
+}
 
-    onSave(application.id, {
-      uploadStatus: nextMaterials.every((material) => material.status === '已上传' || material.status === '已签署') ? '已上传' : '部分上传',
-      materials: nextMaterials,
-      statusLogs: [...application.statusLogs, nextLog],
+function BrokerageDocumentsTab({ application, onReuploadMaterial }) {
+  return (
+    <BrokeragePageSection title="文档资料" icon={FileText}>
+      <BrokerageMaterialsGrid application={application} mode="process" onReuploadMaterial={onReuploadMaterial} />
+    </BrokeragePageSection>
+  )
+}
+
+function BrokerageReviewRightSections({ application, onSave, defaultTab = 'overview' }) {
+  const profile = getBrokerageOpeningProfile(application)
+  const showVisibleAccountInfo = application.openingStatus === '已开户'
+  const [activeTab, setActiveTab] = useState(defaultTab)
+  const canEditSubmittedProfile = defaultTab === 'process' && application.openingStatus !== '已开户'
+
+  const reuploadMaterial = (materialId) => {
+    onSave?.(application.id, buildBrokerageMaterialReuploadPatch(application, materialId))
+  }
+
+  return (
+    <>
+      <BrokerageReviewSummaryBanner application={application} />
+      <BrokerageReviewTabBar activeTab={activeTab} onChange={setActiveTab} />
+
+      {activeTab === 'overview' ? (
+        <div className="space-y-[18px]">
+          <BrokerageOverviewTab application={application} />
+          {showVisibleAccountInfo ? <BrokerageVisibleAccountInfoSection application={application} /> : null}
+          <BrokerageRejectedReasonSection application={application} />
+        </div>
+      ) : null}
+      {activeTab === 'settlor' ? <BrokeragePersonSection title="委托人资料" person={profile.settlor} includeMailing editable={canEditSubmittedProfile} /> : null}
+      {activeTab === 'beneficiaries' ? <BrokerageBeneficiariesTab beneficiaries={profile.beneficiaries} editable={canEditSubmittedProfile} /> : null}
+      {activeTab === 'documents' ? <BrokerageDocumentsTab application={application} onReuploadMaterial={reuploadMaterial} /> : null}
+      {activeTab === 'process' ? <BrokerageProcessTab application={application} onSave={onSave} /> : null}
+    </>
+  )
+}
+
+function buildBrokerageMaterialReuploadPatch(application, materialId) {
+  const uploadedAt = formatAdminDateTime()
+    .replaceAll('-', '')
+    .replaceAll(':', '')
+    .replaceAll(' ', '')
+    .slice(0, 12)
+  const materialTemplate = getBrokerageReviewFiles(application).find((material) => material.id === materialId)
+  let materialUpdated = false
+  const nextMaterials = application.materials.map((material) => {
+    if (material.id !== materialId) return material
+    materialUpdated = true
+    return {
+      ...material,
+      status: '已上传',
+      fileName: `${material.id}-reuploaded-${uploadedAt}.pdf`,
+      type: material.type || materialTemplate?.type || '上传资料',
+    }
+  })
+
+  if (!materialUpdated && materialTemplate) {
+    nextMaterials.push({
+      id: materialTemplate.id,
+      name: materialTemplate.name,
+      status: '已上传',
+      fileName: `${materialTemplate.id}-reuploaded-${uploadedAt}.pdf`,
+      type: materialTemplate.type || '上传资料',
     })
   }
 
+  const nextLog = {
+    id: `log-${application.id}-reupload-${Date.now()}`,
+    time: formatAdminDateTime(),
+    operator: '后台人员',
+    from: application.openingStatus,
+    to: application.openingStatus,
+    remark: '后台重新上传客户开户资料。',
+  }
+
+  return {
+    uploadStatus: nextMaterials.every((material) => material.status === '已上传' || material.status === '已签署') ? '已上传' : '部分上传',
+    materials: nextMaterials,
+    statusLogs: [...application.statusLogs, nextLog],
+  }
+}
+
+function BrokerageApplicationDetailPage({ application, onBack, onSave }) {
   return (
     <AdminShell>
       <div className="grid grid-cols-[360px_1fr] gap-[18px]">
         <div className="space-y-[18px]">
           <BrokerageProfileCard application={application} />
-          <Panel className="p-[18px]">
-            <div className="flex items-center gap-[8px] text-[14px] font-semibold text-[#20213a]">
-              <FileCheck2 className="h-[17px] w-[17px] text-[#8b4fff]" />
-              开户处理
-            </div>
-            <div className="mt-[14px] text-[12px] leading-[20px] text-[#55556e]">仅在开始处理页更新开户进度、重新上传资料，并在开户完成后录入客户可见账户信息。</div>
-            <div className="mt-[14px] space-y-[10px]">
-              <DrawerSelectField
-                label="开户状态 *"
-                value={nextStatus}
-                onChange={(nextValue) => {
-                  setNextStatus(nextValue)
-                  if (nextValue !== '需补充资料') setReturnReasonError('')
-                }}
-                options={brokerageOpeningStatuses}
-              />
-              <DrawerTextareaField
-                label={showReturnReason ? '退回原因 *' : '处理备注'}
-                value={statusRemark}
-                onChange={(nextValue) => {
-                  setStatusRemark(nextValue)
-                  if (returnReasonError) setReturnReasonError('')
-                }}
-                placeholder={showReturnReason ? '请填写资料问题和客户需补充内容' : '记录本次处理说明'}
-              />
-              {returnReasonError ? <div className="text-[12px] text-[#f04f5f]">{returnReasonError}</div> : null}
-              <button type="button" onClick={saveChanges} className="flex h-[38px] w-full items-center justify-center gap-[8px] rounded-[5px] bg-[#bda2f9] text-[13px] font-semibold text-white hover:bg-[#9b63f5]">
-                <FileCheck2 className="h-[15px] w-[15px]" />
-                保存处理结果
-              </button>
-            </div>
-          </Panel>
+          <BrokerageReturnReasonCard application={application} />
         </div>
 
         <div className="space-y-[18px]">
@@ -1703,17 +2264,27 @@ function BrokerageApplicationProcessPage({ application, onBack, onSave }) {
             <ActionButton icon={ChevronDown} onClick={onBack}>返回券商开户管理</ActionButton>
           </div>
 
-          <BrokeragePageSection title="用户资料" icon={ShieldCheck}>
-            <BrokerageUserSummaryGrid application={application} />
-          </BrokeragePageSection>
+          <BrokerageReviewRightSections application={application} onSave={onSave} defaultTab="overview" />
+        </div>
+      </div>
+    </AdminShell>
+  )
+}
 
-          {showRejectedVisibleAccountInfo ? <BrokerageVisibleAccountInfoSection application={application} /> : null}
+function BrokerageApplicationProcessPage({ application, onBack, onSave }) {
+  return (
+    <AdminShell>
+      <div className="grid grid-cols-[360px_1fr] gap-[18px]">
+        <div className="space-y-[18px]">
+          <BrokerageProfileCard application={application} />
+        </div>
 
-          <BrokeragePageSection title="文件与第三方签署" icon={FileText}>
-            <BrokerageMaterialsGrid application={application} mode="process" onReuploadMaterial={reuploadMaterial} />
-          </BrokeragePageSection>
+        <div className="space-y-[18px]">
+          <div className="flex items-center justify-between">
+            <ActionButton icon={ChevronDown} onClick={onBack}>返回券商开户管理</ActionButton>
+          </div>
 
-          {showAccountForm ? <BrokerageAccountForm value={accountForm} onChange={setAccountForm} lockedBrokerName={application.brokerName} /> : null}
+          <BrokerageReviewRightSections application={application} onSave={onSave} defaultTab="process" />
 
         </div>
       </div>
@@ -1722,15 +2293,27 @@ function BrokerageApplicationProcessPage({ application, onBack, onSave }) {
 }
 
 function BrokerageApplicationDrawer({ application, onClose, onSave }) {
-  const initialAccount = application.accountInfo || {
-    brokerName: application.brokerName,
-    accountName: '',
-    accountNumber: '',
-    currency: 'USD',
-    openedAt: formatAdminDateTime().slice(0, 10),
-    accountStatus: '已开户',
-    remark: '账户已成功开通，可联系客户经理了解后续服务。',
-  }
+  const initialAccount = application.accountInfo
+    ? {
+        ...application.accountInfo,
+        brokerName: application.brokerName,
+        accountType: application.accountInfo.accountType || 'Individual Account',
+        settlementCurrencies: normalizeBrokerageSettlementCurrencies(application.accountInfo.settlementCurrencies || application.accountInfo.settlementCurrency, application.accountInfo.currency),
+        settlementCurrency: formatBrokerageSettlementCurrencies(application.accountInfo),
+        currency: application.accountInfo.currency || normalizeBrokerageSettlementCurrencies(application.accountInfo.settlementCurrencies || application.accountInfo.settlementCurrency)[0] || 'USD',
+      }
+    : {
+        brokerName: application.brokerName,
+        accountName: '',
+        accountNumber: '',
+        accountType: 'Individual Account',
+        settlementCurrencies: ['USD'],
+        settlementCurrency: 'USD',
+        currency: 'USD',
+        openedAt: formatAdminDateTime().slice(0, 10),
+        accountStatus: '已开户',
+        remark: '',
+      }
   const [nextStatus, setNextStatus] = useState(application.openingStatus)
   const [statusRemark, setStatusRemark] = useState('')
   const [returnReasonError, setReturnReasonError] = useState('')
@@ -1922,8 +2505,8 @@ export function BrokerageApplicationManagementPage({ applications = initialBroke
   const pageRows = filteredApplications.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const selectedApplication = applications.find((application) => application.id === selectedApplicationId)
   const openedCount = userTypeApplications.filter((application) => application.openingStatus === '已开户').length
-  const pendingActionCount = userTypeApplications.filter((application) => ['资料审核中', '开户处理中'].includes(application.openingStatus)).length
-  const attentionCount = userTypeApplications.filter((application) => ['需补充资料', '已拒绝'].includes(application.openingStatus)).length
+  const pendingActionCount = userTypeApplications.filter((application) => ['审核中', '开户中'].includes(application.openingStatus)).length
+  const attentionCount = userTypeApplications.filter((application) => application.openingStatus === '需补充资料').length
 
   const changeUserType = (nextType) => {
     setActiveUserType(nextType)
@@ -1969,7 +2552,7 @@ export function BrokerageApplicationManagementPage({ applications = initialBroke
       <BrokerageApplicationDetailPage
         application={selectedApplication}
         onBack={backToList}
-        onStartProcess={() => setPageMode('process')}
+        onSave={handleSaveApplication}
       />
     )
   }
@@ -2007,8 +2590,8 @@ export function BrokerageApplicationManagementPage({ applications = initialBroke
       ) : (
         <>
       <div className="mt-[21px] grid w-[936px] grid-cols-3 gap-[21px]">
-        <StatCard title="待处理" value={pendingActionCount} desc="资料审核中 / 开户处理中" tone="blue" icon={LineChart} />
-        <StatCard title="需关注" value={attentionCount} desc="需补充资料 / 已拒绝" tone="amber" icon={PauseCircle} />
+        <StatCard title="待处理" value={pendingActionCount} desc="审核中 / 开户中" tone="blue" icon={LineChart} />
+        <StatCard title="需关注" value={attentionCount} desc="需补充资料" tone="amber" icon={PauseCircle} />
         <StatCard title="已开户" value={openedCount} desc="客户可见账户信息" tone="green" icon={CheckCircle2} />
       </div>
 
@@ -2500,11 +3083,20 @@ function FiatTransferPanel({ onOpenRecord }) {
 }
 
 function CurrencyPill({ currency }) {
-  const toneClass = currency === 'HKD'
-    ? 'bg-[#fff1d6] text-[#f39800]'
-    : 'bg-[#e7f5ff] text-[#237be8]'
+  const toneClass = {
+    CNY: 'bg-[#fff1f1] text-[#d62d2d]',
+    EUR: 'bg-[#eef4ff] text-[#3267d6]',
+    HKD: 'bg-[#fff1d6] text-[#f39800]',
+    SGD: 'bg-[#fff1f1] text-[#d62d2d]',
+    USD: 'bg-[#e7f5ff] text-[#237be8]',
+  }[String(currency || '').toUpperCase()] || 'bg-[#f0f2f7] text-[#55556e]'
 
-  return <span className={`inline-flex rounded-full px-[10px] py-[3px] text-[12px] font-semibold ${toneClass}`}>{currency}</span>
+  return (
+    <span className={`inline-flex h-[26px] items-center gap-[6px] rounded-full px-[8px] py-[3px] text-[12px] font-semibold leading-none ${toneClass}`}>
+      <CurrencyIcon currency={currency} size="sm" />
+      <span>{currency}</span>
+    </span>
+  )
 }
 
 function DirectionBadge({ direction }) {

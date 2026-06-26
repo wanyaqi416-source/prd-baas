@@ -81,6 +81,21 @@ export const prdModules = [
     moduleType: 'prototype',
     buttonLabel: '进入原型',
   },
+  {
+    id: 'user-transfer-prototype',
+    title: '转账给其他用户原型',
+    subtitle: '信托用户之间互转原型入口',
+    description:
+      '复用现有客户端账户页面结构，新增转账给其他用户快捷入口，用于演示信托用户之间按邮箱、币种和金额发起互转申请。',
+    category: '原型',
+    status: 'Prototype',
+    phase: 'Prototype Draft',
+    route: '/admin/product-manual/user-transfer-prototype',
+    tags: ['转账', '信托用户', '用户互转', '客户端', '原型'],
+    source: 'Current Project',
+    moduleType: 'prototype',
+    buttonLabel: '进入原型',
+  },
 ]
 
 export const baasPrototypeEntries = [
