@@ -1487,7 +1487,9 @@ function copyBrokerageValue(value) {
   navigator.clipboard?.writeText(text).catch(() => {})
 }
 
-function BrokerageDetailField({ label, value, copyable = false, wide = false, editable = false, onChange }) {
+const brokerageCountryRegionOptions = ['中国（CN）', '中国香港（HK）', '中国澳门（MO）', '中国台湾（TW）', '新加坡（SG）', '美国（US）', '日本（JP）']
+
+function BrokerageDetailField({ label, value, copyable = false, wide = false, editable = false, onChange, options }) {
   const [editing, setEditing] = useState(false)
   const [fieldValue, setFieldValue] = useState(formatBrokerageDetailValue(value))
   const displayValue = formatBrokerageDetailValue(fieldValue)
@@ -1542,12 +1544,24 @@ function BrokerageDetailField({ label, value, copyable = false, wide = false, ed
         </div>
       </div>
       {editing ? (
-        <textarea
-          value={fieldValue === '-' ? '' : fieldValue}
-          onChange={(event) => setFieldValue(event.target.value)}
-          className="mt-[8px] h-[58px] w-full resize-none rounded-[4px] border border-[#cfd1dc] bg-white px-[10px] py-[8px] text-[13px] font-semibold leading-[20px] text-[#24243d] outline-none focus:border-[#8b4fff]"
-          placeholder="-"
-        />
+        options?.length ? (
+          <select
+            value={fieldValue === '-' ? options[0] : fieldValue}
+            onChange={(event) => setFieldValue(event.target.value)}
+            className="mt-[8px] h-[40px] w-full rounded-[4px] border border-[#cfd1dc] bg-white px-[10px] text-[13px] font-semibold text-[#24243d] outline-none focus:border-[#8b4fff]"
+          >
+            {options.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        ) : (
+          <textarea
+            value={fieldValue === '-' ? '' : fieldValue}
+            onChange={(event) => setFieldValue(event.target.value)}
+            className="mt-[8px] h-[58px] w-full resize-none rounded-[4px] border border-[#cfd1dc] bg-white px-[10px] py-[8px] text-[13px] font-semibold leading-[20px] text-[#24243d] outline-none focus:border-[#8b4fff]"
+            placeholder="-"
+          />
+        )
       ) : (
         <div className="mt-[8px] break-words text-[13px] font-semibold leading-[20px] text-[#24243d]">{displayValue}</div>
       )}
@@ -1566,6 +1580,7 @@ function BrokerageDetailGrid({ rows, editable = false, onFieldChange }) {
           copyable={row.copyable}
           wide={row.wide}
           editable={editable}
+          options={row.options}
           onChange={(nextValue) => onFieldChange?.(row.key, nextValue)}
         />
       ))}
@@ -1587,26 +1602,29 @@ function splitBrokerageCustomerName(name = '') {
 function createBrokeragePerson(application, role, index = 0) {
   const { firstName, middleName, lastName } = splitBrokerageCustomerName(application.customer.name)
   const phone = application.customer.phone || '-'
+  const isBeneficiary = role === '受益人'
+  const isSecondBeneficiary = isBeneficiary && index === 1
+  const documentSuffix = isBeneficiary ? `beneficiary-${index + 1}` : 'settlor'
 
   return {
-    lastNameEn: lastName,
-    middleName,
-    firstNameEn: firstName,
-    lastNameCn: application.customer.name?.slice(0, 1) || '-',
-    firstNameCn: application.customer.name?.slice(1) || '-',
-    gender: '-',
-    birthDate: '-',
-    documentType: '-',
-    documentNumber: '-',
-    nationality: '-',
+    lastNameEn: isSecondBeneficiary ? `${lastName || 'TRUST'} BENEFICIARY` : lastName,
+    middleName: middleName === '-' ? 'N/A' : middleName,
+    firstNameEn: isSecondBeneficiary ? 'FAMILY' : firstName,
+    lastNameCn: isSecondBeneficiary ? '受' : application.customer.name?.slice(0, 1) || '-',
+    firstNameCn: isSecondBeneficiary ? '益人' : application.customer.name?.slice(1) || '-',
+    gender: isSecondBeneficiary ? '男' : '女',
+    birthDate: isSecondBeneficiary ? '1988-10-09' : '1990-03-18',
+    documentType: '护照',
+    documentNumber: `P${application.customer.id || '0000'}${index + 1}`,
+    nationality: application.customer.phone?.startsWith('+852') ? '中国香港（HK）' : '中国（CN）',
     phone,
-    address: '-',
+    address: isSecondBeneficiary ? '上海市浦东新区世纪大道 88 号' : '香港中环金融街 8 号 Fidere Trust Office',
     email: application.customer.email || '-',
     beneficiaryRatio: '',
     documentPhoto: {
-      name: '-',
-      status: '未上传',
-      uploadedAt: '-',
+      name: `${application.id}-${documentSuffix}-id-photo.pdf`,
+      status: '已上传',
+      uploadedAt: application.submittedAt,
     },
   }
 }
@@ -1617,11 +1635,6 @@ function getBrokerageOpeningProfile(application) {
     {
       ...createBrokeragePerson(application, '受益人', 0),
       firstNameEn: splitBrokerageCustomerName(application.customer.name).firstName,
-      documentPhoto: {
-        name: `${application.id}-beneficiary-1-id-photo.pdf`,
-        status: '已上传',
-        uploadedAt: application.submittedAt,
-      },
     },
     {
       ...createBrokeragePerson(application, '受益人', 1),
@@ -1630,11 +1643,6 @@ function getBrokerageOpeningProfile(application) {
       lastNameCn: '受',
       firstNameCn: '益人',
       phone: application.customer.phone || '-',
-      documentPhoto: {
-        name: `${application.id}-beneficiary-2-id-photo.pdf`,
-        status: '已上传',
-        uploadedAt: application.submittedAt,
-      },
     },
   ]
 
@@ -1652,10 +1660,10 @@ function BrokeragePersonRows(person, { includeMailing = false } = {}) {
     { key: 'lastNameCn', label: '姓（中）', value: person?.lastNameCn, copyable: true },
     { key: 'firstNameCn', label: '名（中）', value: person?.firstNameCn, copyable: true },
     { key: 'gender', label: '性别', value: person?.gender, copyable: true },
-    { key: 'birthDate', label: '出生日期', value: person?.birthDate },
+    { key: 'birthDate', label: '出生日期', value: person?.birthDate, copyable: true },
     { key: 'documentType', label: '证件类型', value: person?.documentType, copyable: true },
     { key: 'documentNumber', label: '证件号码', value: person?.documentNumber, copyable: true },
-    { key: 'nationality', label: '国籍', value: person?.nationality, copyable: true },
+    { key: 'nationality', label: '国籍', value: person?.nationality, copyable: true, options: brokerageCountryRegionOptions },
     { key: 'phone', label: '电话号码', value: person?.phone, copyable: true },
   ]
 
@@ -1665,19 +1673,37 @@ function BrokeragePersonRows(person, { includeMailing = false } = {}) {
   return rows
 }
 
-function BrokerageIdentityFileRow({ file }) {
+function BrokerageIdentityFileRow({ file, editable = false }) {
+  const [currentFile, setCurrentFile] = useState(file || {})
+  const reuploadIdentityFile = () => {
+    const stamp = formatAdminDateTime()
+      .replaceAll('-', '')
+      .replaceAll(':', '')
+      .replaceAll(' ', '')
+      .slice(0, 12)
+
+    setCurrentFile({
+      ...currentFile,
+      name: `identity-photo-reuploaded-${stamp}.pdf`,
+      status: '已上传',
+      uploadedAt: formatAdminDateTime(),
+    })
+  }
+
   return (
     <div className="mt-[10px] rounded-[5px] border border-[#e2e4ec] bg-white p-[12px]">
       <div className="flex items-start justify-between gap-[12px]">
         <div>
           <div className="text-[13px] font-semibold text-[#20213a]">证件照片</div>
-          <div className="mt-[5px] text-[12px] text-[#66677f]">{file?.name || '-'}</div>
+          <div className="mt-[5px] text-[12px] text-[#66677f]">{currentFile?.name || '-'}</div>
+          <div className="mt-[4px] text-[12px] text-[#8a8ca0]">上传时间：{currentFile?.uploadedAt || '-'}</div>
         </div>
-        <StatusBadge tone={file?.status === '已上传' ? 'green' : 'gray'}>{file?.status || '未上传'}</StatusBadge>
+        <StatusBadge tone={currentFile?.status === '已上传' ? 'green' : 'gray'}>{currentFile?.status || '未上传'}</StatusBadge>
       </div>
       <div className="mt-[10px] flex flex-wrap gap-[8px]">
         <ActionButton icon={Eye}>查看</ActionButton>
         <ActionButton icon={Download}>下载</ActionButton>
+        {editable ? <ActionButton icon={UploadCloud} onClick={reuploadIdentityFile}>重新上传</ActionButton> : null}
       </div>
     </div>
   )
@@ -1693,7 +1719,7 @@ function BrokeragePersonSection({ title, person, includeMailing = false, editabl
         editable={editable}
         onFieldChange={(field, nextValue) => setDraftPerson((current) => ({ ...current, [field]: nextValue }))}
       />
-      <BrokerageIdentityFileRow file={draftPerson?.documentPhoto} />
+      <BrokerageIdentityFileRow file={draftPerson?.documentPhoto} editable={editable} />
     </BrokeragePageSection>
   )
 }
@@ -1974,7 +2000,7 @@ function BrokerageBeneficiaryCard({ beneficiary, index, editable = false }) {
         editable={editable}
         onFieldChange={(field, nextValue) => setDraftBeneficiary((current) => ({ ...current, [field]: nextValue }))}
       />
-      <BrokerageIdentityFileRow file={draftBeneficiary?.documentPhoto} />
+      <BrokerageIdentityFileRow file={draftBeneficiary?.documentPhoto} editable={editable} />
     </div>
   )
 }
