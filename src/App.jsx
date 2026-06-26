@@ -40,6 +40,7 @@ import {
 } from './pages/SecuritiesAccountPrototype'
 import { SecuritiesBrokerageAdminPrototype } from './pages/SecuritiesBrokerageAdminPrototype'
 import { initialAccountCurrencyConfigs } from './data/accountCurrencyConfig'
+import { initialBrokerageConfigs } from './data/brokerageConfig'
 import { initialBrokerageApplications } from './data/securitiesBrokerageApplications'
 
 function useCurrentPath() {
@@ -95,6 +96,7 @@ function App() {
   const [path, navigate] = useCurrentPath()
   const [baasOpeningInitialStatus, setBaasOpeningInitialStatus] = useState('not_opened')
   const [brokerageApplications, setBrokerageApplications] = useState(initialBrokerageApplications)
+  const [brokerageConfigs, setBrokerageConfigs] = useState(initialBrokerageConfigs)
   const [accountCurrencyConfigs, setAccountCurrencyConfigs] = useState(initialAccountCurrencyConfigs)
 
   const updateBrokerageApplication = (applicationId, patch) => {
@@ -146,6 +148,8 @@ function App() {
       <SecuritiesBrokerageServicePrototype
         onBack={() => navigate('/admin/product-manual/securities-account-prototype/client')}
         onNavigate={navigate}
+        brokerageConfigs={brokerageConfigs}
+        brokerageApplications={brokerageApplications}
       />
     )
   }
@@ -158,6 +162,8 @@ function App() {
         onUpdateBrokerageApplication={updateBrokerageApplication}
         accountCurrencyConfigs={accountCurrencyConfigs}
         onChangeAccountCurrencyConfigs={setAccountCurrencyConfigs}
+        brokerageConfigs={brokerageConfigs}
+        onChangeBrokerageConfigs={setBrokerageConfigs}
       />
     )
   }

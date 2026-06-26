@@ -40,12 +40,16 @@ import {
   accountCurrencyAccountTypes,
   enabledCurrencyOptions,
   getCurrencyName,
-  getEnabledAccountCurrencyCodes,
   initialAccountCurrencyConfigs,
-  mapBrokerNameToAccountCurrencyType,
 } from '../data/accountCurrencyConfig'
 import {
-  brokerageAccountStatuses,
+  brokerageConfigStatusOptions,
+  brokerageDisplayTagOptions,
+  brokerageMarketCoverageOptions,
+  brokerageMaterialTemplates,
+  initialBrokerageConfigs,
+} from '../data/brokerageConfig'
+import {
   brokerageBrokers,
   brokerageFileRule,
   brokerageOpeningStatuses,
@@ -1090,7 +1094,24 @@ function UserManagementTable() {
   )
 }
 
-function UserManagementPage() {
+export function UserManagementPage({ focusedCustomer }) {
+  if (focusedCustomer) {
+    return (
+      <AdminShell>
+        <Panel className="px-[18px] py-[22px]">
+          <PageTitle title="用户管理详情" subtitle="后台用户管理详情页，用于查看客户已归档资料" />
+          <div className="mt-[18px] grid grid-cols-3 gap-[12px]">
+            <BrokerageReadOnlyField label="客户名称" value={focusedCustomer.name} />
+            <BrokerageReadOnlyField label="用户ID" value={focusedCustomer.id} />
+            <BrokerageReadOnlyField label="邮箱地址" value={focusedCustomer.email} />
+            <BrokerageReadOnlyField label="手机号" value={focusedCustomer.phone} />
+            <BrokerageReadOnlyField label="客户类型" value={focusedCustomer.type} />
+          </div>
+        </Panel>
+      </AdminShell>
+    )
+  }
+
   return (
     <AdminShell>
       <div className="grid w-[936px] grid-cols-3 gap-[21px]">
@@ -1244,7 +1265,7 @@ function DrawerSelectField({ label, value, onChange, options, placeholder }) {
   )
 }
 
-function DrawerMultiSelectField({ label, value = [], onChange, options }) {
+function DrawerMultiSelectField({ label, value = [], onChange, options, allowEmpty = false }) {
   const [open, setOpen] = useState(false)
   const selectedValues = Array.isArray(value) ? value : []
   const displayValue = selectedValues.length ? selectedValues.join(' / ') : '请选择'
@@ -1255,7 +1276,7 @@ function DrawerMultiSelectField({ label, value = [], onChange, options }) {
       ? selectedValues.filter((item) => item !== option)
       : [...selectedValues, option]
 
-    onChange?.(nextValues.length ? nextValues : selectedValues)
+    onChange?.(nextValues.length || allowEmpty ? nextValues : selectedValues)
   }
 
   return (
@@ -1420,24 +1441,8 @@ function formatBrokerageSettlementCurrencies(account) {
 
 function BrokerageAccountForm({ value, onChange, lockedBrokerName = '', accountCurrencyConfigs = initialAccountCurrencyConfigs }) {
   const displayBrokerName = lockedBrokerName || value.brokerName
-  const accountCurrencyType = mapBrokerNameToAccountCurrencyType(displayBrokerName)
-  const currencyOptions = getEnabledAccountCurrencyCodes(accountCurrencyConfigs, accountCurrencyType)
-  const effectiveCurrencyOptions = currencyOptions.length ? currencyOptions : brokerageSettlementCurrencyOptions
-  const selectedSettlementCurrencies = normalizeBrokerageSettlementCurrencies(value.settlementCurrencies || value.settlementCurrency, value.currency)
-  const selectedAvailableCurrencies = selectedSettlementCurrencies.filter((currency) => effectiveCurrencyOptions.includes(currency))
-  const effectiveSettlementCurrencies = selectedAvailableCurrencies.length ? selectedAvailableCurrencies : [effectiveCurrencyOptions[0] || 'USD']
   const updateField = (field, nextValue) => {
-    const nextSettlementCurrencies = Array.isArray(nextValue) ? nextValue.filter((currency) => effectiveCurrencyOptions.includes(currency)) : normalizeBrokerageSettlementCurrencies(nextValue)
-    const effectiveNextSettlementCurrencies = nextSettlementCurrencies.length ? nextSettlementCurrencies : [effectiveCurrencyOptions[0] || 'USD']
-    const nextValuePatch = field === 'settlementCurrencies'
-      ? {
-          settlementCurrencies: effectiveNextSettlementCurrencies,
-          settlementCurrency: effectiveNextSettlementCurrencies.join(' / '),
-          currency: effectiveNextSettlementCurrencies[0],
-        }
-      : { [field]: nextValue }
-
-    onChange({ ...value, brokerName: displayBrokerName, ...nextValuePatch })
+    onChange({ ...value, brokerName: displayBrokerName, accountType: '现金账户', [field]: nextValue })
   }
 
   return (
@@ -1450,20 +1455,11 @@ function BrokerageAccountForm({ value, onChange, lockedBrokerName = '', accountC
         )}
         <DrawerInputField label="账户名称 *" value={value.accountName} onChange={(nextValue) => updateField('accountName', nextValue)} placeholder="XXX Trust Account" />
         <DrawerInputField label="券商账户号码 *" value={value.accountNumber} onChange={(nextValue) => updateField('accountNumber', nextValue)} placeholder="请输入券商账户号码" />
-        <DrawerInputField label="账户类型 *" value={value.accountType} onChange={(nextValue) => updateField('accountType', nextValue)} placeholder="Individual Account" />
-        <DrawerMultiSelectField label="结算币种 *" value={effectiveSettlementCurrencies} onChange={(nextValue) => updateField('settlementCurrencies', nextValue)} options={effectiveCurrencyOptions} />
+        <BrokerageReadOnlyField label="账户类型 *" value="现金账户" />
         <DrawerInputField label="开户日期 *" type="date" value={value.openedAt} onChange={(nextValue) => updateField('openedAt', nextValue)} />
-        <DrawerSelectField label="账户状态 *" value={value.accountStatus} onChange={(nextValue) => updateField('accountStatus', nextValue)} options={brokerageAccountStatuses} />
-        <DrawerTextareaField label="备注信息" value={value.remark} onChange={(nextValue) => updateField('remark', nextValue)} placeholder="该备注用于后台处理记录" />
       </div>
     </BrokerageDrawerSection>
   )
-}
-
-function canReuploadBrokerageMaterial(application, material) {
-  if (application.brokerId === 'webull') return material.id === 'basic_profile'
-  if (application.brokerId === 'ibkr') return material.id === 'address_proof'
-  return false
 }
 
 function BrokeragePageSection({ title, icon: Icon = FileText, children }) {
@@ -1687,21 +1683,6 @@ function BrokeragePersonRows(person, { includeMailing = false } = {}) {
 
 function BrokerageIdentityFileRow({ file, editable = false }) {
   const [currentFile, setCurrentFile] = useState(file || {})
-  const reuploadIdentityFile = () => {
-    const stamp = formatAdminDateTime()
-      .replaceAll('-', '')
-      .replaceAll(':', '')
-      .replaceAll(' ', '')
-      .slice(0, 12)
-
-    setCurrentFile({
-      ...currentFile,
-      name: `identity-photo-reuploaded-${stamp}.pdf`,
-      status: '已上传',
-      uploadedAt: formatAdminDateTime(),
-    })
-  }
-
   return (
     <div className="mt-[10px] rounded-[5px] border border-[#e2e4ec] bg-white p-[12px]">
       <div className="flex items-start justify-between gap-[12px]">
@@ -1715,7 +1696,6 @@ function BrokerageIdentityFileRow({ file, editable = false }) {
       <div className="mt-[10px] flex flex-wrap gap-[8px]">
         <ActionButton icon={Eye}>查看</ActionButton>
         <ActionButton icon={Download}>下载</ActionButton>
-        {editable ? <ActionButton icon={UploadCloud} onClick={reuploadIdentityFile}>重新上传</ActionButton> : null}
       </div>
     </div>
   )
@@ -1732,6 +1712,25 @@ function BrokeragePersonSection({ title, person, includeMailing = false, editabl
         onFieldChange={(field, nextValue) => setDraftPerson((current) => ({ ...current, [field]: nextValue }))}
       />
       <BrokerageIdentityFileRow file={draftPerson?.documentPhoto} editable={editable} />
+    </BrokeragePageSection>
+  )
+}
+
+function BrokerageUserManagementLinkSection({ title, application, onOpenUserDetail }) {
+  return (
+    <BrokeragePageSection title={title} icon={UsersRound}>
+      <div className="rounded-[6px] border border-[#e2e4ec] bg-[#fbfbfd] px-[18px] py-[18px]">
+        <div className="text-[14px] font-semibold text-[#20213a]">资料已归档至用户管理详情</div>
+        <div className="mt-[8px] text-[13px] leading-[22px] text-[#66677f]">
+          当前页面不再展示{title}字段，运营可跳转到后台用户管理详情页查看客户完整资料。
+        </div>
+        <div className="mt-[14px] flex flex-wrap items-center gap-[10px]">
+          <span className="rounded-[5px] bg-white px-[12px] py-[8px] text-[12px] font-semibold text-[#55556e]">
+            {application.customer.name} / ID: {application.customer.id}
+          </span>
+          <PrimaryButton icon={Eye} onClick={() => onOpenUserDetail?.(application.customer)}>查看用户管理详情</PrimaryButton>
+        </div>
+      </div>
     </BrokeragePageSection>
   )
 }
@@ -1757,7 +1756,6 @@ function getBrokerageReviewFiles(application) {
       fileName: material?.fileName && material.fileName !== '-' ? material.fileName : '-',
       status: uploaded ? '已上传' : '未上传',
       uploadedAt: material?.uploadedAt || (uploaded ? application.submittedAt : '-'),
-      reuploadable: file.id === 'address_proof' || file.id === 'basic_profile',
     }
   })
 
@@ -1768,7 +1766,6 @@ function getBrokerageReviewFiles(application) {
         fileName: material.fileName && material.fileName !== '-' ? material.fileName : '-',
         status: material.status === '已上传' || material.status === '已签署' ? '已上传' : '未上传',
         uploadedAt: material.status === '已上传' || material.status === '已签署' ? application.submittedAt : '-',
-        reuploadable: canReuploadBrokerageMaterial(application, material),
       })
     }
   })
@@ -1809,7 +1806,7 @@ function getBrokerageVisibleAccount(application) {
     return {
       ...application.accountInfo,
       brokerName: application.brokerName,
-      accountType: application.accountInfo.accountType || 'Individual Account',
+      accountType: application.accountInfo.accountType || '现金账户',
       settlementCurrencies: normalizeBrokerageSettlementCurrencies(application.accountInfo.settlementCurrencies || application.accountInfo.settlementCurrency, application.accountInfo.currency),
       settlementCurrency: formatBrokerageSettlementCurrencies(application.accountInfo),
     }
@@ -1835,10 +1832,8 @@ function BrokerageVisibleAccountInfoSection({ application }) {
         <BrokerageReadOnlyField label="券商名称" value={visibleAccount.brokerName} />
         <BrokerageReadOnlyField label="账户名称" value={visibleAccount.accountName} />
         <BrokerageReadOnlyField label="券商账户号码" value={visibleAccount.accountNumber} />
-        <BrokerageReadOnlyField label="账户类型" value={visibleAccount.accountType} />
-        <BrokerageReadOnlyField label="结算币种" value={formatBrokerageSettlementCurrencies(visibleAccount)} />
+        <BrokerageReadOnlyField label="账户类型" value={visibleAccount.accountType || '现金账户'} />
         <BrokerageReadOnlyField label="开户日期" value={visibleAccount.openedAt} />
-        <BrokerageReadOnlyField label="账户状态" value={visibleAccount.accountStatus} />
       </div>
     </BrokeragePageSection>
   )
@@ -1872,33 +1867,31 @@ function BrokerageProfileCard({ application }) {
 function getBrokerageReturnReason(application) {
   return [...(application.statusLogs || [])]
     .reverse()
-    .find((log) => log.to === '需补充资料')?.remark || ''
+    .find((log) => log.to === '已拒绝')?.remark || ''
 }
 
 function BrokerageReturnReasonCard({ application }) {
-  if (application.openingStatus !== '需补充资料') return null
+  if (application.openingStatus !== '已拒绝') return null
 
   return (
     <Panel className="p-[18px]">
       <div className="flex items-center gap-[8px] text-[14px] font-semibold text-[#20213a]">
         <FileText className="h-[17px] w-[17px] text-[#8b4fff]" />
-        退回原因
+        拒绝原因
       </div>
-      <div className="mt-[12px] rounded-[5px] border border-[#f1d4ff] bg-[#fbf6ff] px-[12px] py-[11px] text-[13px] leading-[22px] text-[#55556e]">
-        {getBrokerageReturnReason(application) || '暂无退回原因'}
+      <div className="mt-[12px] rounded-[5px] border border-[#ffd7dc] bg-[#fff7f8] px-[12px] py-[11px] text-[13px] leading-[22px] text-[#b52d3b]">
+        {getBrokerageReturnReason(application) || '暂无拒绝原因'}
       </div>
     </Panel>
   )
 }
 
-function BrokerageMaterialsGrid({ application, mode = 'view', onReuploadMaterial }) {
+function BrokerageMaterialsGrid({ application, mode = 'view' }) {
   const files = getBrokerageReviewFiles(application)
 
   return (
     <div className="grid grid-cols-2 gap-[10px]">
       {files.map((material) => {
-        const canReupload = mode === 'process' && material.reuploadable
-
         return (
           <div key={material.id} className="rounded-[5px] border border-[#e2e4ec] bg-white p-[14px]">
             <div className="flex items-start justify-between gap-[12px]">
@@ -1912,11 +1905,10 @@ function BrokerageMaterialsGrid({ application, mode = 'view', onReuploadMaterial
             <div className="mt-[13px] flex flex-wrap gap-[8px]">
               <ActionButton icon={Eye}>查看</ActionButton>
               <ActionButton icon={Download} onClick={() => downloadApplicationMaterials(application)}>下载</ActionButton>
-              {canReupload ? <ActionButton icon={UploadCloud} onClick={() => onReuploadMaterial?.(material.id)}>重新上传</ActionButton> : null}
             </div>
-            {mode === 'process' && !canReupload ? (
+            {mode === 'process' ? (
               <div className="mt-[9px] rounded-[4px] bg-[#f6f7fb] px-[10px] py-[8px] text-[12px] text-[#66677f]">
-                {material.type === '签署文件' ? '第三方签署文件，仅支持查看或下载。' : '该文件当前不支持后台重新上传。'}
+                {material.type === '签署文件' ? '第三方签署文件，仅支持查看或下载。' : '附件文件仅支持查看或下载。'}
               </div>
             ) : null}
           </div>
@@ -2052,17 +2044,15 @@ function BrokerageRejectedReasonSection({ application }) {
 
 const brokerageReviewTabs = [
   { key: 'overview', label: '申请概览' },
-  { key: 'settlor', label: '委托人资料' },
-  { key: 'beneficiaries', label: '受益人资料' },
+  { key: 'people', label: '委托人/受益人资料' },
   { key: 'documents', label: '文档资料' },
-  { key: 'process', label: '开户处理' },
 ]
 
-function BrokerageReviewTabBar({ activeTab, onChange }) {
+function BrokerageReviewTabBar({ activeTab, onChange, tabs = brokerageReviewTabs }) {
   return (
     <Panel className="px-[12px] py-[10px]">
       <div className="flex flex-wrap gap-[8px]">
-        {brokerageReviewTabs.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.key}
             type="button"
@@ -2120,39 +2110,57 @@ function BrokerageBeneficiariesTab({ beneficiaries, editable = false }) {
   return <BrokerageBeneficiariesSection beneficiaries={beneficiaries} editable={editable} />
 }
 
-function BrokerageProcessTab({ application, onSave, accountCurrencyConfigs = initialAccountCurrencyConfigs }) {
-  const initialAccount = application.accountInfo
-    ? {
-        ...application.accountInfo,
-        brokerName: application.brokerName,
-        accountType: application.accountInfo.accountType || 'Individual Account',
-        settlementCurrencies: normalizeBrokerageSettlementCurrencies(application.accountInfo.settlementCurrencies || application.accountInfo.settlementCurrency, application.accountInfo.currency),
-        settlementCurrency: formatBrokerageSettlementCurrencies(application.accountInfo),
-        currency: application.accountInfo.currency || normalizeBrokerageSettlementCurrencies(application.accountInfo.settlementCurrencies || application.accountInfo.settlementCurrency)[0] || 'USD',
-      }
-    : {
-        brokerName: application.brokerName,
-        accountName: '',
-        accountNumber: '',
-        accountType: 'Individual Account',
-        settlementCurrencies: ['USD'],
-        settlementCurrency: 'USD',
-        currency: 'USD',
-        openedAt: formatAdminDateTime().slice(0, 10),
-        accountStatus: '已开户',
-        remark: '',
-      }
-  const [nextStatus, setNextStatus] = useState(application.openingStatus)
+function buildBrokerageInitialAccountForm(application) {
+  if (application.accountInfo) {
+    return {
+      ...application.accountInfo,
+      brokerName: application.brokerName,
+      accountType: '现金账户',
+      settlementCurrencies: normalizeBrokerageSettlementCurrencies(application.accountInfo.settlementCurrencies || application.accountInfo.settlementCurrency, application.accountInfo.currency),
+      settlementCurrency: formatBrokerageSettlementCurrencies(application.accountInfo),
+      currency: application.accountInfo.currency || normalizeBrokerageSettlementCurrencies(application.accountInfo.settlementCurrencies || application.accountInfo.settlementCurrency)[0] || 'USD',
+    }
+  }
+
+  return {
+    brokerName: application.brokerName,
+    accountName: '',
+    accountNumber: '',
+    accountType: '现金账户',
+    settlementCurrencies: ['USD'],
+    settlementCurrency: 'USD',
+    currency: 'USD',
+    openedAt: formatAdminDateTime().slice(0, 10),
+    accountStatus: '已开户',
+    remark: '',
+  }
+}
+
+function BrokerageProcessTab({
+  application,
+  onSave,
+  accountCurrencyConfigs = initialAccountCurrencyConfigs,
+  controlledStatus,
+  onStatusChange,
+  controlledAccountForm,
+  onAccountFormChange,
+  showAccountFormInline = true,
+}) {
+  const [internalNextStatus, setInternalNextStatus] = useState(application.openingStatus)
   const [statusRemark, setStatusRemark] = useState('')
   const [statusError, setStatusError] = useState('')
-  const [accountForm, setAccountForm] = useState(initialAccount)
+  const [internalAccountForm, setInternalAccountForm] = useState(() => buildBrokerageInitialAccountForm(application))
+  const nextStatus = controlledStatus ?? internalNextStatus
+  const accountForm = controlledAccountForm ?? internalAccountForm
+  const setNextStatus = onStatusChange ?? setInternalNextStatus
+  const setAccountForm = onAccountFormChange ?? setInternalAccountForm
   const showAccountForm = nextStatus === '已开户'
-  const showReturnReason = nextStatus === '需补充资料'
-  const remarkLabel = showReturnReason ? '补充资料说明 *' : '处理备注'
+  const showRejectedReason = nextStatus === '已拒绝'
+  const remarkLabel = showRejectedReason ? '拒绝原因 *' : '处理备注'
 
   const saveChanges = () => {
-    if (showReturnReason && !statusRemark.trim()) {
-      setStatusError('请填写补充资料说明')
+    if (showRejectedReason && !statusRemark.trim()) {
+      setStatusError('请填写拒绝原因')
       return
     }
 
@@ -2168,7 +2176,7 @@ function BrokerageProcessTab({ application, onSave, accountCurrencyConfigs = ini
 
     onSave?.(application.id, {
       openingStatus: nextStatus,
-      accountInfo: showAccountForm ? { ...accountForm, brokerName: application.brokerName } : application.accountInfo,
+      accountInfo: showAccountForm ? { ...accountForm, brokerName: application.brokerName, accountType: '现金账户' } : application.accountInfo,
       statusLogs: [...application.statusLogs, nextLog],
     })
   }
@@ -2192,10 +2200,10 @@ function BrokerageProcessTab({ application, onSave, accountCurrencyConfigs = ini
             setStatusRemark(nextValue)
           if (statusError) setStatusError('')
         }}
-          placeholder={showReturnReason ? '请填写客户需要补充的资料说明' : '记录本次处理说明'}
+          placeholder={showRejectedReason ? '请填写拒绝原因' : '记录本次处理说明'}
         />
         {statusError ? <div className="text-[12px] text-[#f04f5f]">{statusError}</div> : null}
-        {showAccountForm ? (
+        {showAccountFormInline && showAccountForm ? (
           <BrokerageAccountForm
             value={accountForm}
             onChange={setAccountForm}
@@ -2212,96 +2220,68 @@ function BrokerageProcessTab({ application, onSave, accountCurrencyConfigs = ini
   )
 }
 
-function BrokerageDocumentsTab({ application, onReuploadMaterial }) {
+function BrokerageDocumentsTab({ application }) {
   return (
     <BrokeragePageSection title="文档资料" icon={FileText}>
-      <BrokerageMaterialsGrid application={application} mode="process" onReuploadMaterial={onReuploadMaterial} />
+      <BrokerageMaterialsGrid application={application} mode="process" />
     </BrokeragePageSection>
   )
 }
 
-function BrokerageReviewRightSections({ application, onSave, defaultTab = 'overview', accountCurrencyConfigs = initialAccountCurrencyConfigs }) {
-  const profile = getBrokerageOpeningProfile(application)
-  const showVisibleAccountInfo = application.openingStatus === '已开户'
+function BrokerageReviewRightSections({
+  application,
+  onSave,
+  defaultTab = 'overview',
+  accountCurrencyConfigs = initialAccountCurrencyConfigs,
+  onOpenUserDetail,
+  processStatus,
+  processAccountForm,
+  onProcessAccountFormChange,
+}) {
+  const showEditableAccountInfo = Boolean(onProcessAccountFormChange) && processStatus === '已开户'
+  const showReadonlyAccountInfo = !onProcessAccountFormChange && application.openingStatus === '已开户'
+  const showAccountInfoTab = showEditableAccountInfo || showReadonlyAccountInfo
+  const tabs = showAccountInfoTab
+    ? [...brokerageReviewTabs, { key: 'account-info', label: '券商账户信息（客户可见）' }]
+    : brokerageReviewTabs
   const [activeTab, setActiveTab] = useState(defaultTab)
-  const canEditSubmittedProfile = defaultTab === 'process' && application.openingStatus !== '已开户'
-
-  const reuploadMaterial = (materialId) => {
-    onSave?.(application.id, buildBrokerageMaterialReuploadPatch(application, materialId))
-  }
+  const currentTab = tabs.some((tab) => tab.key === activeTab) ? activeTab : 'overview'
 
   return (
     <>
       <BrokerageReviewSummaryBanner application={application} />
-      <BrokerageReviewTabBar activeTab={activeTab} onChange={setActiveTab} />
+      <BrokerageReviewTabBar activeTab={currentTab} onChange={setActiveTab} tabs={tabs} />
 
-      {activeTab === 'overview' ? (
+      {currentTab === 'overview' ? (
         <div className="space-y-[18px]">
           <BrokerageOverviewTab application={application} />
-          {showVisibleAccountInfo ? <BrokerageVisibleAccountInfoSection application={application} /> : null}
           <BrokerageRejectedReasonSection application={application} />
         </div>
       ) : null}
-      {activeTab === 'settlor' ? <BrokeragePersonSection title="委托人资料" person={profile.settlor} includeMailing editable={canEditSubmittedProfile} /> : null}
-      {activeTab === 'beneficiaries' ? <BrokerageBeneficiariesTab beneficiaries={profile.beneficiaries} editable={canEditSubmittedProfile} /> : null}
-      {activeTab === 'documents' ? <BrokerageDocumentsTab application={application} onReuploadMaterial={reuploadMaterial} /> : null}
-      {activeTab === 'process' ? (
-        <BrokerageProcessTab
-          application={application}
-          onSave={onSave}
+      {currentTab === 'people' ? <BrokerageUserManagementLinkSection title="委托人/受益人资料" application={application} onOpenUserDetail={onOpenUserDetail} /> : null}
+      {currentTab === 'documents' ? <BrokerageDocumentsTab application={application} /> : null}
+      {currentTab === 'account-info' && showEditableAccountInfo ? (
+        <BrokerageAccountForm
+          value={processAccountForm}
+          onChange={onProcessAccountFormChange}
+          lockedBrokerName={application.brokerName}
           accountCurrencyConfigs={accountCurrencyConfigs}
         />
+      ) : null}
+      {currentTab === 'account-info' && showReadonlyAccountInfo ? (
+        <BrokerageVisibleAccountInfoSection application={application} />
       ) : null}
     </>
   )
 }
 
-function buildBrokerageMaterialReuploadPatch(application, materialId) {
-  const uploadedAt = formatAdminDateTime()
-    .replaceAll('-', '')
-    .replaceAll(':', '')
-    .replaceAll(' ', '')
-    .slice(0, 12)
-  const materialTemplate = getBrokerageReviewFiles(application).find((material) => material.id === materialId)
-  let materialUpdated = false
-  const nextMaterials = application.materials.map((material) => {
-    if (material.id !== materialId) return material
-    materialUpdated = true
-    return {
-      ...material,
-      status: '已上传',
-      fileName: `${material.id}-reuploaded-${uploadedAt}.pdf`,
-      type: material.type || materialTemplate?.type || '上传资料',
-    }
-  })
-
-  if (!materialUpdated && materialTemplate) {
-    nextMaterials.push({
-      id: materialTemplate.id,
-      name: materialTemplate.name,
-      status: '已上传',
-      fileName: `${materialTemplate.id}-reuploaded-${uploadedAt}.pdf`,
-      type: materialTemplate.type || '上传资料',
-    })
-  }
-
-  const nextLog = {
-    id: `log-${application.id}-reupload-${Date.now()}`,
-    time: formatAdminDateTime(),
-    operator: '后台人员',
-    from: application.openingStatus,
-    to: application.openingStatus,
-    remark: '后台重新上传客户开户资料。',
-  }
-
-  return {
-    uploadStatus: nextMaterials.every((material) => material.status === '已上传' || material.status === '已签署') ? '已上传' : '部分上传',
-    materials: nextMaterials,
-    statusLogs: [...application.statusLogs, nextLog],
-  }
-}
-
-function BrokerageApplicationDetailPage({ application, onBack, onSave, accountCurrencyConfigs = initialAccountCurrencyConfigs }) {
+function BrokerageApplicationDetailPage({
+  application,
+  onBack,
+  onSave,
+  accountCurrencyConfigs = initialAccountCurrencyConfigs,
+  onOpenUserDetail,
+}) {
   return (
     <AdminShell>
       <div className="grid grid-cols-[360px_1fr] gap-[18px]">
@@ -2320,6 +2300,7 @@ function BrokerageApplicationDetailPage({ application, onBack, onSave, accountCu
             onSave={onSave}
             defaultTab="overview"
             accountCurrencyConfigs={accountCurrencyConfigs}
+            onOpenUserDetail={onOpenUserDetail}
           />
         </div>
       </div>
@@ -2327,12 +2308,31 @@ function BrokerageApplicationDetailPage({ application, onBack, onSave, accountCu
   )
 }
 
-function BrokerageApplicationProcessPage({ application, onBack, onSave, accountCurrencyConfigs = initialAccountCurrencyConfigs }) {
+function BrokerageApplicationProcessPage({
+  application,
+  onBack,
+  onSave,
+  accountCurrencyConfigs = initialAccountCurrencyConfigs,
+  onOpenUserDetail,
+}) {
+  const [nextStatus, setNextStatus] = useState(application.openingStatus)
+  const [accountForm, setAccountForm] = useState(() => buildBrokerageInitialAccountForm(application))
+
   return (
     <AdminShell>
       <div className="grid grid-cols-[360px_1fr] gap-[18px]">
         <div className="space-y-[18px]">
           <BrokerageProfileCard application={application} />
+          <BrokerageProcessTab
+            application={application}
+            onSave={onSave}
+            accountCurrencyConfigs={accountCurrencyConfigs}
+            controlledStatus={nextStatus}
+            onStatusChange={setNextStatus}
+            controlledAccountForm={accountForm}
+            onAccountFormChange={setAccountForm}
+            showAccountFormInline={false}
+          />
         </div>
 
         <div className="space-y-[18px]">
@@ -2343,8 +2343,12 @@ function BrokerageApplicationProcessPage({ application, onBack, onSave, accountC
           <BrokerageReviewRightSections
             application={application}
             onSave={onSave}
-            defaultTab="process"
+            defaultTab="overview"
             accountCurrencyConfigs={accountCurrencyConfigs}
+            onOpenUserDetail={onOpenUserDetail}
+            processStatus={nextStatus}
+            processAccountForm={accountForm}
+            onProcessAccountFormChange={setAccountForm}
           />
 
         </div>
@@ -2358,7 +2362,7 @@ function BrokerageApplicationDrawer({ application, onClose, onSave }) {
     ? {
         ...application.accountInfo,
         brokerName: application.brokerName,
-        accountType: application.accountInfo.accountType || 'Individual Account',
+        accountType: '现金账户',
         settlementCurrencies: normalizeBrokerageSettlementCurrencies(application.accountInfo.settlementCurrencies || application.accountInfo.settlementCurrency, application.accountInfo.currency),
         settlementCurrency: formatBrokerageSettlementCurrencies(application.accountInfo),
         currency: application.accountInfo.currency || normalizeBrokerageSettlementCurrencies(application.accountInfo.settlementCurrencies || application.accountInfo.settlementCurrency)[0] || 'USD',
@@ -2367,7 +2371,7 @@ function BrokerageApplicationDrawer({ application, onClose, onSave }) {
         brokerName: application.brokerName,
         accountName: '',
         accountNumber: '',
-        accountType: 'Individual Account',
+        accountType: '现金账户',
         settlementCurrencies: ['USD'],
         settlementCurrency: 'USD',
         currency: 'USD',
@@ -2381,11 +2385,11 @@ function BrokerageApplicationDrawer({ application, onClose, onSave }) {
   const [accountForm, setAccountForm] = useState(initialAccount)
   const brokerConfig = brokerageBrokers.find((broker) => broker.id === application.brokerId)
   const showAccountForm = nextStatus === '已开户'
-  const showReturnReason = nextStatus === '需补充资料'
+  const showRejectedReason = nextStatus === '已拒绝'
 
   const saveChanges = () => {
-    if (showReturnReason && !statusRemark.trim()) {
-      setReturnReasonError('请填写退回原因')
+    if (showRejectedReason && !statusRemark.trim()) {
+      setReturnReasonError('请填写拒绝原因')
       return
     }
 
@@ -2401,7 +2405,7 @@ function BrokerageApplicationDrawer({ application, onClose, onSave }) {
 
     onSave(application.id, {
       openingStatus: nextStatus,
-      accountInfo: showAccountForm ? { ...accountForm, brokerName: application.brokerName } : application.accountInfo,
+      accountInfo: showAccountForm ? { ...accountForm, brokerName: application.brokerName, accountType: '现金账户' } : application.accountInfo,
       statusLogs: [...application.statusLogs, nextLog],
     })
   }
@@ -2468,18 +2472,18 @@ function BrokerageApplicationDrawer({ application, onClose, onSave }) {
               value={nextStatus}
               onChange={(nextValue) => {
                 setNextStatus(nextValue)
-                if (nextValue !== '需补充资料') setReturnReasonError('')
+                if (nextValue !== '已拒绝') setReturnReasonError('')
               }}
               options={brokerageOpeningStatuses}
             />
             <DrawerTextareaField
-              label={showReturnReason ? '退回原因 *' : '状态备注'}
+              label={showRejectedReason ? '拒绝原因 *' : '状态备注'}
               value={statusRemark}
               onChange={(nextValue) => {
                 setStatusRemark(nextValue)
                 if (returnReasonError) setReturnReasonError('')
               }}
-              placeholder={showReturnReason ? '请填写资料问题和客户需补充内容' : '记录本次状态流转说明'}
+              placeholder={showRejectedReason ? '请填写拒绝原因' : '记录本次状态流转说明'}
             />
             {returnReasonError ? <div className="text-[12px] text-[#f04f5f]">{returnReasonError}</div> : null}
           </div>
@@ -2545,6 +2549,7 @@ export function BrokerageApplicationManagementPage({
   standalone = false,
   onBack,
   accountCurrencyConfigs = initialAccountCurrencyConfigs,
+  onOpenUserDetail,
 }) {
   const [activeUserType, setActiveUserType] = useState('personal')
   const [filters, setFilters] = useState({
@@ -2579,8 +2584,8 @@ export function BrokerageApplicationManagementPage({
   const pageRows = filteredApplications.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const selectedApplication = applications.find((application) => application.id === selectedApplicationId)
   const openedCount = userTypeApplications.filter((application) => application.openingStatus === '已开户').length
-  const pendingActionCount = userTypeApplications.filter((application) => ['审核中', '开户中'].includes(application.openingStatus)).length
-  const attentionCount = userTypeApplications.filter((application) => application.openingStatus === '需补充资料').length
+  const pendingActionCount = userTypeApplications.filter((application) => application.openingStatus === '审核中').length
+  const attentionCount = userTypeApplications.filter((application) => application.openingStatus === '已拒绝').length
 
   const changeUserType = (nextType) => {
     setActiveUserType(nextType)
@@ -2628,6 +2633,7 @@ export function BrokerageApplicationManagementPage({
         onBack={backToList}
         onSave={handleSaveApplication}
         accountCurrencyConfigs={accountCurrencyConfigs}
+        onOpenUserDetail={onOpenUserDetail}
       />
     )
   }
@@ -2639,6 +2645,7 @@ export function BrokerageApplicationManagementPage({
         onBack={backToList}
         onSave={handleSaveApplication}
         accountCurrencyConfigs={accountCurrencyConfigs}
+        onOpenUserDetail={onOpenUserDetail}
       />
     )
   }
@@ -2666,8 +2673,8 @@ export function BrokerageApplicationManagementPage({
       ) : (
         <>
       <div className="mt-[21px] grid w-[936px] grid-cols-3 gap-[21px]">
-        <StatCard title="待处理" value={pendingActionCount} desc="审核中 / 开户中" tone="blue" icon={LineChart} />
-        <StatCard title="需关注" value={attentionCount} desc="需补充资料" tone="amber" icon={PauseCircle} />
+        <StatCard title="待处理" value={pendingActionCount} desc="审核中" tone="blue" icon={LineChart} />
+        <StatCard title="需关注" value={attentionCount} desc="已拒绝" tone="red" icon={PauseCircle} />
         <StatCard title="已开户" value={openedCount} desc="客户可见账户信息" tone="green" icon={CheckCircle2} />
       </div>
 
@@ -2722,7 +2729,11 @@ export function BrokerageApplicationManagementPage({
                   <td className="px-[18px]">
                     <div className="flex gap-[8px]">
                       <ActionButton icon={Eye} onClick={() => openApplicationPage(application.id, 'detail')}>查看详情</ActionButton>
-                      {application.openingStatus !== '已开户' ? <ActionButton icon={Play} onClick={() => openApplicationPage(application.id, 'process')}>开始处理</ActionButton> : null}
+                      {application.openingStatus !== '已开户' ? (
+                        <ActionButton icon={Play} onClick={() => openApplicationPage(application.id, 'process')}>
+                          {application.openingStatus === '已拒绝' ? '重新审核' : '开始处理'}
+                        </ActionButton>
+                      ) : null}
                     </div>
                   </td>
                 </tr>
@@ -3164,6 +3175,453 @@ export function AccountCurrencyConfigPage({
           row={selectedRow}
           onClose={() => setSelectedRow(null)}
           onSave={saveAccountCurrencyGroup}
+        />
+      ) : null}
+    </AdminShell>
+  )
+}
+
+function buildBrokerageManagementForm(broker) {
+  return {
+    id: broker?.id || '',
+    name: broker?.name || '',
+    englishName: broker?.englishName || '',
+    code: broker?.code || '',
+    logo: broker?.logo || '',
+    description: broker?.description || '',
+    websiteUrl: broker?.websiteUrl || '',
+    marketCoverage: broker?.marketCoverage?.length ? broker.marketCoverage : ['美股', '港股'],
+    displayTags: broker?.displayTags || [],
+    displayOrder: broker?.displayOrder || 1,
+    status: broker?.status || '启用',
+    adminFee: broker?.adminFee || '100',
+    feeCurrency: broker?.feeCurrency || 'USD',
+    accountTypes: broker?.accountTypes?.length ? broker.accountTypes : ['现金账户'],
+    settlementCurrencies: broker?.settlementCurrencies?.length ? broker.settlementCurrencies : ['USD', 'HKD', 'CNY'],
+    estimatedTime: broker?.estimatedTime || '3-7 个工作日',
+    materials: broker?.materials?.length ? broker.materials : [],
+  }
+}
+
+function BrokerageLogoUploadField({ value, onChange }) {
+  const displayValue = value || '未上传'
+
+  return (
+    <div className="rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] py-[12px]">
+      <div className="mb-[10px] text-[12px] text-[#66677f]">券商 Logo</div>
+      <div className="flex flex-wrap items-center gap-[12px]">
+        <div className="flex h-[48px] w-[48px] items-center justify-center rounded-[5px] bg-[#f0e9ff] text-[14px] font-bold text-[#8b4fff]">
+          {value ? String(value).slice(0, 2).toUpperCase() : 'LOGO'}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[13px] font-semibold text-[#20213a]">{displayValue}</div>
+          <div className="mt-[3px] text-[12px] text-[#8a8ca0]">支持 PNG / JPG，当前为前端原型上传占位。</div>
+        </div>
+        <label className="flex h-[34px] cursor-pointer items-center gap-[7px] rounded-[5px] border border-[#8b4fff] px-[10px] text-[12px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">
+          <UploadCloud className="h-[14px] w-[14px]" />
+          上传图片
+          <input
+            type="file"
+            accept="image/png,image/jpeg"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              if (file) onChange?.(file.name)
+              event.target.value = ''
+            }}
+          />
+        </label>
+      </div>
+    </div>
+  )
+}
+
+function BrokerageManagementModal({ broker, brokers = [], onClose, onSave }) {
+  const [form, setForm] = useState(() => buildBrokerageManagementForm(broker))
+  const [error, setError] = useState('')
+  const isEdit = Boolean(broker?.id)
+
+  const updateField = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }))
+    if (error) setError('')
+  }
+
+  const updateMaterial = (materialId, patch) => {
+    setForm((current) => ({
+      ...current,
+      materials: current.materials.map((material) => (
+        material.id === materialId ? { ...material, ...patch } : material
+      )),
+    }))
+  }
+
+  const toggleMaterial = (template) => {
+    setForm((current) => {
+      const exists = current.materials.some((material) => material.id === template.id)
+      return {
+        ...current,
+        materials: exists
+          ? current.materials.filter((material) => material.id !== template.id)
+          : [
+              ...current.materials,
+              {
+                id: template.id,
+                name: template.name,
+                handlingMethod: template.handlingMethod || '用户上传',
+                required: true,
+                enabled: true,
+                formats: template.formats,
+                sizeLimit: template.sizeLimit,
+                allowMultiple: Boolean(template.allowMultiple),
+                uploadDescription: template.uploadDescription || '',
+                signingPlatform: template.signingPlatform || 'Documenso',
+                signingTemplateName: template.signingTemplateName || '',
+                signingDescription: template.signingDescription || '',
+                showAfterSigned: template.showAfterSigned !== false,
+                description: template.description,
+              },
+            ],
+      }
+    })
+    if (error) setError('')
+  }
+
+  const submit = () => {
+    const normalizedCode = form.code.trim().toUpperCase()
+    const duplicate = brokers.some((item) => item.code.toUpperCase() === normalizedCode && item.id !== form.id)
+
+    if (!form.name.trim() || !form.englishName.trim() || !normalizedCode) {
+      setError('请填写券商名称、英文名称和券商代码')
+      return
+    }
+
+    if (duplicate) {
+      setError('券商代码不允许重复')
+      return
+    }
+
+    if (!String(form.displayOrder).trim() || !form.adminFee.trim() || !form.feeCurrency || !form.estimatedTime.trim() || !form.marketCoverage.length) {
+      setError('请完整填写开户配置')
+      return
+    }
+
+    if (!form.materials.length) {
+      setError('请至少配置一个所需上传资料')
+      return
+    }
+
+    onSave?.({
+      ...form,
+      id: form.id || `BRK-CFG-${normalizedCode}-${Date.now()}`,
+      code: normalizedCode,
+      logo: form.logo.trim() || normalizedCode.slice(0, 2),
+      websiteUrl: form.websiteUrl.trim(),
+      marketCoverage: form.marketCoverage,
+      displayTags: form.displayTags,
+      accountTypes: ['现金账户'],
+      settlementCurrencies: ['USD', 'HKD', 'CNY'],
+      displayOrder: Number(form.displayOrder) || 1,
+      adminFee: form.adminFee.trim(),
+      materials: form.materials.map((material) => ({
+        id: material.id,
+        name: material.name?.trim() || '-',
+        handlingMethod: material.handlingMethod || '用户上传',
+        required: Boolean(material.required),
+        enabled: material.enabled !== false,
+        description: material.description?.trim() || '',
+        ...(material.handlingMethod === '第三方签署'
+          ? {
+              signingPlatform: material.signingPlatform || 'Documenso',
+              signingTemplateName: material.signingTemplateName?.trim() || '',
+              signingDescription: material.signingDescription?.trim() || '',
+              showAfterSigned: material.showAfterSigned !== false,
+            }
+          : {
+              formats: material.formats?.trim() || 'PDF/JPG/PNG',
+              sizeLimit: material.sizeLimit?.trim() || '10MB',
+              allowMultiple: Boolean(material.allowMultiple),
+              uploadDescription: material.uploadDescription?.trim() || '',
+            }),
+      })),
+    })
+    onClose?.()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#252236]/55 px-[24px] py-[28px]">
+      <section className="flex max-h-[88vh] w-full max-w-[980px] flex-col overflow-hidden rounded-[8px] bg-white shadow-[0_18px_48px_rgba(28,29,42,0.28)]">
+        <div className="flex h-[62px] shrink-0 items-center justify-between border-b border-[#e5e6ef] px-[22px]">
+          <div>
+            <h2 className="text-[16px] font-semibold text-[#20213a]">{isEdit ? '编辑券商配置' : '新增券商配置'}</h2>
+            <div className="mt-[3px] text-[11px] font-semibold uppercase text-[#8a8ca0]">平台支持券商基础配置</div>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-[4px] p-[7px] text-[#66677f] hover:bg-[#f6f7fb]">
+            <X className="h-[16px] w-[16px]" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto bg-white px-[22px] py-[18px]">
+      <div className="space-y-[16px]">
+        <BrokerageDrawerSection title="基础信息">
+          <div className="grid grid-cols-2 gap-[13px]">
+            <DrawerInputField label="券商名称 *" value={form.name} onChange={(value) => updateField('name', value)} placeholder="IBKR 盈透证券" />
+            <DrawerInputField label="券商英文名称 *" value={form.englishName} onChange={(value) => updateField('englishName', value)} placeholder="Interactive Brokers" />
+            <DrawerInputField label="券商代码 *" value={form.code} onChange={(value) => updateField('code', value.toUpperCase())} placeholder="IBKR / WEBULL" />
+            <BrokerageLogoUploadField value={form.logo} onChange={(value) => updateField('logo', value)} />
+            <DrawerInputField label="官网链接" value={form.websiteUrl} onChange={(value) => updateField('websiteUrl', value)} placeholder="https://www.example.com" />
+            <DrawerMultiSelectField label="市场覆盖 *" value={form.marketCoverage} onChange={(value) => updateField('marketCoverage', value)} options={brokerageMarketCoverageOptions} />
+            <DrawerMultiSelectField label="展示标签" value={form.displayTags} onChange={(value) => updateField('displayTags', value)} options={brokerageDisplayTagOptions} allowEmpty />
+            <div className="col-span-2">
+            <DrawerTextareaField label="券商简介" value={form.description} onChange={(value) => updateField('description', value)} placeholder="客户端券商卡片简介" />
+            </div>
+            <DrawerInputField label="展示顺序 *" type="number" value={form.displayOrder} onChange={(value) => updateField('displayOrder', value)} />
+            <DrawerSelectField label="状态 *" value={form.status} onChange={(value) => updateField('status', value)} options={brokerageConfigStatusOptions} />
+          </div>
+        </BrokerageDrawerSection>
+
+        <BrokerageDrawerSection title="开户配置">
+          <div className="grid grid-cols-4 gap-[13px]">
+            <DrawerInputField label="开户行政费 *" value={form.adminFee} onChange={(value) => updateField('adminFee', value)} placeholder="100" />
+            <DrawerSelectField label="费用币种 *" value={form.feeCurrency} onChange={(value) => updateField('feeCurrency', value)} options={enabledCurrencyOptions.map((currency) => currency.code)} />
+            <BrokerageReadOnlyField label="支持账户类型" value="现金账户" />
+            <BrokerageReadOnlyField label="结算币种" value="USD / HKD / CNY" />
+            <DrawerInputField label="预计处理时间 *" value={form.estimatedTime} onChange={(value) => updateField('estimatedTime', value)} placeholder="3-7 个工作日" />
+          </div>
+        </BrokerageDrawerSection>
+
+        <BrokerageDrawerSection title="资料配置">
+          <div className="space-y-[10px]">
+            {brokerageMaterialTemplates.map((template) => {
+              const selected = form.materials.find((material) => material.id === template.id)
+              const handlingMethod = selected?.handlingMethod || template.handlingMethod || '用户上传'
+              const displayMaterialName = selected?.name || template.name
+
+              return (
+                <div key={template.id} className={selected ? 'rounded-[5px] border border-[#c7b5ff] bg-[#fbf8ff] p-[12px]' : 'rounded-[5px] border border-[#e2e4ec] bg-white p-[12px]'}>
+                  <label className="flex cursor-pointer items-center justify-between gap-[12px]">
+                    <span>
+                      <span className="text-[13px] font-semibold text-[#20213a]">{displayMaterialName}</span>
+                      {selected ? (
+                        <span className="ml-[8px] rounded-full bg-white px-[8px] py-[2px] text-[11px] font-semibold text-[#8b4fff]">{handlingMethod}</span>
+                      ) : null}
+                    </span>
+                    <input type="checkbox" checked={Boolean(selected)} onChange={() => toggleMaterial(template)} className="h-[16px] w-[16px] accent-[#8b4fff]" />
+                  </label>
+                  {selected ? (
+                    <div className="mt-[12px] grid grid-cols-2 gap-[8px]">
+                      <DrawerInputField label="资料名称" value={selected.name} onChange={(value) => updateMaterial(template.id, { name: value })} />
+                      <DrawerSelectField label="处理方式" value={handlingMethod} onChange={(value) => updateMaterial(template.id, { handlingMethod: value })} options={['用户上传', '第三方签署']} />
+                      <DrawerSelectField label="是否必填" value={selected.required ? '是' : '否'} onChange={(value) => updateMaterial(template.id, { required: value === '是' })} options={['是', '否']} />
+                      <DrawerSelectField label="状态 / 是否启用" value={selected.enabled === false ? '禁用' : '启用'} onChange={(value) => updateMaterial(template.id, { enabled: value === '启用' })} options={['启用', '禁用']} />
+                      <div className="col-span-2">
+                        <DrawerTextareaField label="说明文案" value={selected.description} onChange={(value) => updateMaterial(template.id, { description: value })} />
+                      </div>
+                      {handlingMethod === '用户上传' ? (
+                        <>
+                          <DrawerInputField label="支持格式" value={selected.formats || 'PDF/JPG/PNG'} onChange={(value) => updateMaterial(template.id, { formats: value })} />
+                          <DrawerInputField label="大小限制" value={selected.sizeLimit || '10MB'} onChange={(value) => updateMaterial(template.id, { sizeLimit: value })} />
+                          <DrawerSelectField label="是否允许多文件" value={selected.allowMultiple ? '是' : '否'} onChange={(value) => updateMaterial(template.id, { allowMultiple: value === '是' })} options={['否', '是']} />
+                          <div className="col-span-2">
+                            <DrawerTextareaField label="上传说明文案" value={selected.uploadDescription || ''} onChange={(value) => updateMaterial(template.id, { uploadDescription: value })} />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <BrokerageReadOnlyField label="签署平台" value={selected.signingPlatform || 'Documenso'} />
+                          <DrawerInputField label="签署模板名称 / 模板ID" value={selected.signingTemplateName || ''} onChange={(value) => updateMaterial(template.id, { signingTemplateName: value })} placeholder={`${selected.name}模板`} />
+                          <div className="col-span-2">
+                            <DrawerTextareaField label="签署说明文案" value={selected.signingDescription || ''} onChange={(value) => updateMaterial(template.id, { signingDescription: value })} />
+                          </div>
+                          <DrawerSelectField label="签署完成后作为申请资料展示" value={selected.showAfterSigned === false ? '否' : '是'} onChange={(value) => updateMaterial(template.id, { showAfterSigned: value === '是' })} options={['是', '否']} />
+                        </>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
+        </BrokerageDrawerSection>
+        {error ? <div className="rounded-[5px] bg-[#ffe8eb] px-[12px] py-[10px] text-[12px] font-semibold text-[#f04f5f]">{error}</div> : null}
+      </div>
+        </div>
+        <div className="grid grid-cols-2 gap-[10px] border-t border-[#e5e6ef] bg-white p-[14px]">
+          <button type="button" onClick={onClose} className="h-[40px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">取消</button>
+          <button type="button" onClick={submit} className="h-[40px] rounded-[5px] bg-[#8b4fff] text-[13px] font-semibold text-white hover:bg-[#7f42f2]">保存配置</button>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+export function BrokerageManagementPage({
+  brokers = initialBrokerageConfigs,
+  onChangeBrokers,
+}) {
+  const [localBrokers, setLocalBrokers] = useState(initialBrokerageConfigs)
+  const sourceBrokers = onChangeBrokers ? brokers : localBrokers
+  const commitBrokers = (nextBrokers) => {
+    if (onChangeBrokers) {
+      onChangeBrokers(nextBrokers)
+      return
+    }
+    setLocalBrokers(nextBrokers)
+  }
+  const [filters, setFilters] = useState({ keyword: '', status: '' })
+  const [appliedFilters, setAppliedFilters] = useState(filters)
+  const [editingBroker, setEditingBroker] = useState(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  const sortedBrokers = useMemo(() => [...sourceBrokers].sort((left, right) => Number(left.displayOrder || 0) - Number(right.displayOrder || 0)), [sourceBrokers])
+  const filteredBrokers = useMemo(() => sortedBrokers.filter((broker) => {
+    const keyword = appliedFilters.keyword.trim().toLowerCase()
+    const keywordMatched = !keyword
+      || broker.name.toLowerCase().includes(keyword)
+      || broker.englishName.toLowerCase().includes(keyword)
+      || broker.code.toLowerCase().includes(keyword)
+
+    return keywordMatched && (!appliedFilters.status || broker.status === appliedFilters.status)
+  }), [sortedBrokers, appliedFilters])
+
+  const openCreate = () => {
+    setEditingBroker(null)
+    setDrawerOpen(true)
+  }
+
+  const openEdit = (broker) => {
+    setEditingBroker(broker)
+    setDrawerOpen(true)
+  }
+
+  const saveBroker = (payload) => {
+    const stamp = formatAdminDateTime()
+    const nextBroker = {
+      ...payload,
+      updatedAt: stamp,
+      updatedBy: '运营管理员',
+    }
+    const exists = sourceBrokers.some((broker) => broker.id === nextBroker.id)
+    const nextBrokers = exists
+      ? sourceBrokers.map((broker) => (broker.id === nextBroker.id ? nextBroker : broker))
+      : [...sourceBrokers, nextBroker]
+
+    commitBrokers(nextBrokers)
+  }
+
+  const toggleStatus = (broker) => {
+    saveBroker({
+      ...broker,
+      status: broker.status === '启用' ? '禁用' : '启用',
+    })
+  }
+
+  const updateFilter = (field, value) => {
+    setFilters((current) => ({ ...current, [field]: value }))
+  }
+
+  const resetFilters = () => {
+    const nextFilters = { keyword: '', status: '' }
+    setFilters(nextFilters)
+    setAppliedFilters(nextFilters)
+  }
+
+  return (
+    <AdminShell>
+      <Panel className="px-[18px] py-[22px]">
+        <div className="flex items-center justify-between gap-[20px]">
+          <PageTitle
+            title="券商管理"
+            subtitle="维护客户端可展示的券商、开户费用、预计处理时间、所需资料和启用状态。"
+          />
+          <PrimaryButton icon={Plus} onClick={openCreate}>新增配置</PrimaryButton>
+        </div>
+      </Panel>
+
+      <Panel className="mt-[21px] px-[15px] py-[18px]">
+        <div className="flex items-center justify-between">
+          <div className="text-[16px] font-semibold text-[#20213a]">筛选条件</div>
+          <span className="text-[12px] text-[#8a8ca0]">禁用券商不再展示在客户端申请入口</span>
+        </div>
+        <div className="mt-[15px] grid grid-cols-[minmax(260px,1fr)_180px_156px] gap-[10px]">
+          <label className="flex h-[50px] items-center gap-[11px] rounded-[4px] border border-[#cfd1dc] bg-white px-[15px] text-[13px] text-[#9a9cab]">
+            <Search className="h-[16px] w-[16px] text-[#20213a]" strokeWidth={1.8} />
+            <input value={filters.keyword} onChange={(event) => updateFilter('keyword', event.target.value)} className="h-full flex-1 bg-transparent outline-none" placeholder="券商名称、英文名称、券商代码" />
+          </label>
+          <AccountCurrencyFilterSelect label="状态" value={filters.status} onChange={(value) => updateFilter('status', value)} width="w-full">
+            <option value="">全部</option>
+            {brokerageConfigStatusOptions.map((status) => <option key={status} value={status}>{status}</option>)}
+          </AccountCurrencyFilterSelect>
+          <div className="flex items-center justify-end gap-[8px]">
+            <ActionButton icon={Clock3} onClick={resetFilters}>重置</ActionButton>
+            <PrimaryButton icon={Search} onClick={() => setAppliedFilters(filters)}>查询</PrimaryButton>
+          </div>
+        </div>
+      </Panel>
+
+      <Panel className="mt-[21px] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-[1680px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+            <thead>
+              <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
+                {['券商名称', '券商英文名称', '券商代码', '市场覆盖', '展示标签', '官网链接', '开户行政费', '费用币种', '支持账户类型', '结算币种', '所需资料数量', '预计处理时间', '状态', '展示顺序', '更新时间', '更新人', '操作'].map((item) => (
+                  <th key={item} className="whitespace-nowrap px-[14px]">{item}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredBrokers.map((broker) => (
+                <tr key={broker.id} className="h-[74px] border-b border-[#e7e8ef] bg-white">
+                  <td className="whitespace-nowrap px-[14px] font-semibold text-[#20213a]">{broker.name}</td>
+                  <td className="whitespace-nowrap px-[14px]">{broker.englishName}</td>
+                  <td className="whitespace-nowrap px-[14px] font-mono font-semibold text-[#237be8]">{broker.code}</td>
+                  <td className="whitespace-nowrap px-[14px]">{broker.marketCoverage?.join(' / ') || '-'}</td>
+                  <td className="px-[14px]">
+                    <div className="flex flex-wrap gap-[5px]">
+                      {(broker.displayTags || []).length ? broker.displayTags.map((tag) => (
+                        <span key={tag} className="rounded-full bg-[#f0e9ff] px-[8px] py-[3px] text-[11px] font-semibold text-[#8b4fff]">{tag}</span>
+                      )) : '-'}
+                    </div>
+                  </td>
+                  <td className="max-w-[190px] truncate px-[14px]" title={broker.websiteUrl || ''}>{broker.websiteUrl || '-'}</td>
+                  <td className="whitespace-nowrap px-[14px] font-semibold text-[#20213a]">{broker.adminFee}</td>
+                  <td className="whitespace-nowrap px-[14px]">{broker.feeCurrency}</td>
+                  <td className="whitespace-nowrap px-[14px]">{(broker.accountTypes || ['现金账户']).join(' / ')}</td>
+                  <td className="whitespace-nowrap px-[14px]">{(broker.settlementCurrencies || ['USD', 'HKD', 'CNY']).join(' / ')}</td>
+                  <td className="whitespace-nowrap px-[14px]">{broker.materials?.length || 0}</td>
+                  <td className="whitespace-nowrap px-[14px]">{broker.estimatedTime}</td>
+                  <td className="whitespace-nowrap px-[14px]"><StatusBadge tone={broker.status === '启用' ? 'green' : 'gray'}>{broker.status}</StatusBadge></td>
+                  <td className="whitespace-nowrap px-[14px]">{broker.displayOrder}</td>
+                  <td className="whitespace-nowrap px-[14px]">{broker.updatedAt}</td>
+                  <td className="whitespace-nowrap px-[14px]">{broker.updatedBy}</td>
+                  <td className="px-[14px]">
+                    <div className="flex flex-wrap gap-[8px]">
+                      <ActionButton icon={Pencil} onClick={() => openEdit(broker)}>编辑</ActionButton>
+                      <ActionButton icon={broker.status === '启用' ? XCircle : CheckCircle2} onClick={() => toggleStatus(broker)}>{broker.status === '启用' ? '禁用' : '启用'}</ActionButton>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredBrokers.length === 0 ? (
+                <tr>
+                  <td colSpan={17} className="px-[18px] py-[36px] text-center text-[13px] text-[#8a8ca0]">暂无符合条件的券商配置</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+        <div className="border-t border-[#e5e6ef] px-[18px] py-[14px] text-[13px] text-[#66677f]">
+          共 {filteredBrokers.length} 个券商配置。禁用券商不影响历史申请记录和已开户账户展示。
+        </div>
+      </Panel>
+
+      {drawerOpen ? (
+        <BrokerageManagementModal
+          broker={editingBroker}
+          brokers={sourceBrokers}
+          onClose={() => {
+            setDrawerOpen(false)
+            setEditingBroker(null)
+          }}
+          onSave={saveBroker}
         />
       ) : null}
     </AdminShell>

@@ -22,6 +22,7 @@ import {
   initialAccountCurrencyConfigs,
   mapBrokerNameToAccountCurrencyType,
 } from '../data/accountCurrencyConfig'
+import { getBrokerConfigClientId, initialBrokerageConfigs } from '../data/brokerageConfig'
 import { BaasOpeningPrototype, ClientTopNav } from './BaasOpeningPrototype'
 
 const securitiesAccountBaseRoute = '/admin/product-manual/securities-account-prototype'
@@ -90,6 +91,52 @@ const brokerageServiceBrokers = {
       },
     ],
   },
+}
+
+function getCurrentClientBrokerageApplicationIds(applications = []) {
+  const currentCustomerId = applications.find((application) => application.openingStatus === '已开户')?.customer?.id
+    || applications[0]?.customer?.id
+
+  if (!currentCustomerId) return new Set()
+
+  return new Set(applications
+    .filter((application) => application.customer?.id === currentCustomerId)
+    .filter((application) => ['审核中', '已开户'].includes(application.openingStatus))
+    .map((application) => application.brokerId))
+}
+
+function normalizeBrokerageServiceBrokers(configs = initialBrokerageConfigs, applications = []) {
+  const activeBrokerIds = getCurrentClientBrokerageApplicationIds(applications)
+
+  return configs
+    .filter((config) => config.status === '启用')
+    .sort((left, right) => Number(left.displayOrder || 0) - Number(right.displayOrder || 0))
+    .map((config) => {
+      const id = getBrokerConfigClientId(config)
+      const fallback = brokerageServiceBrokers[id] || {}
+      const fee = `${config.adminFee || fallback.fee?.split(' ')[0] || '100'} ${config.feeCurrency || 'USD'}`
+      const duplicate = activeBrokerIds.has(id)
+
+      return {
+        ...fallback,
+        id,
+        name: config.name,
+        shortName: config.code || fallback.shortName || config.name,
+        logo: config.logo || fallback.logo || String(config.code || config.name).slice(0, 2),
+        fee,
+        estimatedTime: config.estimatedTime || fallback.estimatedTime || '3-7 个工作日',
+        marketCoverage: config.marketCoverage?.length ? config.marketCoverage : (fallback.marketCoverage || ['美股', '港股']),
+        highlights: config.displayTags?.length ? config.displayTags : (fallback.highlights || ['平台开户', '人工审核']),
+        websiteUrl: config.websiteUrl || '',
+        description: config.description || fallback.description || '',
+        materials: (config.materials?.length ? config.materials : fallback.materials || []).map((material) => ({
+          ...material,
+          helper: material.description || material.helper || '',
+          fileName: `${material.id || material.name}-upload.pdf`,
+        })),
+        disabledReason: duplicate ? '当前客户已存在该券商的有效申请或已开户账户' : '',
+      }
+    })
 }
 
 const brokerageServiceSteps = [
@@ -238,8 +285,8 @@ function BrokerageSummaryCard({
 }) {
   const rows = [
     ['已选择券商', broker.name],
-    ['开户费用', '$100'],
-    ['预计处理时间', '3-7 工作日'],
+    ['开户费用', broker.fee],
+    ['预计处理时间', broker.estimatedTime],
     ['账户类型', 'Individual Account'],
     ['当前步骤', `STEP ${brokerageStepIndex[currentStep] || 1}/4`],
   ]
@@ -300,11 +347,13 @@ function BrokerageSummaryCard({
 }
 
 function BrokerageBrokerCard({ broker, selected, onSelect }) {
-  const tagText = broker.id === 'ibkr' ? ['全球市场', '官网'] : ['流程便捷', '官网']
+  const tagText = broker.highlights?.length ? broker.highlights : []
+  const visibleTags = [...new Set(broker.websiteUrl ? [...tagText, '官网'] : tagText)]
   const actionLabel = selected ? '已选择' : `选择 ${broker.shortName}`
+  const disabled = Boolean(broker.disabledReason)
 
   return (
-    <div className={selected ? 'rounded-lg border border-[#2F6BFF] bg-white p-5 shadow-sm' : 'rounded-lg border border-slate-200 bg-white p-5 shadow-sm'}>
+    <div className={selected ? 'rounded-lg border border-[#2F6BFF] bg-white p-5 shadow-sm' : disabled ? 'rounded-lg border border-slate-200 bg-slate-50 p-5 opacity-75 shadow-sm' : 'rounded-lg border border-slate-200 bg-white p-5 shadow-sm'}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex gap-4">
           <div className={selected ? 'flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#2F6BFF] text-sm font-bold text-white' : 'flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-700'}>
@@ -313,12 +362,12 @@ function BrokerageBrokerCard({ broker, selected, onSelect }) {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-lg font-bold text-slate-950">{broker.name}</h3>
-              {tagText.map((tag) => <Badge key={tag} variant="secondary">{tag}</Badge>)}
+              {visibleTags.map((tag) => <Badge key={tag} variant="secondary">{tag}</Badge>)}
             </div>
             <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
               <div>
                 <div className="text-xs text-slate-500">开户费</div>
-                <div className="mt-1 font-bold text-slate-950">100 USD</div>
+                <div className="mt-1 font-bold text-slate-950">{broker.fee}</div>
               </div>
               <div>
                 <div className="text-xs text-slate-500">市场覆盖</div>
@@ -334,12 +383,18 @@ function BrokerageBrokerCard({ broker, selected, onSelect }) {
         <Button
           type="button"
           onClick={onSelect}
+          disabled={disabled}
           variant={selected ? 'default' : 'outline'}
-          className={selected ? 'rounded-lg bg-[#2F6BFF] hover:bg-blue-700' : 'rounded-lg'}
+          className={selected ? 'rounded-lg bg-[#2F6BFF] hover:bg-blue-700' : 'rounded-lg disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400'}
         >
-          {actionLabel}
+          {disabled ? '已存在申请' : actionLabel}
         </Button>
       </div>
+      {disabled ? (
+        <div className="mt-4 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+          {broker.disabledReason}
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -378,11 +433,11 @@ function BrokerageMaterialCard({ material, uploadedFile, onUpload, onDelete }) {
   )
 }
 
-function BrokerageFooterActions({ step, allUploaded, feeConfirmed, submitConfirmed, onBack, onPrevious, onNext, onSubmit }) {
+function BrokerageFooterActions({ step, allUploaded, feeConfirmed, submitConfirmed, canProceed = true, onBack, onPrevious, onNext, onSubmit }) {
   if (step === 'select') {
     return (
       <div className="mt-5 flex justify-end">
-        <Button type="button" onClick={onNext} className="rounded-lg bg-[#2F6BFF] px-6 hover:bg-blue-700">
+        <Button type="button" disabled={!canProceed} onClick={onNext} className="rounded-lg bg-[#2F6BFF] px-6 hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300">
           下一步：确认费用
         </Button>
       </div>
@@ -425,14 +480,35 @@ function BrokerageFooterActions({ step, allUploaded, feeConfirmed, submitConfirm
   )
 }
 
-export function SecuritiesBrokerageServicePrototype({ onBack, onNavigate }) {
+export function SecuritiesBrokerageServicePrototype({
+  onBack,
+  onNavigate,
+  brokerageConfigs = initialBrokerageConfigs,
+  brokerageApplications = [],
+}) {
   const [selectedBrokerId, setSelectedBrokerId] = useState('ibkr')
   const [step, setStep] = useState('select')
   const [feeConfirmed, setFeeConfirmed] = useState(false)
   const [submitConfirmed, setSubmitConfirmed] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState({})
   const [application, setApplication] = useState(null)
-  const broker = brokerageServiceBrokers[selectedBrokerId]
+  const serviceBrokers = useMemo(
+    () => normalizeBrokerageServiceBrokers(brokerageConfigs, brokerageApplications),
+    [brokerageConfigs, brokerageApplications]
+  )
+  const broker = serviceBrokers.find((item) => item.id === selectedBrokerId && !item.disabledReason)
+    || serviceBrokers.find((item) => !item.disabledReason)
+    || serviceBrokers[0]
+    || {
+      id: 'empty',
+      name: '-',
+      shortName: '-',
+      fee: '-',
+      estimatedTime: '-',
+      materials: [],
+      marketCoverage: [],
+    }
+  const selectableBrokerCount = serviceBrokers.filter((item) => !item.disabledReason).length
   const uploadedCount = broker.materials.filter((material) => uploadedFiles[material.id]).length
   const allUploaded = uploadedCount === broker.materials.length
 
@@ -472,20 +548,36 @@ export function SecuritiesBrokerageServicePrototype({ onBack, onNavigate }) {
   }
 
   const renderLeftContent = () => {
+    if (!serviceBrokers.length) {
+      return (
+        <section className="rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <h2 className="text-xl font-bold text-slate-950">暂无可申请券商</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-500">当前后台未启用券商配置，请联系运营开启后再提交开户申请。</p>
+        </section>
+      )
+    }
+
     if (step === 'select') {
       return (
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-slate-950">选择券商</h2>
           <div className="mt-5 space-y-4">
-            {Object.values(brokerageServiceBrokers).map((item) => (
+            {serviceBrokers.map((item) => (
               <BrokerageBrokerCard
                 key={item.id}
                 broker={item}
-                selected={item.id === selectedBrokerId}
-                onSelect={() => resetForBroker(item.id)}
+                selected={item.id === broker.id}
+                onSelect={() => {
+                  if (!item.disabledReason) resetForBroker(item.id)
+                }}
               />
             ))}
           </div>
+          {!selectableBrokerCount ? (
+            <div className="mt-5 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+              当前客户已存在所有启用券商的有效申请或账户，不能重复申请同一家券商。
+            </div>
+          ) : null}
         </section>
       )
     }
@@ -501,7 +593,7 @@ export function SecuritiesBrokerageServicePrototype({ onBack, onNavigate }) {
             </div>
             <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
               <div className="text-xs text-blue-700">开户费用</div>
-              <div className="mt-2 text-2xl font-bold text-slate-950">100 USD</div>
+              <div className="mt-2 text-2xl font-bold text-slate-950">{broker.fee}</div>
             </div>
           </div>
           <div className="mt-5 rounded-lg border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-600">
@@ -561,8 +653,8 @@ export function SecuritiesBrokerageServicePrototype({ onBack, onNavigate }) {
             {[
               ['券商名称', broker.name],
               ['账户类型', 'Individual Account'],
-              ['开户费用', '100 USD'],
-              ['预计处理时间', '3-7 工作日'],
+              ['开户费用', broker.fee],
+              ['预计处理时间', broker.estimatedTime],
             ].map(([label, value]) => (
               <div key={label} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
                 <div className="text-xs text-slate-500">{label}</div>
@@ -700,6 +792,7 @@ export function SecuritiesBrokerageServicePrototype({ onBack, onNavigate }) {
             onPrevious={goPrevious}
             onNext={goNext}
             onSubmit={submitApplication}
+            canProceed={Boolean(selectableBrokerCount)}
           />
         )}
       </main>

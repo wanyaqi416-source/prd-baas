@@ -21,8 +21,9 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 
-import { AccountCurrencyConfigPage, BrokerageApplicationManagementPage, FiatAssetManagementPage } from './BaasAdminReviewPrototype'
+import { BrokerageApplicationManagementPage, BrokerageManagementPage, FiatAssetManagementPage, UserManagementPage } from './BaasAdminReviewPrototype'
 import { initialAccountCurrencyConfigs } from '../data/accountCurrencyConfig'
+import { initialBrokerageConfigs } from '../data/brokerageConfig'
 import { initialBrokerageApplications } from '../data/securitiesBrokerageApplications'
 
 function BrokerageAdminHeader({ onBack }) {
@@ -93,7 +94,7 @@ function BrokerageAdminSidebar({ activePage, onSelect }) {
           <SidebarItem icon={BriefcaseBusiness} label="案件工作台" />
           <SidebarItem icon={WalletCards} label="券商开户管理" marked active={activePage === 'brokerage-applications'} onClick={() => onSelect('brokerage-applications')} />
           <SidebarItem icon={ListChecks} label="开户审核" />
-          <SidebarItem icon={UsersRound} label="用户管理" />
+          <SidebarItem icon={UsersRound} label="用户管理" active={activePage === 'user-management'} onClick={() => onSelect('user-management')} />
           <SidebarItem icon={Gauge} label="处理中审核" />
           <SidebarItem icon={WalletCards} label="法币账户审核" />
           <SidebarItem icon={FileCheck2} label="数字资产地址审核" />
@@ -107,7 +108,7 @@ function BrokerageAdminSidebar({ activePage, onSelect }) {
           <SidebarItem icon={UserRound} label="客户" />
           <SidebarItem icon={UserRound} label="资产中心" />
           <SidebarItem icon={ShoppingCart} label="法币资产管理" marked active={activePage === 'fiat-assets'} onClick={() => onSelect('fiat-assets')} />
-          <SidebarItem icon={Coins} label="账户币种配置" marked active={activePage === 'account-currency-config'} onClick={() => onSelect('account-currency-config')} />
+          <SidebarItem icon={Coins} label="券商管理" marked active={activePage === 'brokerage-management'} onClick={() => onSelect('brokerage-management')} />
           <SidebarItem icon={CircleDot} label="数字资产管理" />
           <SidebarItem icon={LineChart} label="理财产品" />
           <SidebarItem icon={CircleDot} label="交易管理" />
@@ -124,28 +125,42 @@ export function SecuritiesBrokerageAdminPrototype({
   onUpdateBrokerageApplication,
   accountCurrencyConfigs = initialAccountCurrencyConfigs,
   onChangeAccountCurrencyConfigs,
+  brokerageConfigs = initialBrokerageConfigs,
+  onChangeBrokerageConfigs,
 }) {
   const [activePage, setActivePage] = useState('brokerage-applications')
+  const [selectedUserDetail, setSelectedUserDetail] = useState(null)
   const [localAccountCurrencyConfigs, setLocalAccountCurrencyConfigs] = useState(initialAccountCurrencyConfigs)
+  const [localBrokerageConfigs, setLocalBrokerageConfigs] = useState(initialBrokerageConfigs)
   const effectiveAccountCurrencyConfigs = onChangeAccountCurrencyConfigs ? accountCurrencyConfigs : localAccountCurrencyConfigs
-  const updateAccountCurrencyConfigs = onChangeAccountCurrencyConfigs || setLocalAccountCurrencyConfigs
+  const effectiveBrokerageConfigs = onChangeBrokerageConfigs ? brokerageConfigs : localBrokerageConfigs
+  const updateBrokerageConfigs = onChangeBrokerageConfigs || setLocalBrokerageConfigs
+  const selectPage = (page) => {
+    setActivePage(page)
+    setSelectedUserDetail(null)
+  }
 
   return (
     <div className="min-h-screen bg-[#f4f5fb] font-sans text-[#24243d]">
       <BrokerageAdminHeader onBack={onBack} />
-      <BrokerageAdminSidebar activePage={activePage} onSelect={setActivePage} />
+      <BrokerageAdminSidebar activePage={activePage} onSelect={selectPage} />
       {activePage === 'brokerage-applications' ? (
         <BrokerageApplicationManagementPage
           applications={brokerageApplications}
           onUpdateApplication={onUpdateBrokerageApplication}
           accountCurrencyConfigs={effectiveAccountCurrencyConfigs}
+          onOpenUserDetail={(customer) => {
+            setSelectedUserDetail(customer)
+            setActivePage('user-management')
+          }}
         />
       ) : null}
+      {activePage === 'user-management' ? <UserManagementPage focusedCustomer={selectedUserDetail} /> : null}
       {activePage === 'fiat-assets' ? <FiatAssetManagementPage /> : null}
-      {activePage === 'account-currency-config' ? (
-        <AccountCurrencyConfigPage
-          configs={effectiveAccountCurrencyConfigs}
-          onChangeConfigs={updateAccountCurrencyConfigs}
+      {activePage === 'brokerage-management' ? (
+        <BrokerageManagementPage
+          brokers={effectiveBrokerageConfigs}
+          onChangeBrokers={updateBrokerageConfigs}
         />
       ) : null}
       <button

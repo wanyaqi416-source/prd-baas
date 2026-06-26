@@ -23,14 +23,12 @@ export const brokerageBrokers = [
 
 export const brokerageSignatureStatuses = ['未签署', '已签署']
 export const brokerageUploadStatuses = ['未上传', '已上传', '部分上传']
-export const brokerageOpeningStatuses = ['审核中', '开户中', '已开户', '需补充资料']
+export const brokerageOpeningStatuses = ['审核中', '已开户', '已拒绝']
 export const brokerageAccountStatuses = ['已开户', '受限', '已关闭']
 
 export const brokerageOpeningStatusTones = {
   审核中: 'blue',
-  开户中: 'orange',
   已开户: 'green',
-  需补充资料: 'violet',
   已拒绝: 'red',
 }
 
@@ -38,15 +36,13 @@ export const clientBrokerageStatusMap = {
   已开户: 'approved',
   已拒绝: 'rejected',
   审核中: 'reviewing',
-  开户中: 'reviewing',
-  需补充资料: 'reviewing',
 }
 
 export const brokerageAccountFallback = {
   brokerName: 'Webull',
   accountName: 'XXX Trust Account',
   accountNumber: 'WB-98347291',
-  accountType: 'Individual Account',
+  accountType: '现金账户',
   settlementCurrency: 'USD / HKD',
   settlementCurrencies: ['USD', 'HKD'],
   currency: 'USD',
@@ -81,14 +77,14 @@ export const initialBrokerageApplications = [
     ],
     statusLogs: [
       { id: 'log-001-1', time: '2026-06-18 11:26', operator: '客户', from: '-', to: '审核中', remark: '客户提交 Webull 开户申请。' },
-      { id: 'log-001-2', time: '2026-06-18 14:10', operator: '后台人员', from: '审核中', to: '开户中', remark: '资料完整，开始人工开户。' },
-      { id: 'log-001-3', time: '2026-06-18 16:40', operator: '后台人员', from: '开户中', to: '已开户', remark: '券商账户信息已录入，客户可见。' },
+      { id: 'log-001-2', time: '2026-06-18 14:10', operator: '后台人员', from: '审核中', to: '审核中', remark: '资料完整，开始人工开户。' },
+      { id: 'log-001-3', time: '2026-06-18 16:40', operator: '后台人员', from: '审核中', to: '已开户', remark: '券商账户信息已录入，客户可见。' },
     ],
     accountInfo: {
       brokerName: 'Webull',
       accountName: 'XXX Trust Account',
       accountNumber: 'WB-98347291',
-      accountType: 'Individual Account',
+      accountType: '现金账户',
       settlementCurrency: 'USD / HKD',
       settlementCurrencies: ['USD', 'HKD'],
       currency: 'USD',
@@ -114,13 +110,13 @@ export const initialBrokerageApplications = [
     submittedAt: '2026-06-19 10:08',
     signatureStatus: '未签署',
     uploadStatus: '已上传',
-    openingStatus: '开户中',
+    openingStatus: '审核中',
     materials: [
       { id: 'address_proof', name: '地址证明', fileName: 'jwy-address-proof.png', type: '上传资料', status: '已上传' },
     ],
     statusLogs: [
       { id: 'log-002-1', time: '2026-06-19 10:08', operator: '客户', from: '-', to: '审核中', remark: '客户提交 IBKR 开户申请。' },
-      { id: 'log-002-2', time: '2026-06-19 15:18', operator: '后台人员', from: '审核中', to: '开户中', remark: '地址证明已确认，进入券商开户处理。' },
+      { id: 'log-002-2', time: '2026-06-19 15:18', operator: '后台人员', from: '审核中', to: '审核中', remark: '地址证明已确认，进入券商开户处理。' },
     ],
     accountInfo: null,
   },
@@ -169,7 +165,7 @@ export const initialBrokerageApplications = [
     submittedAt: '2026-06-20 17:51',
     signatureStatus: '未签署',
     uploadStatus: '部分上传',
-    openingStatus: '需补充资料',
+    openingStatus: '已拒绝',
     materials: [
       { id: 'basic_profile', name: '账户基础资料', fileName: 'yaya-basic-profile.pdf', type: '签署文件', status: '已签署' },
       { id: 'authorization_letter', name: 'W8-ben表格', fileName: '-', type: '签署文件', status: '未签署' },
@@ -177,7 +173,7 @@ export const initialBrokerageApplications = [
     ],
     statusLogs: [
       { id: 'log-003-1', time: '2026-06-20 17:51', operator: '客户', from: '-', to: '审核中', remark: '客户提交 Webull 开户申请。' },
-      { id: 'log-003-2', time: '2026-06-21 09:40', operator: '后台人员', from: '审核中', to: '需补充资料', remark: 'W8-ben表格缺失，CRS-Controlling person表格未完成签署，请客户补充后再次提交。' },
+      { id: 'log-003-2', time: '2026-06-21 09:40', operator: '后台人员', from: '审核中', to: '已拒绝', remark: 'W8-ben表格缺失，CRS-Controlling person表格未完成签署，请客户补充后再次提交。' },
     ],
     accountInfo: null,
   },
