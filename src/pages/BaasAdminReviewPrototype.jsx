@@ -1741,8 +1741,8 @@ function getBrokerageReviewFiles(application) {
   const standardFiles = application.brokerId === 'webull'
     ? [
         { id: 'basic_profile', name: '账户基础资料', type: '上传资料' },
-        { id: 'authorization_letter', name: '授权书', type: '第三方签署文档' },
-        { id: 'risk_disclosure', name: '风险披露文件', type: '第三方签署文档' },
+        { id: 'authorization_letter', name: 'W8-ben表格', type: '第三方签署文档' },
+        { id: 'risk_disclosure', name: 'CRS-Controlling person表格', type: '第三方签署文档' },
       ]
     : [
         { id: 'address_proof', name: '地址证明', type: '上传资料' },

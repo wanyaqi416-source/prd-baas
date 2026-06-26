@@ -78,13 +78,13 @@ const brokerageServiceBrokers = {
       },
       {
         id: 'authorization_letter',
-        name: '授权书',
+        name: 'W8-ben表格',
         helper: '第三方签署文件，由签署流程生成后同步到申请中。',
         fileName: 'webull-authorization-letter.pdf',
       },
       {
         id: 'risk_disclosure',
-        name: '风险披露文件',
+        name: 'CRS-Controlling person表格',
         helper: '第三方签署文件，用于确认客户已阅读并接受相关风险披露。',
         fileName: 'webull-risk-disclosure.pdf',
       },

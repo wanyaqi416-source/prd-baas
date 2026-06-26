@@ -7,8 +7,8 @@ export const brokerageBrokers = [
     shortName: 'Webull',
     requiredMaterials: [
       { id: 'basic_profile', name: '账户基础资料', required: true },
-      { id: 'authorization_letter', name: '授权书', required: true },
-      { id: 'risk_disclosure', name: '风险披露文件', required: true },
+      { id: 'authorization_letter', name: 'W8-ben表格', required: true },
+      { id: 'risk_disclosure', name: 'CRS-Controlling person表格', required: true },
     ],
   },
   {
@@ -76,8 +76,8 @@ export const initialBrokerageApplications = [
     openingStatus: '已开户',
     materials: [
       { id: 'basic_profile', name: '账户基础资料', fileName: 'wanyara-basic-profile.pdf', type: '签署文件', status: '已签署' },
-      { id: 'authorization_letter', name: '授权书', fileName: 'wanyara-authorization.pdf', type: '签署文件', status: '已签署' },
-      { id: 'risk_disclosure', name: '风险披露文件', fileName: 'wanyara-risk-disclosure.pdf', type: '签署文件', status: '已签署' },
+      { id: 'authorization_letter', name: 'W8-ben表格', fileName: 'wanyara-authorization.pdf', type: '签署文件', status: '已签署' },
+      { id: 'risk_disclosure', name: 'CRS-Controlling person表格', fileName: 'wanyara-risk-disclosure.pdf', type: '签署文件', status: '已签署' },
     ],
     statusLogs: [
       { id: 'log-001-1', time: '2026-06-18 11:26', operator: '客户', from: '-', to: '审核中', remark: '客户提交 Webull 开户申请。' },
@@ -172,12 +172,12 @@ export const initialBrokerageApplications = [
     openingStatus: '需补充资料',
     materials: [
       { id: 'basic_profile', name: '账户基础资料', fileName: 'yaya-basic-profile.pdf', type: '签署文件', status: '已签署' },
-      { id: 'authorization_letter', name: '授权书', fileName: '-', type: '签署文件', status: '未签署' },
-      { id: 'risk_disclosure', name: '风险披露文件', fileName: '-', type: '签署文件', status: '未签署' },
+      { id: 'authorization_letter', name: 'W8-ben表格', fileName: '-', type: '签署文件', status: '未签署' },
+      { id: 'risk_disclosure', name: 'CRS-Controlling person表格', fileName: '-', type: '签署文件', status: '未签署' },
     ],
     statusLogs: [
       { id: 'log-003-1', time: '2026-06-20 17:51', operator: '客户', from: '-', to: '审核中', remark: '客户提交 Webull 开户申请。' },
-      { id: 'log-003-2', time: '2026-06-21 09:40', operator: '后台人员', from: '审核中', to: '需补充资料', remark: '授权书缺失，风险披露文件未完成签署，请客户补充后再次提交。' },
+      { id: 'log-003-2', time: '2026-06-21 09:40', operator: '后台人员', from: '审核中', to: '需补充资料', remark: 'W8-ben表格缺失，CRS-Controlling person表格未完成签署，请客户补充后再次提交。' },
     ],
     accountInfo: null,
   },
@@ -229,8 +229,8 @@ export const initialBrokerageApplications = [
     openingStatus: '审核中',
     materials: [
       { id: 'basic_profile', name: '账户基础资料', fileName: 'nora-basic-profile.pdf', type: '签署文件', status: '已签署' },
-      { id: 'authorization_letter', name: '授权书', fileName: 'nora-authorization.pdf', type: '签署文件', status: '已签署' },
-      { id: 'risk_disclosure', name: '风险披露文件', fileName: 'nora-risk-disclosure.pdf', type: '签署文件', status: '已签署' },
+      { id: 'authorization_letter', name: 'W8-ben表格', fileName: 'nora-authorization.pdf', type: '签署文件', status: '已签署' },
+      { id: 'risk_disclosure', name: 'CRS-Controlling person表格', fileName: 'nora-risk-disclosure.pdf', type: '签署文件', status: '已签署' },
     ],
     statusLogs: [
       { id: 'log-007-1', time: '2026-06-22 12:26', operator: '客户', from: '-', to: '审核中', remark: '客户提交 Webull 开户申请，后台待审核资料。' },
