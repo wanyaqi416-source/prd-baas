@@ -39,6 +39,7 @@ import {
   SecuritiesAccountPrototypeHome,
 } from './pages/SecuritiesAccountPrototype'
 import { SecuritiesBrokerageAdminPrototype } from './pages/SecuritiesBrokerageAdminPrototype'
+import { initialAccountCurrencyConfigs } from './data/accountCurrencyConfig'
 import { initialBrokerageApplications } from './data/securitiesBrokerageApplications'
 
 function useCurrentPath() {
@@ -94,6 +95,7 @@ function App() {
   const [path, navigate] = useCurrentPath()
   const [baasOpeningInitialStatus, setBaasOpeningInitialStatus] = useState('not_opened')
   const [brokerageApplications, setBrokerageApplications] = useState(initialBrokerageApplications)
+  const [accountCurrencyConfigs, setAccountCurrencyConfigs] = useState(initialAccountCurrencyConfigs)
 
   const updateBrokerageApplication = (applicationId, patch) => {
     setBrokerageApplications((current) => current.map((application) => (
@@ -125,6 +127,7 @@ function App() {
         onNavigate={navigate}
         onPrototypeHome={() => navigate('/admin/product-manual/securities-account-prototype')}
         brokerageApplications={brokerageApplications}
+        accountCurrencyConfigs={accountCurrencyConfigs}
       />
     )
   }
@@ -153,6 +156,8 @@ function App() {
         onBack={() => navigate('/admin/product-manual/securities-account-prototype')}
         brokerageApplications={brokerageApplications}
         onUpdateBrokerageApplication={updateBrokerageApplication}
+        accountCurrencyConfigs={accountCurrencyConfigs}
+        onChangeAccountCurrencyConfigs={setAccountCurrencyConfigs}
       />
     )
   }
@@ -167,6 +172,7 @@ function App() {
         showGuidanceMarks={false}
         enableUserTransfer
         forceUserTransferMark
+        accountCurrencyConfigs={accountCurrencyConfigs}
       />
     )
   }
@@ -191,6 +197,7 @@ function App() {
         onOpenApplication={() => navigate('/admin/product-manual/baas-prototype/account-opening/create')}
         onPrototypeHome={() => navigate('/admin/product-manual/baas-prototype')}
         initialStatus={baasOpeningInitialStatus}
+        accountCurrencyConfigs={accountCurrencyConfigs}
       />
     )
   }

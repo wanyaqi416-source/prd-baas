@@ -37,6 +37,14 @@ import {
 } from 'lucide-react'
 
 import {
+  accountCurrencyAccountTypes,
+  enabledCurrencyOptions,
+  getCurrencyName,
+  getEnabledAccountCurrencyCodes,
+  initialAccountCurrencyConfigs,
+  mapBrokerNameToAccountCurrencyType,
+} from '../data/accountCurrencyConfig'
+import {
   brokerageAccountStatuses,
   brokerageBrokers,
   brokerageFileRule,
@@ -1393,7 +1401,7 @@ function BrokerageDrawerSection({ title, children }) {
   )
 }
 
-const brokerageSettlementCurrencyOptions = ['USD', 'HKD']
+const brokerageSettlementCurrencyOptions = enabledCurrencyOptions.map((currency) => currency.code)
 
 function normalizeBrokerageSettlementCurrencies(value, fallbackValue = '') {
   const sourceValues = Array.isArray(value)
@@ -1410,13 +1418,17 @@ function formatBrokerageSettlementCurrencies(account) {
   return values.length ? values.join(' / ') : '-'
 }
 
-function BrokerageAccountForm({ value, onChange, lockedBrokerName = '' }) {
+function BrokerageAccountForm({ value, onChange, lockedBrokerName = '', accountCurrencyConfigs = initialAccountCurrencyConfigs }) {
   const displayBrokerName = lockedBrokerName || value.brokerName
+  const accountCurrencyType = mapBrokerNameToAccountCurrencyType(displayBrokerName)
+  const currencyOptions = getEnabledAccountCurrencyCodes(accountCurrencyConfigs, accountCurrencyType)
+  const effectiveCurrencyOptions = currencyOptions.length ? currencyOptions : brokerageSettlementCurrencyOptions
   const selectedSettlementCurrencies = normalizeBrokerageSettlementCurrencies(value.settlementCurrencies || value.settlementCurrency, value.currency)
-  const effectiveSettlementCurrencies = selectedSettlementCurrencies.length ? selectedSettlementCurrencies : ['USD']
+  const selectedAvailableCurrencies = selectedSettlementCurrencies.filter((currency) => effectiveCurrencyOptions.includes(currency))
+  const effectiveSettlementCurrencies = selectedAvailableCurrencies.length ? selectedAvailableCurrencies : [effectiveCurrencyOptions[0] || 'USD']
   const updateField = (field, nextValue) => {
-    const nextSettlementCurrencies = normalizeBrokerageSettlementCurrencies(nextValue)
-    const effectiveNextSettlementCurrencies = nextSettlementCurrencies.length ? nextSettlementCurrencies : ['USD']
+    const nextSettlementCurrencies = Array.isArray(nextValue) ? nextValue.filter((currency) => effectiveCurrencyOptions.includes(currency)) : normalizeBrokerageSettlementCurrencies(nextValue)
+    const effectiveNextSettlementCurrencies = nextSettlementCurrencies.length ? nextSettlementCurrencies : [effectiveCurrencyOptions[0] || 'USD']
     const nextValuePatch = field === 'settlementCurrencies'
       ? {
           settlementCurrencies: effectiveNextSettlementCurrencies,
@@ -1439,7 +1451,7 @@ function BrokerageAccountForm({ value, onChange, lockedBrokerName = '' }) {
         <DrawerInputField label="账户名称 *" value={value.accountName} onChange={(nextValue) => updateField('accountName', nextValue)} placeholder="XXX Trust Account" />
         <DrawerInputField label="券商账户号码 *" value={value.accountNumber} onChange={(nextValue) => updateField('accountNumber', nextValue)} placeholder="请输入券商账户号码" />
         <DrawerInputField label="账户类型 *" value={value.accountType} onChange={(nextValue) => updateField('accountType', nextValue)} placeholder="Individual Account" />
-        <DrawerMultiSelectField label="结算币种 *" value={effectiveSettlementCurrencies} onChange={(nextValue) => updateField('settlementCurrencies', nextValue)} options={brokerageSettlementCurrencyOptions} />
+        <DrawerMultiSelectField label="结算币种 *" value={effectiveSettlementCurrencies} onChange={(nextValue) => updateField('settlementCurrencies', nextValue)} options={effectiveCurrencyOptions} />
         <DrawerInputField label="开户日期 *" type="date" value={value.openedAt} onChange={(nextValue) => updateField('openedAt', nextValue)} />
         <DrawerSelectField label="账户状态 *" value={value.accountStatus} onChange={(nextValue) => updateField('accountStatus', nextValue)} options={brokerageAccountStatuses} />
         <DrawerTextareaField label="备注信息" value={value.remark} onChange={(nextValue) => updateField('remark', nextValue)} placeholder="该备注用于后台处理记录" />
@@ -2108,7 +2120,7 @@ function BrokerageBeneficiariesTab({ beneficiaries, editable = false }) {
   return <BrokerageBeneficiariesSection beneficiaries={beneficiaries} editable={editable} />
 }
 
-function BrokerageProcessTab({ application, onSave }) {
+function BrokerageProcessTab({ application, onSave, accountCurrencyConfigs = initialAccountCurrencyConfigs }) {
   const initialAccount = application.accountInfo
     ? {
         ...application.accountInfo,
@@ -2183,7 +2195,14 @@ function BrokerageProcessTab({ application, onSave }) {
           placeholder={showReturnReason ? '请填写客户需要补充的资料说明' : '记录本次处理说明'}
         />
         {statusError ? <div className="text-[12px] text-[#f04f5f]">{statusError}</div> : null}
-        {showAccountForm ? <BrokerageAccountForm value={accountForm} onChange={setAccountForm} lockedBrokerName={application.brokerName} /> : null}
+        {showAccountForm ? (
+          <BrokerageAccountForm
+            value={accountForm}
+            onChange={setAccountForm}
+            lockedBrokerName={application.brokerName}
+            accountCurrencyConfigs={accountCurrencyConfigs}
+          />
+        ) : null}
         <button type="button" onClick={saveChanges} className="flex h-[38px] w-full items-center justify-center gap-[8px] rounded-[5px] bg-[#bda2f9] text-[13px] font-semibold text-white hover:bg-[#9b63f5]">
           <FileCheck2 className="h-[15px] w-[15px]" />
           保存处理结果
@@ -2201,7 +2220,7 @@ function BrokerageDocumentsTab({ application, onReuploadMaterial }) {
   )
 }
 
-function BrokerageReviewRightSections({ application, onSave, defaultTab = 'overview' }) {
+function BrokerageReviewRightSections({ application, onSave, defaultTab = 'overview', accountCurrencyConfigs = initialAccountCurrencyConfigs }) {
   const profile = getBrokerageOpeningProfile(application)
   const showVisibleAccountInfo = application.openingStatus === '已开户'
   const [activeTab, setActiveTab] = useState(defaultTab)
@@ -2226,7 +2245,13 @@ function BrokerageReviewRightSections({ application, onSave, defaultTab = 'overv
       {activeTab === 'settlor' ? <BrokeragePersonSection title="委托人资料" person={profile.settlor} includeMailing editable={canEditSubmittedProfile} /> : null}
       {activeTab === 'beneficiaries' ? <BrokerageBeneficiariesTab beneficiaries={profile.beneficiaries} editable={canEditSubmittedProfile} /> : null}
       {activeTab === 'documents' ? <BrokerageDocumentsTab application={application} onReuploadMaterial={reuploadMaterial} /> : null}
-      {activeTab === 'process' ? <BrokerageProcessTab application={application} onSave={onSave} /> : null}
+      {activeTab === 'process' ? (
+        <BrokerageProcessTab
+          application={application}
+          onSave={onSave}
+          accountCurrencyConfigs={accountCurrencyConfigs}
+        />
+      ) : null}
     </>
   )
 }
@@ -2276,7 +2301,7 @@ function buildBrokerageMaterialReuploadPatch(application, materialId) {
   }
 }
 
-function BrokerageApplicationDetailPage({ application, onBack, onSave }) {
+function BrokerageApplicationDetailPage({ application, onBack, onSave, accountCurrencyConfigs = initialAccountCurrencyConfigs }) {
   return (
     <AdminShell>
       <div className="grid grid-cols-[360px_1fr] gap-[18px]">
@@ -2290,14 +2315,19 @@ function BrokerageApplicationDetailPage({ application, onBack, onSave }) {
             <ActionButton icon={ChevronDown} onClick={onBack}>返回券商开户管理</ActionButton>
           </div>
 
-          <BrokerageReviewRightSections application={application} onSave={onSave} defaultTab="overview" />
+          <BrokerageReviewRightSections
+            application={application}
+            onSave={onSave}
+            defaultTab="overview"
+            accountCurrencyConfigs={accountCurrencyConfigs}
+          />
         </div>
       </div>
     </AdminShell>
   )
 }
 
-function BrokerageApplicationProcessPage({ application, onBack, onSave }) {
+function BrokerageApplicationProcessPage({ application, onBack, onSave, accountCurrencyConfigs = initialAccountCurrencyConfigs }) {
   return (
     <AdminShell>
       <div className="grid grid-cols-[360px_1fr] gap-[18px]">
@@ -2310,7 +2340,12 @@ function BrokerageApplicationProcessPage({ application, onBack, onSave }) {
             <ActionButton icon={ChevronDown} onClick={onBack}>返回券商开户管理</ActionButton>
           </div>
 
-          <BrokerageReviewRightSections application={application} onSave={onSave} defaultTab="process" />
+          <BrokerageReviewRightSections
+            application={application}
+            onSave={onSave}
+            defaultTab="process"
+            accountCurrencyConfigs={accountCurrencyConfigs}
+          />
 
         </div>
       </div>
@@ -2450,7 +2485,14 @@ function BrokerageApplicationDrawer({ application, onClose, onSave }) {
           </div>
         </BrokerageDrawerSection>
 
-        {showAccountForm ? <BrokerageAccountForm value={accountForm} onChange={setAccountForm} lockedBrokerName={application.brokerName} /> : null}
+        {showAccountForm ? (
+          <BrokerageAccountForm
+            value={accountForm}
+            onChange={setAccountForm}
+            lockedBrokerName={application.brokerName}
+            accountCurrencyConfigs={initialAccountCurrencyConfigs}
+          />
+        ) : null}
 
         <BrokerageDrawerSection title="状态流转日志">
           <BrokerageTimelineLogs logs={application.statusLogs} />
@@ -2497,7 +2539,13 @@ function BrokerageUserTypeTabs({ activeUserType, onChange }) {
   )
 }
 
-export function BrokerageApplicationManagementPage({ applications = initialBrokerageApplications, onUpdateApplication, standalone = false, onBack }) {
+export function BrokerageApplicationManagementPage({
+  applications = initialBrokerageApplications,
+  onUpdateApplication,
+  standalone = false,
+  onBack,
+  accountCurrencyConfigs = initialAccountCurrencyConfigs,
+}) {
   const [activeUserType, setActiveUserType] = useState('personal')
   const [filters, setFilters] = useState({
     keyword: '',
@@ -2579,6 +2627,7 @@ export function BrokerageApplicationManagementPage({ applications = initialBroke
         application={selectedApplication}
         onBack={backToList}
         onSave={handleSaveApplication}
+        accountCurrencyConfigs={accountCurrencyConfigs}
       />
     )
   }
@@ -2589,6 +2638,7 @@ export function BrokerageApplicationManagementPage({ applications = initialBroke
         application={selectedApplication}
         onBack={backToList}
         onSave={handleSaveApplication}
+        accountCurrencyConfigs={accountCurrencyConfigs}
       />
     )
   }
@@ -2696,6 +2746,426 @@ export function BrokerageApplicationManagementPage({ applications = initialBroke
         </>
       )}
 
+    </AdminShell>
+  )
+}
+
+function AccountCurrencyFilterSelect({ label, value, onChange, children, width = 'w-[240px]' }) {
+  return (
+    <label className={`flex h-[50px] ${width} items-center justify-between rounded-[4px] border border-[#cfd1dc] bg-white px-[14px] text-[13px] text-[#4c4c68]`}>
+      <span className="whitespace-nowrap">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
+        className="h-full min-w-[130px] bg-transparent text-right font-semibold text-[#20213a] outline-none"
+      >
+        {children}
+      </select>
+    </label>
+  )
+}
+
+function buildAccountCurrencyRows(configs) {
+  return accountCurrencyAccountTypes.map((accountType) => {
+    const records = configs
+      .filter((config) => config.accountType === accountType)
+      .sort((left, right) => Number(left.displayOrder || 0) - Number(right.displayOrder || 0))
+    const currencyCodes = records.map((record) => record.currencyCode)
+    const defaultCurrency = records.find((record) => record.isDefault)?.currencyCode || currencyCodes[0] || '-'
+    const latestRecord = records.reduce((latest, record) => {
+      if (!latest) return record
+      return String(record.updatedAt || '') > String(latest.updatedAt || '') ? record : latest
+    }, null)
+
+    return {
+      accountType,
+      currencyCodes,
+      defaultCurrency,
+      updatedAt: latestRecord?.updatedAt || '-',
+      updatedBy: latestRecord?.updatedBy || '-',
+      remark: latestRecord?.remark || '',
+      records,
+    }
+  })
+}
+
+function AccountCurrencyTags({ currencies = [] }) {
+  const visibleCurrencies = currencies.slice(0, 3)
+  const hiddenCount = Math.max(0, currencies.length - visibleCurrencies.length)
+
+  if (!currencies.length) {
+    return <span className="text-[#8a8ca0]">未配置</span>
+  }
+
+  return (
+    <div className="flex flex-wrap gap-[6px]" title={currencies.join(' / ')}>
+      {visibleCurrencies.map((currency) => (
+        <span key={currency} className="inline-flex h-[26px] items-center rounded-full bg-[#e7f5ff] px-[9px] text-[12px] font-semibold text-[#237be8]">
+          {currency}
+        </span>
+      ))}
+      {hiddenCount ? (
+        <span className="inline-flex h-[26px] items-center rounded-full bg-[#f0e7ff] px-[9px] text-[12px] font-semibold text-[#8b4fff]">
+          +{hiddenCount}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
+function AccountCurrencySearchableMultiSelect({ value = [], onChange, options = [] }) {
+  const [open, setOpen] = useState(false)
+  const [keyword, setKeyword] = useState('')
+  const selectedValues = Array.isArray(value) ? value : []
+  const normalizedKeyword = keyword.trim().toLowerCase()
+  const filteredOptions = options.filter((currency) => (
+    !normalizedKeyword
+    || currency.code.toLowerCase().includes(normalizedKeyword)
+    || currency.name.toLowerCase().includes(normalizedKeyword)
+  ))
+  const selectedSummary = selectedValues.length > 3
+    ? `${selectedValues.slice(0, 3).join('、')} +${selectedValues.length - 3}`
+    : selectedValues.length
+      ? selectedValues.join('、')
+      : '请选择支持币种'
+
+  const toggleValue = (currencyCode) => {
+    const nextValues = selectedValues.includes(currencyCode)
+      ? selectedValues.filter((item) => item !== currencyCode)
+      : [...selectedValues, currencyCode]
+
+    onChange?.(nextValues)
+  }
+
+  return (
+    <div className="relative">
+      <span className="mb-[-8px] ml-[10px] inline-block bg-white px-[4px] text-[12px] text-[#66677f]">支持币种 *</span>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex h-[54px] w-full items-center justify-between rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] text-left text-[14px] text-[#24243d] outline-none"
+      >
+        <span className={selectedValues.length ? 'font-semibold' : 'text-[#9a9cab]'}>
+          {selectedSummary}
+        </span>
+        <span className="flex items-center gap-[8px] text-[12px] font-semibold text-[#8b4fff]">
+          已选择 {selectedValues.length} 个
+          <ChevronDown className={`h-[16px] w-[16px] text-[#8a8ca0] transition ${open ? 'rotate-180' : ''}`} />
+        </span>
+      </button>
+      {open ? (
+        <div className="absolute left-0 right-0 top-[58px] z-30 rounded-[5px] border border-[#cfd1dc] bg-white p-[8px] shadow-[0_12px_28px_rgba(31,35,66,0.14)]">
+          <label className="flex h-[38px] items-center gap-[8px] rounded-[4px] border border-[#dfe1ea] bg-[#fbfbfd] px-[10px] text-[12px] text-[#8a8ca0]">
+            <Search className="h-[14px] w-[14px] text-[#8b4fff]" />
+            <input
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="搜索币种代码或名称，如 USD / 美元"
+              className="h-full flex-1 bg-transparent text-[13px] text-[#24243d] outline-none"
+            />
+          </label>
+          <div className="mt-[8px] max-h-[220px] overflow-y-auto">
+            {filteredOptions.map((currency) => {
+              const checked = selectedValues.includes(currency.code)
+
+              return (
+                <button
+                  key={currency.code}
+                  type="button"
+                  onClick={() => toggleValue(currency.code)}
+                  className={`flex h-[40px] w-full items-center justify-between rounded-[4px] px-[10px] text-left transition ${
+                    checked ? 'bg-[#f0e9ff] text-[#8b4fff]' : 'text-[#4c4c68] hover:bg-[#f6f7fb]'
+                  }`}
+                >
+                  <span>
+                    <span className="text-[13px] font-semibold">{currency.code}</span>
+                    <span className="ml-[8px] text-[12px] text-[#8a8ca0]">{currency.name}</span>
+                  </span>
+                  <span className={`flex h-[16px] w-[16px] items-center justify-center rounded-[4px] border text-[11px] ${
+                    checked ? 'border-[#8b4fff] bg-[#8b4fff] text-white' : 'border-[#cfd1dc] text-transparent'
+                  }`}>
+                    ✓
+                  </span>
+                </button>
+              )
+            })}
+            {filteredOptions.length === 0 ? (
+              <div className="px-[10px] py-[18px] text-center text-[12px] text-[#8a8ca0]">没有匹配的已启用币种</div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function AccountCurrencyConfigDrawer({ row, onClose, onSave }) {
+  const initialCurrencies = row.currencyCodes.length ? row.currencyCodes : [enabledCurrencyOptions[0]?.code || 'USD']
+  const initialForm = {
+    accountType: row.accountType,
+    currencyCodes: initialCurrencies,
+    defaultCurrency: initialCurrencies.includes(row.defaultCurrency) ? row.defaultCurrency : initialCurrencies[0],
+    remark: row.remark || '',
+  }
+  const [form, setForm] = useState(initialForm)
+  const [error, setError] = useState('')
+  const [defaultCurrencyWarning, setDefaultCurrencyWarning] = useState('')
+
+  const updateField = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }))
+    if (error) setError('')
+    if (field === 'defaultCurrency') setDefaultCurrencyWarning('')
+  }
+
+  const updateCurrencies = (nextCurrencies) => {
+    const uniqueCurrencies = [...new Set(nextCurrencies)]
+    setForm((current) => {
+      const defaultRemoved = Boolean(current.defaultCurrency) && !uniqueCurrencies.includes(current.defaultCurrency)
+
+      if (defaultRemoved) {
+        setDefaultCurrencyWarning('默认币种已被移除，请重新选择默认币种')
+      }
+
+      return {
+        ...current,
+        currencyCodes: uniqueCurrencies,
+        defaultCurrency: defaultRemoved ? '' : current.defaultCurrency,
+      }
+    })
+    if (error) setError('')
+  }
+
+  const removeCurrency = (currency) => {
+    updateCurrencies(form.currencyCodes.filter((item) => item !== currency))
+  }
+
+  const submit = () => {
+    if (!form.currencyCodes.length) {
+      setError('请至少选择一个支持币种')
+      return
+    }
+
+    if (!form.defaultCurrency || !form.currencyCodes.includes(form.defaultCurrency)) {
+      setError('默认币种必须包含在支持币种内')
+      return
+    }
+
+    onSave?.({
+      accountType: form.accountType,
+      currencyCodes: form.currencyCodes,
+      defaultCurrency: form.defaultCurrency,
+      remark: form.remark.trim(),
+    })
+    onClose?.()
+  }
+
+  const removedCurrencies = row.currencyCodes.filter((currency) => !form.currencyCodes.includes(currency))
+
+  return (
+    <DrawerShell
+      title={`配置账户币种 - ${row.accountType}`}
+      eyebrow="按账户类型维护支持币种"
+      onClose={onClose}
+      footer={(
+        <div className="grid grid-cols-2 gap-[8px]">
+          <button type="button" onClick={onClose} className="h-[38px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">取消</button>
+          <button type="button" onClick={submit} className="h-[38px] rounded-[5px] bg-[#8b4fff] text-[13px] font-semibold text-white hover:bg-[#7f42f2]">保存配置</button>
+        </div>
+      )}
+    >
+      <div className="space-y-[14px]">
+        <div className="rounded-[5px] bg-[#f6f7fb] px-[14px] py-[13px] text-[13px] leading-[22px] text-[#66677f]">
+          页面仅维护账户类型支持哪些币种。比如美国账户后续要支持 HKD，只需要在这里勾选 HKD 并保存，系统会新增“美国账户 + HKD”配置。
+        </div>
+        <BrokerageReadOnlyField label="账户类型" value={form.accountType} />
+        <AccountCurrencySearchableMultiSelect value={form.currencyCodes} onChange={updateCurrencies} options={enabledCurrencyOptions} />
+        {form.currencyCodes.length ? (
+          <DrawerSelectField label="默认币种 *" value={form.defaultCurrency} onChange={(value) => updateField('defaultCurrency', value)} options={form.currencyCodes} placeholder="请选择默认币种" />
+        ) : (
+          <BrokerageReadOnlyField label="默认币种 *" value="请先选择支持币种" />
+        )}
+        {defaultCurrencyWarning ? <div className="text-[12px] font-semibold text-[#f39800]">{defaultCurrencyWarning}</div> : null}
+        <div className="rounded-[5px] border border-[#e2e4ec] bg-white p-[12px]">
+          <div className="text-[12px] font-semibold text-[#66677f]">已选币种</div>
+          <div className="mt-[10px] overflow-x-auto">
+            <table className="w-full min-w-[330px] border-collapse text-left text-[12px] text-[#55556e]">
+              <thead>
+                <tr className="h-[34px] bg-[#f6f7fb] font-semibold text-[#22223d]">
+                  {['币种代码', '币种名称', '是否默认币种', '操作'].map((item) => (
+                    <th key={item} className="whitespace-nowrap px-[8px]">{item}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {form.currencyCodes.map((currency) => (
+                  <tr key={currency} className="h-[44px] border-b border-[#e7e8ef] last:border-b-0">
+                    <td className="px-[8px] font-mono font-semibold text-[#237be8]">{currency}</td>
+                    <td className="px-[8px]">{getCurrencyName(currency)}</td>
+                    <td className="px-[8px]">{form.defaultCurrency === currency ? <StatusBadge tone="green">是</StatusBadge> : '-'}</td>
+                    <td className="px-[8px]">
+                      <div className="flex flex-wrap gap-[5px]">
+                        <button type="button" onClick={() => removeCurrency(currency)} className="h-[26px] rounded-[4px] border border-[#f04f5f] px-[7px] text-[12px] font-semibold text-[#f04f5f] hover:bg-[#ffe8eb]">移除</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {form.currencyCodes.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-[8px] py-[20px] text-center text-[#8a8ca0]">请先在上方选择支持币种</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <DrawerTextareaField label="备注" value={form.remark} onChange={(value) => updateField('remark', value)} placeholder="选填，说明该账户类型支持该币种的配置背景" />
+        {removedCurrencies.length ? (
+          <div className="rounded-[5px] bg-[#fff1d6] px-[12px] py-[10px] text-[12px] font-semibold leading-[20px] text-[#9a6500]">
+            风险提示：将移除 {removedCurrencies.join(' / ')}。若该账户下已有余额或历史交易记录，历史数据仍正常展示，但后续不允许新选择这些币种。
+          </div>
+        ) : null}
+        {error ? <div className="rounded-[5px] bg-[#ffe8eb] px-[12px] py-[10px] text-[12px] font-semibold text-[#f04f5f]">{error}</div> : null}
+      </div>
+    </DrawerShell>
+  )
+}
+
+export function AccountCurrencyConfigPage({
+  configs = initialAccountCurrencyConfigs,
+  onChangeConfigs,
+}) {
+  const [localConfigs, setLocalConfigs] = useState(initialAccountCurrencyConfigs)
+  const sourceConfigs = onChangeConfigs ? configs : localConfigs
+  const commitConfigs = (nextConfigs) => {
+    if (onChangeConfigs) {
+      onChangeConfigs(nextConfigs)
+      return
+    }
+    setLocalConfigs(nextConfigs)
+  }
+  const [filters, setFilters] = useState({
+    accountType: '',
+    currencyCode: '',
+  })
+  const [appliedFilters, setAppliedFilters] = useState(filters)
+  const [selectedRow, setSelectedRow] = useState(null)
+
+  const groupedRows = useMemo(() => buildAccountCurrencyRows(sourceConfigs), [sourceConfigs])
+  const filteredRows = useMemo(() => groupedRows.filter((row) => (
+    (!appliedFilters.accountType || row.accountType === appliedFilters.accountType)
+    && (!appliedFilters.currencyCode || row.currencyCodes.includes(appliedFilters.currencyCode))
+  )), [groupedRows, appliedFilters])
+
+  const updateFilter = (field, value) => {
+    setFilters((current) => ({ ...current, [field]: value }))
+  }
+
+  const resetFilters = () => {
+    const nextFilters = { accountType: '', currencyCode: '' }
+    setFilters(nextFilters)
+    setAppliedFilters(nextFilters)
+  }
+
+  const saveAccountCurrencyGroup = (payload) => {
+    const stamp = formatAdminDateTime()
+    const existingByCurrency = new Map(sourceConfigs
+      .filter((item) => item.accountType === payload.accountType)
+      .map((item) => [item.currencyCode, item]))
+    const untouchedConfigs = sourceConfigs.filter((item) => item.accountType !== payload.accountType)
+    const nextAccountConfigs = payload.currencyCodes.map((currencyCode, index) => {
+      const existingRecord = existingByCurrency.get(currencyCode)
+
+      return {
+        id: existingRecord?.id || `ACC-CUR-${payload.accountType}-${currencyCode}-${Date.now()}-${index}`,
+        accountType: payload.accountType,
+        currencyCode,
+        currencyName: getCurrencyName(currencyCode),
+        isDefault: currencyCode === payload.defaultCurrency,
+        displayOrder: index + 1,
+        status: '启用',
+        updatedAt: stamp,
+        updatedBy: '运营管理员',
+        remark: payload.remark,
+      }
+    })
+
+    commitConfigs([...untouchedConfigs, ...nextAccountConfigs])
+  }
+
+  return (
+    <AdminShell>
+      <Panel className="px-[18px] py-[22px]">
+        <div className="flex items-center justify-between">
+          <PageTitle
+            title="账户币种配置"
+            subtitle="按账户类型维护支持币种，客户端与管理端账户币种下拉均读取该配置。"
+          />
+          <span className="rounded-[5px] bg-[#f6f7fb] px-[14px] py-[9px] text-[12px] text-[#66677f]">配置来源：币种管理已启用币种</span>
+        </div>
+      </Panel>
+
+      <Panel className="mt-[21px] px-[15px] py-[18px]">
+        <div className="flex items-center justify-between">
+          <div className="text-[16px] font-semibold text-[#20213a]">筛选条件</div>
+          <span className="text-[12px] text-[#8a8ca0]">币种筛选会匹配支持该币种的账户类型</span>
+        </div>
+        <div className="mt-[15px] flex flex-wrap items-center gap-[10px]">
+          <AccountCurrencyFilterSelect label="账户类型" value={filters.accountType} onChange={(value) => updateFilter('accountType', value)} width="w-[288px]">
+            <option value="">全部</option>
+            {accountCurrencyAccountTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+          </AccountCurrencyFilterSelect>
+          <AccountCurrencyFilterSelect label="币种" value={filters.currencyCode} onChange={(value) => updateFilter('currencyCode', value)} width="w-[240px]">
+            <option value="">全部</option>
+            {enabledCurrencyOptions.map((currency) => <option key={currency.code} value={currency.code}>{currency.code} - {currency.name}</option>)}
+          </AccountCurrencyFilterSelect>
+          <div className="ml-auto flex items-center gap-[8px]">
+            <ActionButton icon={Clock3} onClick={resetFilters}>重置</ActionButton>
+            <PrimaryButton icon={Search} onClick={() => setAppliedFilters(filters)}>查询</PrimaryButton>
+          </div>
+        </div>
+      </Panel>
+
+      <Panel className="mt-[21px] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-[1180px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+            <thead>
+              <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
+                {['账户类型', '支持币种', '默认币种', '更新时间', '更新人', '操作'].map((item) => (
+                  <th key={item} className="whitespace-nowrap px-[18px]">{item}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRows.map((row) => (
+                <tr key={row.accountType} className="h-[72px] border-b border-[#e7e8ef] bg-white">
+                  <td className="whitespace-nowrap px-[18px] font-semibold text-[#20213a]">{row.accountType}</td>
+                  <td className="px-[18px]"><AccountCurrencyTags currencies={row.currencyCodes} /></td>
+                  <td className="whitespace-nowrap px-[18px] font-mono text-[14px] font-semibold text-[#237be8]">{row.defaultCurrency}</td>
+                  <td className="whitespace-nowrap px-[18px]">{row.updatedAt}</td>
+                  <td className="whitespace-nowrap px-[18px]">{row.updatedBy}</td>
+                  <td className="px-[18px]"><ActionButton icon={Pencil} onClick={() => setSelectedRow(row)}>配置币种</ActionButton></td>
+                </tr>
+              ))}
+              {filteredRows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-[18px] py-[36px] text-center text-[13px] text-[#8a8ca0]">暂无符合条件的账户币种配置</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+        <div className="border-t border-[#e5e6ef] px-[18px] py-[14px] text-[13px] text-[#66677f]">
+          共 {filteredRows.length} 个账户类型。禁用配置只影响后续可选币种，不影响历史余额与历史账户信息。
+        </div>
+      </Panel>
+
+      {selectedRow ? (
+        <AccountCurrencyConfigDrawer
+          row={selectedRow}
+          onClose={() => setSelectedRow(null)}
+          onSave={saveAccountCurrencyGroup}
+        />
+      ) : null}
     </AdminShell>
   )
 }

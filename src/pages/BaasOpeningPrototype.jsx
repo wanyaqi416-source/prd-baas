@@ -24,6 +24,12 @@ import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { CurrencyIcon } from '../components/baas/CurrencyIcon'
 import { TransactionDetailDrawer, formatDetailCurrencyAmount } from '../components/baas/TransactionDetailDrawer'
+import {
+  getCurrencyName,
+  getEnabledAccountCurrencyCodes,
+  initialAccountCurrencyConfigs,
+  mapBrokerNameToAccountCurrencyType,
+} from '../data/accountCurrencyConfig'
 import { IncomingFiatDepositPrototype } from './IncomingFiatDepositPrototype'
 
 const demoStatuses = [
@@ -91,7 +97,7 @@ const internalTransferFiatAccounts = [
     id: 'hk',
     kind: 'fiat',
     name: '香港账户',
-    currencies: ['USD', 'HKD'],
+    currencies: ['USD', 'HKD', 'CNY', 'SGD'],
     balance: {
       USD: 'USD 96,037.39',
       HKD: 'HKD 625,106.36',
@@ -114,6 +120,13 @@ const internalTransferFiatAccounts = [
 const getInternalTransferBalance = (account, currency) => account?.balance?.[currency] || `${currency} --`
 
 const formatCurrencyAmount = (currency, amount) => `${currency} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+const getConfiguredTransferCurrencies = (configs, accountType, fallback = []) => {
+  const configuredCurrencies = getEnabledAccountCurrencyCodes(configs, accountType)
+  return configuredCurrencies.length ? configuredCurrencies : fallback
+}
+
+const formatTransferCurrencyLabel = (currency) => `${currency} ${getCurrencyName(currency)}`
 
 const trustUserTransferCurrencies = [
   { value: 'HKD', label: 'HKD 港币' },
@@ -1525,7 +1538,14 @@ function UserTransferPage({ onBack, topNavProps }) {
   )
 }
 
-function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords, brokerageAccounts = [] }) {
+function InternalTransferPage({
+  direction,
+  onBack,
+  onSubmit,
+  onViewRecords,
+  brokerageAccounts = [],
+  accountCurrencyConfigs = initialAccountCurrencyConfigs,
+}) {
   const [currentDirection, setCurrentDirection] = useState(direction)
   const [transferMode, setTransferMode] = useState('fiat')
   const [currency, setCurrency] = useState('USD')
@@ -1536,32 +1556,50 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords, brok
   const [error, setError] = useState('')
   const [confirmDraft, setConfirmDraft] = useState(null)
   const config = internalTransferDirections[currentDirection]
+  const configuredFiatAccounts = useMemo(() => internalTransferFiatAccounts.map((account) => ({
+    ...account,
+    currencies: getConfiguredTransferCurrencies(accountCurrencyConfigs, account.name, account.currencies),
+  })), [accountCurrencyConfigs])
   const normalizedBrokerageAccounts = useMemo(() => brokerageAccounts.map((account) => ({
     id: account.id,
     kind: 'brokerage',
     name: account.label || account.brokerName || account.accountName || '券商账户',
     helper: account.accountNumber ? `账户号码：${account.accountNumber}` : account.accountName,
-    currencies: account.currencies?.length ? account.currencies : ['USD', 'HKD'],
+    currencies: getConfiguredTransferCurrencies(
+      accountCurrencyConfigs,
+      mapBrokerNameToAccountCurrencyType(account.brokerName || account.label || account.accountName),
+      account.currencies?.length ? account.currencies : ['USD', 'HKD']
+    ),
     balance: account.balance || {
       USD: 'USD 0.00',
       HKD: 'HKD 0.00',
     },
-  })), [brokerageAccounts])
+  })), [brokerageAccounts, accountCurrencyConfigs])
   const hasBrokerageAccounts = normalizedBrokerageAccounts.length > 0
-  const brokerageCurrencyOptions = sourceAccountId === 'us' || targetAccountId === 'us'
-    ? ['USD']
-    : sourceAccountId === 'hk' || targetAccountId === 'hk'
-      ? internalTransferFiatAccounts.find((account) => account.id === 'hk')?.currencies || ['USD', 'HKD']
-      : ['USD', 'HKD']
-  const effectiveBrokerageCurrency = brokerageCurrencyOptions.includes(currency) ? currency : 'USD'
-  const activeCurrency = transferMode === 'brokerage' ? effectiveBrokerageCurrency : 'USD'
+  const brokerageTransferAccounts = useMemo(() => [
+    ...configuredFiatAccounts,
+    ...normalizedBrokerageAccounts,
+  ], [configuredFiatAccounts, normalizedBrokerageAccounts])
+  const selectedRawSourceAccount = brokerageTransferAccounts.find((account) => account.id === sourceAccountId)
+  const selectedRawTargetAccount = brokerageTransferAccounts.find((account) => account.id === targetAccountId)
+  const allBrokerageTransferCurrencies = [...new Set(brokerageTransferAccounts.flatMap((account) => account.currencies))]
+  const oppositeCurrencyOptions = selectedRawSourceAccount
+    ? [...new Set(brokerageTransferAccounts
+        .filter((account) => account.kind !== selectedRawSourceAccount.kind)
+        .flatMap((account) => account.currencies))]
+    : allBrokerageTransferCurrencies
+  const brokerageCurrencyOptions = (selectedRawSourceAccount?.currencies || selectedRawTargetAccount?.currencies || allBrokerageTransferCurrencies)
+    .filter((currencyCode) => oppositeCurrencyOptions.includes(currencyCode))
+  const effectiveBrokerageCurrency = brokerageCurrencyOptions.includes(currency) ? currency : brokerageCurrencyOptions[0] || 'USD'
+  const fiatSourceAccount = configuredFiatAccounts.find((account) => account.name === config.sourceAccount)
+  const fiatTargetAccount = configuredFiatAccounts.find((account) => account.name === config.targetAccount)
+  const fiatCurrencyOptions = (fiatSourceAccount?.currencies || ['USD'])
+    .filter((currencyCode) => (fiatTargetAccount?.currencies || ['USD']).includes(currencyCode))
+  const effectiveFiatCurrency = fiatCurrencyOptions.includes(currency) ? currency : fiatCurrencyOptions[0] || 'USD'
+  const activeCurrency = transferMode === 'brokerage' ? effectiveBrokerageCurrency : effectiveFiatCurrency
   const numericAmount = Number(amount)
   const hasValidAmount = Number.isFinite(numericAmount) && numericAmount > 0
   const arrivalAmountDisplay = formatCurrencyAmount(activeCurrency, hasValidAmount ? numericAmount : 0)
-  const brokerageTransferAccounts = useMemo(() => [
-    ...internalTransferFiatAccounts,
-    ...normalizedBrokerageAccounts,
-  ], [normalizedBrokerageAccounts])
   const brokerageSourceOptions = brokerageTransferAccounts.filter((account) => account.currencies.includes(activeCurrency))
   const brokerageSourceAccount = brokerageSourceOptions.find((account) => account.id === sourceAccountId) || brokerageSourceOptions[0]
   const brokerageTargetOptions = brokerageTransferAccounts.filter((account) => (
@@ -1754,10 +1792,19 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords, brok
               {transferMode === 'fiat' ? (
                 <label className="block">
                   <span className="text-sm font-semibold text-slate-700">币种</span>
-                  <div className="mt-2 flex h-11 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-900">
-                    USD 美元
-                  </div>
-                  <div className="mt-2 text-xs leading-5 text-slate-500">资金互转目前仅支持 USD。</div>
+                  <select
+                    value={activeCurrency}
+                    onChange={(event) => {
+                      setCurrency(event.target.value)
+                      setError('')
+                    }}
+                    className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
+                  >
+                    {fiatCurrencyOptions.map((option) => (
+                      <option key={option} value={option}>{formatTransferCurrencyLabel(option)}</option>
+                    ))}
+                  </select>
+                  <div className="mt-2 text-xs leading-5 text-slate-500">法币账户互转仅展示转出与转入账户共同启用的币种。</div>
                 </label>
               ) : (
                 <label className="block">
@@ -1771,10 +1818,10 @@ function InternalTransferPage({ direction, onBack, onSubmit, onViewRecords, brok
                     className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
                   >
                     {brokerageCurrencyOptions.map((option) => (
-                      <option key={option} value={option}>{option === 'USD' ? 'USD 美元' : 'HKD 港币'}</option>
+                      <option key={option} value={option}>{formatTransferCurrencyLabel(option)}</option>
                     ))}
                   </select>
-                  <div className="mt-2 text-xs leading-5 text-slate-500">美国账户仅支持 USD；香港账户和券商账户支持 USD / HKD，仅允许同币种转账。</div>
+                  <div className="mt-2 text-xs leading-5 text-slate-500">币种来自账户币种配置，仅允许同币种转账。</div>
                 </label>
               )}
               <label className="block">
@@ -1983,6 +2030,7 @@ export function BaasOpeningPrototype({
   forceUserTransferMark = false,
   investmentMenu = [],
   brokerageAccounts = [],
+  accountCurrencyConfigs = initialAccountCurrencyConfigs,
 }) {
   const [status, setStatus] = useState(initialStatus)
   const [activeAccount, setActiveAccount] = useState('trust')
@@ -2061,6 +2109,7 @@ export function BaasOpeningPrototype({
         onSubmit={submitInternalTransfer}
         onViewRecords={() => setActiveOpenedPage('internal-transfer-records')}
         brokerageAccounts={brokerageAccounts}
+        accountCurrencyConfigs={accountCurrencyConfigs}
       />
     )
   }

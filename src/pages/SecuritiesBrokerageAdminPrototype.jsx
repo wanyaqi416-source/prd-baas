@@ -2,6 +2,7 @@ import {
   BriefcaseBusiness,
   ChevronDown,
   CircleDot,
+  Coins,
   Droplet,
   FileCheck2,
   FileText,
@@ -20,7 +21,8 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 
-import { BrokerageApplicationManagementPage, FiatAssetManagementPage } from './BaasAdminReviewPrototype'
+import { AccountCurrencyConfigPage, BrokerageApplicationManagementPage, FiatAssetManagementPage } from './BaasAdminReviewPrototype'
+import { initialAccountCurrencyConfigs } from '../data/accountCurrencyConfig'
 import { initialBrokerageApplications } from '../data/securitiesBrokerageApplications'
 
 function BrokerageAdminHeader({ onBack }) {
@@ -105,6 +107,7 @@ function BrokerageAdminSidebar({ activePage, onSelect }) {
           <SidebarItem icon={UserRound} label="客户" />
           <SidebarItem icon={UserRound} label="资产中心" />
           <SidebarItem icon={ShoppingCart} label="法币资产管理" marked active={activePage === 'fiat-assets'} onClick={() => onSelect('fiat-assets')} />
+          <SidebarItem icon={Coins} label="账户币种配置" marked active={activePage === 'account-currency-config'} onClick={() => onSelect('account-currency-config')} />
           <SidebarItem icon={CircleDot} label="数字资产管理" />
           <SidebarItem icon={LineChart} label="理财产品" />
           <SidebarItem icon={CircleDot} label="交易管理" />
@@ -119,8 +122,13 @@ export function SecuritiesBrokerageAdminPrototype({
   onBack,
   brokerageApplications = initialBrokerageApplications,
   onUpdateBrokerageApplication,
+  accountCurrencyConfigs = initialAccountCurrencyConfigs,
+  onChangeAccountCurrencyConfigs,
 }) {
   const [activePage, setActivePage] = useState('brokerage-applications')
+  const [localAccountCurrencyConfigs, setLocalAccountCurrencyConfigs] = useState(initialAccountCurrencyConfigs)
+  const effectiveAccountCurrencyConfigs = onChangeAccountCurrencyConfigs ? accountCurrencyConfigs : localAccountCurrencyConfigs
+  const updateAccountCurrencyConfigs = onChangeAccountCurrencyConfigs || setLocalAccountCurrencyConfigs
 
   return (
     <div className="min-h-screen bg-[#f4f5fb] font-sans text-[#24243d]">
@@ -130,9 +138,16 @@ export function SecuritiesBrokerageAdminPrototype({
         <BrokerageApplicationManagementPage
           applications={brokerageApplications}
           onUpdateApplication={onUpdateBrokerageApplication}
+          accountCurrencyConfigs={effectiveAccountCurrencyConfigs}
         />
       ) : null}
       {activePage === 'fiat-assets' ? <FiatAssetManagementPage /> : null}
+      {activePage === 'account-currency-config' ? (
+        <AccountCurrencyConfigPage
+          configs={effectiveAccountCurrencyConfigs}
+          onChangeConfigs={updateAccountCurrencyConfigs}
+        />
+      ) : null}
       <button
         type="button"
         className="fixed right-0 top-[180px] z-40 flex h-[36px] w-[36px] items-center justify-center rounded-l-full bg-[#8b4fff] text-white shadow-lg"

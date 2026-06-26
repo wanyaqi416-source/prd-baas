@@ -17,6 +17,11 @@ import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { ProductManualLayout } from '../components/portal/ProductManualLayout'
 import { PrdBackLink } from '../components/portal/PrdBackLink'
+import {
+  getEnabledAccountCurrencyCodes,
+  initialAccountCurrencyConfigs,
+  mapBrokerNameToAccountCurrencyType,
+} from '../data/accountCurrencyConfig'
 import { BaasOpeningPrototype, ClientTopNav } from './BaasOpeningPrototype'
 
 const securitiesAccountBaseRoute = '/admin/product-manual/securities-account-prototype'
@@ -106,7 +111,12 @@ function formatBrokerageTransferAccountLabel(brokerName) {
   return brokerName ? `${brokerName}账户` : '券商账户'
 }
 
-function deriveBrokerageAccounts(applications = []) {
+function getBrokerageAccountCurrencies(accountCurrencyConfigs, brokerName, fallback = ['USD', 'HKD']) {
+  const configuredCurrencies = getEnabledAccountCurrencyCodes(accountCurrencyConfigs, mapBrokerNameToAccountCurrencyType(brokerName))
+  return configuredCurrencies.length ? configuredCurrencies : fallback
+}
+
+function deriveBrokerageAccounts(applications = [], accountCurrencyConfigs = initialAccountCurrencyConfigs) {
   const openedAccounts = applications
     .filter((application) => application.openingStatus === '已开户' && application.accountInfo)
     .map((application) => ({
@@ -116,7 +126,7 @@ function deriveBrokerageAccounts(applications = []) {
       label: formatBrokerageTransferAccountLabel(application.brokerName),
       accountName: application.accountInfo.accountName,
       accountNumber: application.accountInfo.accountNumber,
-      currencies: ['USD', 'HKD'],
+      currencies: getBrokerageAccountCurrencies(accountCurrencyConfigs, application.brokerName),
       balance: {
         USD: 'USD 58,320.00',
         HKD: 'HKD 126,800.00',
@@ -133,7 +143,7 @@ function deriveBrokerageAccounts(applications = []) {
       label: 'IBKR 盈透证券账户',
       accountName: 'FIDERE Trust Account',
       accountNumber: 'IBKR-2026-001',
-      currencies: ['USD', 'HKD'],
+      currencies: getBrokerageAccountCurrencies(accountCurrencyConfigs, 'IBKR 盈透证券'),
       balance: {
         USD: 'USD 42,680.00',
         HKD: 'HKD 88,600.00',
@@ -146,7 +156,7 @@ function deriveBrokerageAccounts(applications = []) {
       label: 'Webull 微牛证券账户',
       accountName: 'FIDERE Trust Account',
       accountNumber: 'WB-98347291',
-      currencies: ['USD', 'HKD'],
+      currencies: getBrokerageAccountCurrencies(accountCurrencyConfigs, 'Webull 微牛证券'),
       balance: {
         USD: 'USD 58,320.00',
         HKD: 'HKD 126,800.00',
@@ -759,8 +769,17 @@ export function SecuritiesAccountPrototypeHome({ onBack, onNavigate }) {
   )
 }
 
-export function SecuritiesAccountClientPrototype({ onBack, onNavigate, onPrototypeHome, brokerageApplications = [] }) {
-  const brokerageAccounts = useMemo(() => deriveBrokerageAccounts(brokerageApplications), [brokerageApplications])
+export function SecuritiesAccountClientPrototype({
+  onBack,
+  onNavigate,
+  onPrototypeHome,
+  brokerageApplications = [],
+  accountCurrencyConfigs = initialAccountCurrencyConfigs,
+}) {
+  const brokerageAccounts = useMemo(
+    () => deriveBrokerageAccounts(brokerageApplications, accountCurrencyConfigs),
+    [brokerageApplications, accountCurrencyConfigs]
+  )
 
   return (
     <BaasOpeningPrototype
@@ -771,6 +790,7 @@ export function SecuritiesAccountClientPrototype({ onBack, onNavigate, onPrototy
       forceInternalTransferMark
       investmentMenu={createInvestmentMenu(onNavigate)}
       brokerageAccounts={brokerageAccounts}
+      accountCurrencyConfigs={accountCurrencyConfigs}
       initialStatus="opened"
     />
   )
