@@ -158,63 +158,99 @@ function formatBrokerageTransferAccountLabel(brokerName) {
   return brokerName ? `${brokerName}账户` : '券商账户'
 }
 
-function getBrokerageAccountCurrencies(accountCurrencyConfigs, brokerName, fallback = ['USD', 'HKD']) {
+const brokerageAccountCurrencies = ['USD', 'HKD', 'CNY']
+
+function getBrokerageAccountCurrencies(accountCurrencyConfigs, brokerName, fallback = brokerageAccountCurrencies) {
   const configuredCurrencies = getEnabledAccountCurrencyCodes(accountCurrencyConfigs, mapBrokerNameToAccountCurrencyType(brokerName))
-  return configuredCurrencies.length ? configuredCurrencies : fallback
+  return [...new Set([...(configuredCurrencies.length ? configuredCurrencies : []), ...fallback])]
+}
+
+const brokerageAccountDefinitions = [
+  {
+    brokerId: 'ibkr',
+    brokerName: 'IBKR 盈透证券',
+    label: 'IBKR 盈透证券账户',
+    accountNumber: 'IBKR-2026-001',
+    totalUsd: 37717.39,
+    balance: {
+      USD: 'USD 25,300.00',
+      HKD: 'HKD 198,000.00',
+      CNY: 'CNY 0.00',
+    },
+  },
+  {
+    brokerId: 'webull',
+    brokerName: 'Webull 微牛证券',
+    label: 'Webull 微牛证券账户',
+    accountNumber: 'WB-98347291',
+    totalUsd: 58320,
+    balance: {
+      USD: 'USD 58,320.00',
+      HKD: 'HKD 126,800.00',
+      CNY: 'CNY 0.00',
+    },
+  },
+]
+
+function getCurrentBrokerageCustomerId(applications = []) {
+  return applications.find((application) => application.openingStatus === '已开户')?.customer?.id
+    || applications[0]?.customer?.id
+    || ''
+}
+
+function mapBrokerageApplicationStatus(application) {
+  if (!application) return 'not_opened'
+  if (application.openingStatus === '已开户') return 'opened'
+  if (application.openingStatus === '已拒绝') return 'failed'
+  return 'reviewing'
+}
+
+function getBrokerageRejectReason(application) {
+  return [...(application?.statusLogs || [])]
+    .reverse()
+    .find((log) => log.to === '已拒绝')?.remark || '开户申请未通过，请查看详情或联系运营处理。'
+}
+
+function deriveBrokerageAccountCards(applications = [], accountCurrencyConfigs = initialAccountCurrencyConfigs) {
+  const currentCustomerId = getCurrentBrokerageCustomerId(applications)
+  const currentApplications = applications.filter((application) => !currentCustomerId || application.customer?.id === currentCustomerId)
+  const hasOpenedApplication = currentApplications.some((application) => application.openingStatus === '已开户')
+
+  return brokerageAccountDefinitions.map((definition) => {
+    const application = currentApplications.find((item) => item.brokerId === definition.brokerId)
+    const status = hasOpenedApplication ? 'opened' : mapBrokerageApplicationStatus(application)
+    const currencies = getBrokerageAccountCurrencies(accountCurrencyConfigs, definition.brokerName)
+    const accountInfo = application?.accountInfo
+
+    return {
+      ...definition,
+      id: application?.id || `not-opened-${definition.brokerId}`,
+      transferAccountId: application?.id || definition.brokerId,
+      status,
+      statusLabel: status === 'opened' ? '已开户' : status === 'reviewing' ? '审核中' : status === 'failed' ? '已拒绝' : '未开通',
+      accountName: accountInfo?.accountName || 'FIDERE Trust Account',
+      accountNumber: accountInfo?.accountNumber || definition.accountNumber,
+      currencies,
+      reason: status === 'failed' ? getBrokerageRejectReason(application) : '',
+      openedAt: accountInfo?.openedAt || (status === 'opened' ? '2026-06-18' : '-'),
+      balance: definition.balance,
+    }
+  })
 }
 
 function deriveBrokerageAccounts(applications = [], accountCurrencyConfigs = initialAccountCurrencyConfigs) {
-  const openedAccounts = applications
-    .filter((application) => application.openingStatus === '已开户' && application.accountInfo)
-    .map((application) => ({
-      id: application.id,
-      brokerId: application.brokerId,
-      brokerName: application.brokerName,
-      label: formatBrokerageTransferAccountLabel(application.brokerName),
-      accountName: application.accountInfo.accountName,
-      accountNumber: application.accountInfo.accountNumber,
-      currencies: getBrokerageAccountCurrencies(accountCurrencyConfigs, application.brokerName),
-      balance: {
-        USD: 'USD 58,320.00',
-        HKD: 'HKD 126,800.00',
-      },
+  return deriveBrokerageAccountCards(applications, accountCurrencyConfigs)
+    .filter((account) => account.status === 'opened')
+    .map((account) => ({
+      id: account.transferAccountId,
+      brokerId: account.brokerId,
+      brokerName: account.brokerName,
+      label: account.label,
+      accountName: account.accountName,
+      accountNumber: account.accountNumber,
+      currencies: account.currencies,
+      balance: account.balance,
     }))
-
-  if (!openedAccounts.length) return []
-
-  const demoAccounts = [
-    {
-      id: 'demo-ibkr-brokerage',
-      brokerId: 'ibkr',
-      brokerName: 'IBKR 盈透证券',
-      label: 'IBKR 盈透证券账户',
-      accountName: 'FIDERE Trust Account',
-      accountNumber: 'IBKR-2026-001',
-      currencies: getBrokerageAccountCurrencies(accountCurrencyConfigs, 'IBKR 盈透证券'),
-      balance: {
-        USD: 'USD 42,680.00',
-        HKD: 'HKD 88,600.00',
-      },
-    },
-    {
-      id: 'demo-webull-brokerage',
-      brokerId: 'webull',
-      brokerName: 'Webull 微牛证券',
-      label: 'Webull 微牛证券账户',
-      accountName: 'FIDERE Trust Account',
-      accountNumber: 'WB-98347291',
-      currencies: getBrokerageAccountCurrencies(accountCurrencyConfigs, 'Webull 微牛证券'),
-      balance: {
-        USD: 'USD 58,320.00',
-        HKD: 'HKD 126,800.00',
-      },
-    },
-  ]
-
-  return demoAccounts.map((demoAccount) => {
-    const openedAccount = openedAccounts.find((account) => account.brokerId === demoAccount.brokerId)
-    return openedAccount ? { ...demoAccount, ...openedAccount, label: demoAccount.label } : demoAccount
-  })
 }
 
 const brokerageStepIndex = {
@@ -873,6 +909,10 @@ export function SecuritiesAccountClientPrototype({
     () => deriveBrokerageAccounts(brokerageApplications, accountCurrencyConfigs),
     [brokerageApplications, accountCurrencyConfigs]
   )
+  const brokerageAccountCards = useMemo(
+    () => deriveBrokerageAccountCards(brokerageApplications, accountCurrencyConfigs),
+    [brokerageApplications, accountCurrencyConfigs]
+  )
 
   return (
     <BaasOpeningPrototype
@@ -883,8 +923,10 @@ export function SecuritiesAccountClientPrototype({
       forceInternalTransferMark
       investmentMenu={createInvestmentMenu(onNavigate)}
       brokerageAccounts={brokerageAccounts}
+      brokerageAccountCards={brokerageAccountCards}
       accountCurrencyConfigs={accountCurrencyConfigs}
       initialStatus="opened"
+      onOpenBrokerageService={() => onNavigate(`${securitiesAccountBaseRoute}/client/quanshang`)}
     />
   )
 }

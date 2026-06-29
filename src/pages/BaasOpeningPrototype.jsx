@@ -67,6 +67,63 @@ const usStatusMeta = {
   },
 }
 
+const brokerageStatusMeta = {
+  not_opened: {
+    label: '未开通',
+    badge: 'secondary',
+  },
+  reviewing: {
+    label: '审核中',
+    badge: 'warning',
+  },
+  failed: {
+    label: '已拒绝',
+    badge: 'danger',
+  },
+  opened: {
+    label: '已开户',
+    badge: 'success',
+  },
+}
+
+const brokerageAccountDefinitions = [
+  { brokerId: 'ibkr', label: 'IBKR 盈透证券账户', brokerName: 'IBKR 盈透证券' },
+  { brokerId: 'webull', label: 'Webull 微牛证券账户', brokerName: 'Webull 微牛证券' },
+]
+
+function normalizeBrokerageAccountCards(cards = []) {
+  return brokerageAccountDefinitions.map((definition) => {
+    const card = cards.find((item) => item.brokerId === definition.brokerId) || {}
+    const status = card.status || 'not_opened'
+
+    return {
+      ...definition,
+      ...card,
+      brokerId: definition.brokerId,
+      label: card.label || definition.label,
+      brokerName: card.brokerName || definition.brokerName,
+      status,
+      statusLabel: brokerageStatusMeta[status]?.label || card.statusLabel || '未开通',
+      currencies: card.currencies?.length ? card.currencies : ['USD', 'HKD', 'CNY'],
+      totalUsd: Number(card.totalUsd || 0),
+      balance: card.balance || {},
+      transferAccountId: card.transferAccountId || card.id || definition.brokerId,
+    }
+  })
+}
+
+function getBrokerageSummary(cards = []) {
+  const openedCards = cards.filter((card) => card.status === 'opened')
+  const totalUsd = openedCards.reduce((sum, card) => sum + Number(card.totalUsd || 0), 0)
+
+  return {
+    totalUsd,
+    totalDisplay: `$${totalUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    openedCards,
+    hasAnyActivity: cards.some((card) => card.status !== 'not_opened'),
+  }
+}
+
 const bankAccountRows = [
   ['账户持有人姓名', 'WANYARA OP WAN'],
   ['银行名称', 'Fidere Partner Bank'],
@@ -357,14 +414,30 @@ export function ClientTopNav({ onBack, activeNavLabel = '账户', investmentMenu
   )
 }
 
-function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdiction, onOpenIncomingDeposit, onOpenFiatTransferOut, showGuidanceMarks = true }) {
+function AccountHero({
+  status,
+  activeAccount,
+  onAccountChange,
+  onOpenJurisdiction,
+  onOpenIncomingDeposit,
+  onOpenFiatTransferOut,
+  brokerageAccountCards = [],
+  showBrokerageTab = false,
+  showGuidanceMarks = true,
+}) {
   const hasUsAccount = status !== 'not_opened'
   const opened = status === 'opened'
   const usMeta = usStatusMeta[status]
   const showUsAccount = hasUsAccount && activeAccount === 'us'
+  const showBrokerageAccount = showBrokerageTab && activeAccount === 'brokerage'
+  const brokerageDisplayCards = status === 'opened'
+    ? brokerageAccountCards.map((card) => ({ ...card, status: 'opened', statusLabel: brokerageStatusMeta.opened.label }))
+    : []
+  const brokerageSummary = getBrokerageSummary(brokerageDisplayCards)
   const accountTabs = [
     { id: 'trust', Icon: Landmark, label: '信托账户', enabled: true },
-    { id: 'digital', Icon: WalletCards, label: '数字资产账户', enabled: false },
+    { id: 'digital', Icon: WalletCards, label: '数字资产账户', enabled: true },
+    ...(showBrokerageTab ? [{ id: 'brokerage', Icon: Building2, label: '券商账户', enabled: true }] : []),
   ]
 
   return (
@@ -382,15 +455,27 @@ function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdictio
                   onClick={enabled ? () => onAccountChange(id) : undefined}
                   disabled={!enabled}
                   aria-pressed={active}
-                  className={active ? 'rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900' : enabled ? 'rounded-lg px-4 py-2 text-sm font-semibold text-blue-100 hover:bg-white/10' : 'cursor-default rounded-lg px-4 py-2 text-sm font-semibold text-blue-100/70'}
+                  className={active ? 'inline-flex items-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900' : enabled ? 'inline-flex items-center rounded-lg px-4 py-2 text-sm font-semibold text-blue-100 hover:bg-white/10' : 'inline-flex cursor-default items-center rounded-lg px-4 py-2 text-sm font-semibold text-blue-100/70'}
                 >
                   <Icon className="mr-2 inline h-4 w-4" />
                   {label}
+                  {id === 'brokerage' ? <span className="ml-2 inline-flex"><ClickMark /></span> : null}
                 </button>
               )
             })}
           </div>
-          {showUsAccount ? (
+          {showBrokerageAccount ? (
+            <>
+              <div className="mt-7 text-sm font-medium text-blue-100">券商账户总资产</div>
+              <div className="mt-2 text-5xl font-bold tracking-tight md:text-6xl">{brokerageSummary.totalDisplay}</div>
+              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-blue-100">
+                {brokerageSummary.openedCards.map((card) => (
+                  <span key={card.brokerId}>{card.brokerId === 'ibkr' ? 'IBKR' : 'Webull'}：${Number(card.totalUsd || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                ))}
+                <RefreshCw className="h-4 w-4" />
+              </div>
+            </>
+          ) : showUsAccount ? (
             <>
               <div className="mt-7 flex flex-wrap items-center gap-3">
                 <span className="text-sm font-medium text-blue-100">账户余额：美国账户</span>
@@ -413,6 +498,7 @@ function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdictio
               </div>
             </>
           )}
+          {showBrokerageAccount ? null : (
           <div className="mt-7 flex flex-wrap gap-3">
             <button type="button" onClick={opened ? onOpenIncomingDeposit : undefined} className="inline-flex h-11 items-center gap-2 rounded-lg bg-sky-500 px-5 text-sm font-semibold text-white shadow-sm">
               <Banknote className="h-4 w-4" />
@@ -425,23 +511,34 @@ function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdictio
               法币转出
             </button>
           </div>
+          )}
         </div>
         <div className="rounded-2xl border border-blue-400/20 bg-blue-900/45 p-6 shadow-inner">
-          <h2 className="text-xl font-bold">{showUsAccount ? '美国账户服务' : '管理信托资产'}</h2>
+          <h2 className="text-xl font-bold">{showBrokerageAccount ? '管理券商资产' : showUsAccount ? '美国账户服务' : activeAccount === 'digital' ? '管理数字资产' : '管理信托资产'}</h2>
           <p className="mt-3 text-sm leading-6 text-blue-100">
-            {showUsAccount
+            {showBrokerageAccount
+              ? '查看您的 IBKR、Webull 券商账户资产、账户状态及资金互转。'
+              : showUsAccount
               ? '美国账户用于查看银行收款账户、同币种入金、法币转出和账户信息。'
-              : '连接您的全球银行账户，无缝管理您的信托投资组合和分配。'}
+              : activeAccount === 'digital'
+                ? '查看数字资产账户余额与资产分类，当前原型仅展示账户层级。'
+                : '连接您的全球银行账户，无缝管理您的信托投资组合和分配。'}
           </p>
           <div className="mt-5 grid gap-3 text-sm text-blue-50 sm:grid-cols-2">
-            {(showUsAccount ? ['银行收款账户', '同币种交易', '账户信息', '账户状态'] : ['财富管理', '法币转出', '信托账单']).map((item) => (
+            {(showBrokerageAccount
+              ? ['券商账户管理', '券商资金互转', '资产分布', '账户详情']
+              : showUsAccount
+                ? ['银行收款账户', '同币种交易', '账户信息', '账户状态']
+                : activeAccount === 'digital'
+                  ? ['USDT', 'ETH', 'BTC']
+                  : ['财富管理', '法币转出', '信托账单']).map((item) => (
               <div key={item} className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-sky-300" />
                 {item}
               </div>
             ))}
           </div>
-          {!hasUsAccount ? (
+          {!showBrokerageAccount && !hasUsAccount ? (
             <button
               type="button"
               onClick={onOpenJurisdiction}
@@ -461,7 +558,9 @@ function AccountHero({ status, activeAccount, onAccountChange, onOpenJurisdictio
 function QuickActionDock({
   status,
   activeAccount,
+  brokerageAccountCards = [],
   onOpenAccountInfo,
+  onOpenBrokerageDetail,
   onOpenIncomingDeposit,
   onOpenFiatTransferOut,
   onOpenInternalTransfer,
@@ -476,6 +575,13 @@ function QuickActionDock({
   }
 
   const opened = status === 'opened'
+  const openedBrokerageCards = opened
+    ? brokerageAccountCards.map((card) => ({ ...card, status: 'opened', statusLabel: brokerageStatusMeta.opened.label }))
+    : []
+  const hasOpenedBrokerageAccount = openedBrokerageCards.length > 0
+  if (activeAccount === 'brokerage' && !hasOpenedBrokerageAccount) {
+    return null
+  }
   const trustOpenedActions = [
     [Landmark, '银行存入', onOpenIncomingDeposit],
     [WalletCards, '数字资产存入', undefined],
@@ -491,7 +597,17 @@ function QuickActionDock({
     [Send, '转账给受益人', undefined],
     [RefreshCw, '兑换', undefined],
   ]
-  const actions = activeAccount === 'us' && opened
+  const actions = activeAccount === 'brokerage'
+    ? [
+        ...(hasOpenedBrokerageAccount ? [[RefreshCw, '资金互转', () => onOpenInternalTransfer('trust-to-us', { transferMode: 'brokerage' })]] : []),
+        ...openedBrokerageCards.map((card) => [Building2, `${card.brokerId === 'ibkr' ? 'IBKR' : 'Webull'} 账户详情`, () => onOpenBrokerageDetail?.(card.brokerId)]),
+      ]
+    : activeAccount === 'digital'
+      ? [
+          [WalletCards, '数字资产存入', undefined],
+          [RefreshCw, '兑换', undefined],
+        ]
+    : activeAccount === 'us' && opened
     ? [
         [Banknote, '存入资金', undefined],
         [Send, '法币转出', undefined],
@@ -624,7 +740,30 @@ function ModalHeader({ eyebrow, title, onClose }) {
   )
 }
 
-function MainContent({ status, activeAccount }) {
+function MainContent({
+  status,
+  activeAccount,
+  brokerageAccountCards = [],
+  onOpenBrokerageTransfer,
+  onOpenBrokerageDetail,
+  onOpenBrokerageService,
+}) {
+  if (activeAccount === 'brokerage') {
+    return (
+      <BrokerageAccountContent
+        status={status}
+        cards={brokerageAccountCards}
+        onOpenBrokerageTransfer={onOpenBrokerageTransfer}
+        onOpenBrokerageDetail={onOpenBrokerageDetail}
+        onOpenBrokerageService={onOpenBrokerageService}
+      />
+    )
+  }
+
+  if (activeAccount === 'digital') {
+    return <DigitalAssetDistribution />
+  }
+
   return <AssetDistribution status={status} />
 }
 
@@ -695,7 +834,9 @@ const usAssetRows = [
   },
 ]
 
-function AssetAccountCard({ title, subtitle, total, badge, badgeVariant, rows, statusInfo }) {
+function AssetAccountCard({ title, subtitle, total, badge, badgeVariant, rows, statusInfo, showQuickColumn = true }) {
+  const headers = showQuickColumn ? ['币种', '余额', '可用余额', '冻结金额', '美元价值', '24H汇率', '快捷操作'] : ['币种', '余额', '可用余额', '冻结金额', '美元价值', '24H汇率']
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
@@ -713,7 +854,7 @@ function AssetAccountCard({ title, subtitle, total, badge, badgeVariant, rows, s
           <table className="w-full min-w-[760px] text-sm">
             <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-500">
               <tr>
-                {['币种', '余额', '可用余额', '冻结金额', '美元价值', '24H汇率', '快捷操作'].map((item) => (
+                {headers.map((item) => (
                   <th key={item} className="px-6 py-4">{item}</th>
                 ))}
               </tr>
@@ -734,7 +875,7 @@ function AssetAccountCard({ title, subtitle, total, badge, badgeVariant, rows, s
                   <td className="px-6 py-5">{row.frozen}</td>
                   <td className="px-6 py-5 font-bold">{row.usdValue}</td>
                   <td className="px-6 py-5">{row.rate}</td>
-                  <td className="px-6 py-5 text-slate-400">—</td>
+                  {showQuickColumn ? <td className="px-6 py-5 text-slate-400">—</td> : null}
                 </tr>
               ))}
             </tbody>
@@ -801,6 +942,90 @@ function AssetDistribution({ status }) {
   )
 }
 
+function DigitalAssetDistribution() {
+  const rows = [
+    { currency: 'USDT', balance: '0.00 USDT', available: '0.00 USDT', frozen: '0.00 USDT', usdValue: '0.00', rate: '1 USDT = 1.00 USD' },
+    { currency: 'ETH', balance: '0.00 ETH', available: '0.00 ETH', frozen: '0.00 ETH', usdValue: '0.00', rate: '1 ETH = -- USD' },
+    { currency: 'BTC', balance: '0.00 BTC', available: '0.00 BTC', frozen: '0.00 BTC', usdValue: '0.00', rate: '1 BTC = -- USD' },
+  ]
+
+  return (
+    <div className="grid gap-5">
+      <div>
+        <h3 className="text-lg font-bold text-slate-950">数字资产账户</h3>
+        <p className="mt-1 text-sm text-slate-500">数字资产账户下的 USDT / ETH / BTC 分类，当前原型仅展示账户层级。</p>
+      </div>
+      <AssetAccountCard
+        title="数字资产账户"
+        subtitle="数字资产分类账户"
+        total="$0.00"
+        rows={rows}
+        showQuickColumn={false}
+      />
+    </div>
+  )
+}
+
+function buildBrokerageAssetRows(card) {
+  return (card.currencies || ['USD', 'HKD', 'CNY']).map((currency) => {
+    const balance = card.balance?.[currency] || `${currency} 0.00`
+    const amount = balance.replace(`${currency} `, '')
+
+    return {
+      currency: `${currency} ${getCurrencyName(currency)}`,
+      balance,
+      available: balance,
+      frozen: `${currency} 0.00`,
+      usdValue: currency === 'USD' ? amount : currency === 'HKD' ? '25,384.62' : '0.00',
+      rate: currency === 'USD' ? '1 USD = 1.00 USD' : currency === 'HKD' ? '1 HKD = 0.12 USD' : '1 CNY = 0.14 USD',
+    }
+  })
+}
+
+function BrokerageAccountContent({ status, cards = [], onOpenBrokerageTransfer, onOpenBrokerageDetail, onOpenBrokerageService }) {
+  const displayCards = status === 'opened'
+    ? cards.map((card) => ({ ...card, status: 'opened', statusLabel: brokerageStatusMeta.opened.label }))
+    : []
+
+  if (status === 'not_opened') {
+    return (
+      <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+          <Building2 className="h-7 w-7" />
+        </div>
+        <h3 className="mt-5 text-xl font-bold text-slate-950">暂无可用券商账户</h3>
+        <p className="mx-auto mt-2 max-w-[520px] text-sm leading-6 text-slate-500">
+          您可前往「投资 - 券商服务」开通 IBKR / Webull 券商账户。
+        </p>
+        <Button type="button" className="mt-6 rounded-lg bg-blue-600 px-6 hover:bg-blue-700" onClick={onOpenBrokerageService}>
+          前往券商服务
+        </Button>
+      </section>
+    )
+  }
+
+  return (
+    <div className="grid gap-6">
+      <div>
+        <h3 className="text-lg font-bold text-slate-950">券商资产分类</h3>
+        <p className="mt-1 text-sm text-slate-500">目前仅展示券商账户资产分类，不展示股票、基金、持仓等明细。</p>
+      </div>
+      <div className="grid gap-5">
+        {displayCards.map((card) => (
+          <AssetAccountCard
+            key={card.brokerId}
+            title={card.brokerName}
+            subtitle={`${card.label} · 支持 ${(card.currencies || ['USD', 'HKD', 'CNY']).join(' / ')}`}
+            total={`$${Number(card.totalUsd || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            rows={buildBrokerageAssetRows(card)}
+            showQuickColumn={false}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function AccountInfoDrawer({ onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/45 backdrop-blur-sm">
@@ -844,6 +1069,58 @@ function AccountInfoDrawer({ onClose }) {
           </div>
           <div className="rounded-2xl border border-amber-100 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
             用户通过线下银行转账或其他平台向该银行收款账户转账；入金记录需经后台审核后才增加可用余额。
+          </div>
+        </div>
+      </aside>
+    </div>
+  )
+}
+
+function BrokerageAccountDetailDrawer({ card, onClose }) {
+  if (!card) return null
+
+  const statusMeta = brokerageStatusMeta[card.status] || brokerageStatusMeta.not_opened
+  const rows = [
+    ['券商账户', card.label],
+    ['券商名称', card.brokerName],
+    ['当前状态', statusMeta.label],
+    ['账户名称', card.status === 'opened' ? card.accountName : '--'],
+    ['账户号码', card.status === 'opened' ? card.accountNumber : '--'],
+    ['支持币种', (card.currencies || ['USD', 'HKD', 'CNY']).join(' / ')],
+    ['开户日期', card.status === 'opened' ? card.openedAt : '--'],
+  ]
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/45 backdrop-blur-sm">
+      <aside className="h-full w-full max-w-[460px] overflow-auto bg-[#f8fafc] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <Building2 className="h-5 w-5" />
+            </span>
+            <div>
+              <h3 className="font-bold text-slate-950">券商账户详情</h3>
+              <p className="text-xs uppercase tracking-wide text-slate-400">BROKERAGE ACCOUNT</p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full p-2 text-slate-400 hover:bg-slate-100">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="space-y-5 p-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+            <div className="flex items-center justify-between gap-3">
+              <h4 className="font-bold text-slate-950">{card.label}</h4>
+              <Badge variant={statusMeta.badge}>{statusMeta.label}</Badge>
+            </div>
+            <div className="mt-5 space-y-3">
+              {rows.map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3">
+                  <span className="text-sm text-slate-500">{label}</span>
+                  <span className="text-right text-sm font-bold text-slate-950">{value}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </aside>
@@ -1540,6 +1817,8 @@ function UserTransferPage({ onBack, topNavProps }) {
 
 function InternalTransferPage({
   direction,
+  initialTransferMode = 'fiat',
+  defaultBrokerageSourceAccountId = '',
   onBack,
   onSubmit,
   onViewRecords,
@@ -1547,9 +1826,9 @@ function InternalTransferPage({
   accountCurrencyConfigs = initialAccountCurrencyConfigs,
 }) {
   const [currentDirection, setCurrentDirection] = useState(direction)
-  const [transferMode, setTransferMode] = useState('fiat')
+  const [transferMode, setTransferMode] = useState(initialTransferMode)
   const [currency, setCurrency] = useState('USD')
-  const [sourceAccountId, setSourceAccountId] = useState('hk')
+  const [sourceAccountId, setSourceAccountId] = useState(initialTransferMode === 'brokerage' ? defaultBrokerageSourceAccountId : 'hk')
   const [targetAccountId, setTargetAccountId] = useState('')
   const [amount, setAmount] = useState('')
   const [purpose, setPurpose] = useState('')
@@ -1565,14 +1844,18 @@ function InternalTransferPage({
     kind: 'brokerage',
     name: account.label || account.brokerName || account.accountName || '券商账户',
     helper: account.accountNumber ? `账户号码：${account.accountNumber}` : account.accountName,
-    currencies: getConfiguredTransferCurrencies(
-      accountCurrencyConfigs,
-      mapBrokerNameToAccountCurrencyType(account.brokerName || account.label || account.accountName),
-      account.currencies?.length ? account.currencies : ['USD', 'HKD']
-    ),
+    currencies: [...new Set([
+      ...(account.currencies?.length ? account.currencies : ['USD', 'HKD', 'CNY']),
+      ...getConfiguredTransferCurrencies(
+        accountCurrencyConfigs,
+        mapBrokerNameToAccountCurrencyType(account.brokerName || account.label || account.accountName),
+        []
+      ),
+    ])],
     balance: account.balance || {
       USD: 'USD 0.00',
       HKD: 'HKD 0.00',
+      CNY: 'CNY 0.00',
     },
   })), [brokerageAccounts, accountCurrencyConfigs])
   const hasBrokerageAccounts = normalizedBrokerageAccounts.length > 0
@@ -1601,13 +1884,13 @@ function InternalTransferPage({
   const hasValidAmount = Number.isFinite(numericAmount) && numericAmount > 0
   const arrivalAmountDisplay = formatCurrencyAmount(activeCurrency, hasValidAmount ? numericAmount : 0)
   const brokerageSourceOptions = brokerageTransferAccounts.filter((account) => account.currencies.includes(activeCurrency))
-  const brokerageSourceAccount = brokerageSourceOptions.find((account) => account.id === sourceAccountId) || brokerageSourceOptions[0]
+  const brokerageSourceAccount = brokerageSourceOptions.find((account) => account.id === sourceAccountId) || (sourceAccountId ? brokerageSourceOptions[0] : null)
   const brokerageTargetOptions = brokerageTransferAccounts.filter((account) => (
     account.currencies.includes(activeCurrency)
     && account.id !== brokerageSourceAccount?.id
     && account.kind !== brokerageSourceAccount?.kind
   ))
-  const brokerageTargetAccount = brokerageTargetOptions.find((account) => account.id === targetAccountId) || brokerageTargetOptions[0]
+  const brokerageTargetAccount = brokerageTargetOptions.find((account) => account.id === targetAccountId) || (brokerageSourceAccount ? brokerageTargetOptions[0] : null)
 
   const switchMode = (nextMode) => {
     setTransferMode(nextMode)
@@ -1752,11 +2035,12 @@ function InternalTransferPage({
                           const nextSourceId = event.target.value
                           const nextSourceAccount = brokerageTransferAccounts.find((account) => account.id === nextSourceId)
                           setSourceAccountId(nextSourceId)
-                          setTargetAccountId(nextSourceAccount?.kind === 'brokerage' ? 'hk' : normalizedBrokerageAccounts[0]?.id || '')
+                          setTargetAccountId(nextSourceId ? nextSourceAccount?.kind === 'brokerage' ? 'hk' : normalizedBrokerageAccounts[0]?.id || '' : '')
                           if (nextSourceId === 'us') setCurrency('USD')
                         }}
                         className="mt-2 h-11 w-full rounded-xl border border-blue-100 bg-white px-3 text-sm font-semibold text-slate-900 outline-none"
                       >
+                        <option value="">请选择转出账户</option>
                         {brokerageSourceOptions.map((account) => (
                           <option key={account.id} value={account.id}>{account.name}</option>
                         ))}
@@ -1776,6 +2060,7 @@ function InternalTransferPage({
                         }}
                         className="mt-2 h-11 w-full rounded-xl border border-emerald-100 bg-white px-3 text-sm font-semibold text-slate-900 outline-none"
                       >
+                        <option value="">请选择转入账户</option>
                         {brokerageTargetOptions.map((account) => (
                           <option key={account.id} value={account.id}>{account.name}</option>
                         ))}
@@ -2030,7 +2315,9 @@ export function BaasOpeningPrototype({
   forceUserTransferMark = false,
   investmentMenu = [],
   brokerageAccounts = [],
+  brokerageAccountCards = [],
   accountCurrencyConfigs = initialAccountCurrencyConfigs,
+  onOpenBrokerageService,
 }) {
   const [status, setStatus] = useState(initialStatus)
   const [activeAccount, setActiveAccount] = useState('trust')
@@ -2040,8 +2327,17 @@ export function BaasOpeningPrototype({
   const [accountInfoOpen, setAccountInfoOpen] = useState(false)
   const [activeOpenedPage, setActiveOpenedPage] = useState('account')
   const [internalTransferDirection, setInternalTransferDirection] = useState('trust-to-us')
+  const [internalTransferMode, setInternalTransferMode] = useState('fiat')
+  const [defaultBrokerageSourceAccountId, setDefaultBrokerageSourceAccountId] = useState('')
   const [internalTransferRecords, setInternalTransferRecords] = useState([])
   const [fiatTransferOutRecords, setFiatTransferOutRecords] = useState([])
+  const [selectedBrokerageDetailId, setSelectedBrokerageDetailId] = useState('')
+  const normalizedBrokerageCards = useMemo(
+    () => normalizeBrokerageAccountCards(brokerageAccountCards),
+    [brokerageAccountCards]
+  )
+  const brokerageSummary = getBrokerageSummary(normalizedBrokerageCards)
+  const showBrokerageTab = status === 'opened' && (Boolean(onOpenBrokerageService) || brokerageSummary.hasAnyActivity)
 
   const changeStatus = (nextStatus) => {
     setStatus(nextStatus)
@@ -2067,9 +2363,22 @@ export function BaasOpeningPrototype({
     activeNavLabel: '账户',
   }
 
-  const openInternalTransfer = (direction) => {
+  const openInternalTransfer = (direction, options = {}) => {
     setInternalTransferDirection(direction)
+    setInternalTransferMode(options.transferMode || 'fiat')
+    setDefaultBrokerageSourceAccountId(options.defaultBrokerageSourceAccountId || '')
     setActiveOpenedPage('internal-transfer')
+  }
+
+  const openBrokerageTransfer = (card) => {
+    openInternalTransfer('trust-to-us', {
+      transferMode: 'brokerage',
+      defaultBrokerageSourceAccountId: card.transferAccountId,
+    })
+  }
+
+  const openBrokerageDetail = (brokerId) => {
+    setSelectedBrokerageDetailId(brokerId)
   }
 
   const openUserTransfer = () => {
@@ -2105,6 +2414,8 @@ export function BaasOpeningPrototype({
     return (
       <InternalTransferPage
         direction={internalTransferDirection}
+        initialTransferMode={internalTransferMode}
+        defaultBrokerageSourceAccountId={defaultBrokerageSourceAccountId}
         onBack={() => setActiveOpenedPage('account')}
         onSubmit={submitInternalTransfer}
         onViewRecords={() => setActiveOpenedPage('internal-transfer-records')}
@@ -2144,12 +2455,16 @@ export function BaasOpeningPrototype({
         onOpenJurisdiction={() => setPickerOpen(true)}
         onOpenIncomingDeposit={() => setActiveOpenedPage('external-fiat-transfer-in')}
         onOpenFiatTransferOut={() => setActiveOpenedPage('external-fiat-transfer-out')}
+        brokerageAccountCards={normalizedBrokerageCards}
+        showBrokerageTab={showBrokerageTab}
         showGuidanceMarks={showGuidanceMarks}
       />
       <QuickActionDock
         status={status}
         activeAccount={activeAccount}
+        brokerageAccountCards={normalizedBrokerageCards}
         onOpenAccountInfo={() => setAccountInfoOpen(true)}
+        onOpenBrokerageDetail={openBrokerageDetail}
         onOpenIncomingDeposit={() => setActiveOpenedPage('external-fiat-transfer-in')}
         onOpenFiatTransferOut={() => setActiveOpenedPage('external-fiat-transfer-out')}
         onOpenInternalTransfer={openInternalTransfer}
@@ -2160,7 +2475,14 @@ export function BaasOpeningPrototype({
         forceUserTransferMark={forceUserTransferMark}
       />
       <main className="mx-auto max-w-[1280px] px-5 py-8">
-        <MainContent status={status} activeAccount={activeAccount} onOpenAccountInfo={() => setAccountInfoOpen(true)} />
+        <MainContent
+          status={status}
+          activeAccount={activeAccount}
+          brokerageAccountCards={normalizedBrokerageCards}
+          onOpenBrokerageTransfer={openBrokerageTransfer}
+          onOpenBrokerageDetail={openBrokerageDetail}
+          onOpenBrokerageService={onOpenBrokerageService}
+        />
       </main>
       {pickerOpen ? (
         <JurisdictionPicker
@@ -2172,6 +2494,17 @@ export function BaasOpeningPrototype({
       ) : null}
       {balanceWarningOpen ? <InsufficientBalanceModal onClose={() => setBalanceWarningOpen(false)} /> : null}
       {accountInfoOpen ? <AccountInfoDrawer onClose={() => setAccountInfoOpen(false)} /> : null}
+      {selectedBrokerageDetailId ? (
+        <BrokerageAccountDetailDrawer
+          card={(() => {
+            const detailCard = normalizedBrokerageCards.find((card) => card.brokerId === selectedBrokerageDetailId)
+            return status === 'opened' && detailCard
+              ? { ...detailCard, status: 'opened', statusLabel: brokerageStatusMeta.opened.label }
+              : detailCard
+          })()}
+          onClose={() => setSelectedBrokerageDetailId('')}
+        />
+      ) : null}
     </div>
   )
 }
