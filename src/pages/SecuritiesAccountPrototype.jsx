@@ -924,6 +924,7 @@ export function SecuritiesAccountClientPrototype({
       investmentMenu={createInvestmentMenu(onNavigate)}
       brokerageAccounts={brokerageAccounts}
       brokerageAccountCards={brokerageAccountCards}
+      hideBrokerageAccountEntry
       accountCurrencyConfigs={accountCurrencyConfigs}
       initialStatus="opened"
       onOpenBrokerageService={() => onNavigate(`${securitiesAccountBaseRoute}/client/quanshang`)}

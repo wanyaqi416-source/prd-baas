@@ -2316,6 +2316,7 @@ export function BaasOpeningPrototype({
   investmentMenu = [],
   brokerageAccounts = [],
   brokerageAccountCards = [],
+  hideBrokerageAccountEntry = false,
   accountCurrencyConfigs = initialAccountCurrencyConfigs,
   onOpenBrokerageService,
 }) {
@@ -2337,7 +2338,9 @@ export function BaasOpeningPrototype({
     [brokerageAccountCards]
   )
   const brokerageSummary = getBrokerageSummary(normalizedBrokerageCards)
-  const showBrokerageTab = status === 'opened' && (Boolean(onOpenBrokerageService) || brokerageSummary.hasAnyActivity)
+  const showBrokerageTab = !hideBrokerageAccountEntry
+    && status === 'opened'
+    && (Boolean(onOpenBrokerageService) || brokerageSummary.hasAnyActivity)
 
   const changeStatus = (nextStatus) => {
     setStatus(nextStatus)
