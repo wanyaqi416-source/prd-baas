@@ -98,8 +98,11 @@ function BaasInterlacePage({ onBack }) {
 function App() {
   const [path, navigate] = useCurrentPath()
   const [baasOpeningInitialStatus, setBaasOpeningInitialStatus] = useState('not_opened')
-  const [accountManagementOpeningStatus, setAccountManagementOpeningStatus] = useState('not_opened')
   const [accountManagementApplicationVariant, setAccountManagementApplicationVariant] = useState('us')
+  const [accountManagementJurisdictionStatuses, setAccountManagementJurisdictionStatuses] = useState({
+    us: 'not_opened',
+    singapore: 'not_opened',
+  })
   const [brokerageApplications, setBrokerageApplications] = useState(initialBrokerageApplications)
   const [brokerageConfigs, setBrokerageConfigs] = useState(initialBrokerageConfigs)
   const [accountCurrencyConfigs, setAccountCurrencyConfigs] = useState(initialAccountCurrencyConfigs)
@@ -193,7 +196,9 @@ function App() {
           navigate('/admin/product-manual/account-management-prototype/account-opening/create')
         }}
         onPrototypeHome={() => navigate('/admin/product-manual/account-management-prototype')}
-        initialStatus={accountManagementOpeningStatus}
+        initialStatus={accountManagementJurisdictionStatuses.us}
+        initialJurisdictionStatuses={accountManagementJurisdictionStatuses}
+        onJurisdictionStatusesChange={setAccountManagementJurisdictionStatuses}
         prototypeLabel="用户新加坡账户配置"
         accountCurrencyConfigs={accountCurrencyConfigs}
         enableSingaporeOpening
@@ -206,7 +211,10 @@ function App() {
       <BaasOpeningApplicationPage
         onBack={() => navigate('/admin/product-manual/account-management-prototype/opening')}
         onProceedToOpeningStatus={() => {
-          setAccountManagementOpeningStatus('reviewing')
+          setAccountManagementJurisdictionStatuses((current) => ({
+            ...current,
+            [accountManagementApplicationVariant === 'singapore' ? 'singapore' : 'us']: 'reviewing',
+          }))
           navigate('/admin/product-manual/account-management-prototype/opening')
         }}
         openingAccountVariant={accountManagementApplicationVariant}

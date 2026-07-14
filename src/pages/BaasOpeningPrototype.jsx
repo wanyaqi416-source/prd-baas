@@ -86,6 +86,33 @@ const brokerageStatusMeta = {
   },
 }
 
+const jurisdictionStatusMeta = {
+  not_opened: {
+    label: '未申请',
+    badge: 'secondary',
+    actionLabel: '立即申请',
+    description: '尚未提交开户申请，可随时发起申请。',
+  },
+  reviewing: {
+    label: '审核中',
+    badge: 'warning',
+    actionLabel: '查看进度',
+    description: '申请已提交，当前正在审核中。',
+  },
+  opened: {
+    label: '已开户',
+    badge: 'success',
+    actionLabel: '查看账户',
+    description: '账户已开通，可在资产分布中查看。',
+  },
+  failed: {
+    label: '已拒绝',
+    badge: 'danger',
+    actionLabel: '重新申请',
+    description: '申请未通过，可根据审核意见重新提交。',
+  },
+}
+
 const brokerageAccountDefinitions = [
   { brokerId: 'ibkr', label: 'IBKR 盈透证券账户', brokerName: 'IBKR 盈透证券' },
   { brokerId: 'webull', label: 'Webull 微牛证券账户', brokerName: 'Webull 微牛证券' },
@@ -377,7 +404,7 @@ function ClickMark() {
   )
 }
 
-function DemoBar({ status, onStatusChange, onPrototypeHome, prototypeLabel = 'BaaS 原型' }) {
+function DemoBar({ status, onStatusChange, onPrototypeHome, prototypeLabel = 'BaaS 原型', statusLabelOverrides = {} }) {
   return (
     <div className="border-b border-blue-100 bg-blue-50/95 px-5 py-3">
       <div className="mx-auto flex max-w-[1380px] flex-wrap items-center justify-between gap-3">
@@ -393,7 +420,7 @@ function DemoBar({ status, onStatusChange, onPrototypeHome, prototypeLabel = 'Ba
             className="h-9 rounded-lg border border-blue-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none"
           >
             {demoStatuses.map((item) => (
-              <option key={item.id} value={item.id}>{item.label}</option>
+              <option key={item.id} value={item.id}>{statusLabelOverrides[item.id] || item.label}</option>
             ))}
           </select>
         </div>
@@ -498,6 +525,7 @@ function AccountHero({
   const usMeta = usStatusMeta[status]
   const showUsAccount = hasUsAccount && activeAccount === 'us'
   const showBrokerageAccount = showBrokerageTab && activeAccount === 'brokerage'
+  const showJurisdictionEntry = !showBrokerageAccount && activeAccount === 'trust'
   const brokerageDisplayCards = status === 'opened'
     ? brokerageAccountCards.map((card) => ({ ...card, status: 'opened', statusLabel: brokerageStatusMeta.opened.label }))
     : []
@@ -590,7 +618,7 @@ function AccountHero({
               ? '美国账户用于查看银行收款账户、同币种入金、法币转出和账户信息。'
               : activeAccount === 'digital'
                 ? '查看数字资产账户余额与资产分类，当前原型仅展示账户层级。'
-                : '连接您的全球银行账户，无缝管理您的信托投资组合和分配。'}
+                : '连接您的全球银行账户，管理您的信托资产。'}
           </p>
           <div className="mt-5 grid gap-3 text-sm text-blue-50 sm:grid-cols-2">
             {(showBrokerageAccount
@@ -599,14 +627,14 @@ function AccountHero({
                 ? ['银行收款账户', '同币种交易', '账户信息', '账户状态']
                 : activeAccount === 'digital'
                   ? ['USDT', 'ETH', 'BTC']
-                  : ['财富管理', '法币转出', '信托账单']).map((item) => (
+                  : ['理财', '法币转出', '其他法域账户']).map((item) => (
               <div key={item} className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-sky-300" />
                 {item}
               </div>
             ))}
           </div>
-          {!showBrokerageAccount && !hasUsAccount ? (
+          {showJurisdictionEntry ? (
             <button
               type="button"
               onClick={onOpenJurisdiction}
@@ -614,7 +642,7 @@ function AccountHero({
             >
               <Globe2 className="h-4 w-4" />
               {showGuidanceMarks ? <ClickMark /> : null}
-              开设其他法域账户
+              查看其他法域账户
             </button>
           ) : null}
         </div>
@@ -719,18 +747,56 @@ function JurisdictionPicker({
   onClose,
   onSelectUs,
   onSelectSingapore,
+  onReapplySingapore,
+  accountStatuses,
+  onAccountStatusChange,
   enableSingaporeOpening = false,
+  embedded = false,
 }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-[520px] rounded-3xl bg-white p-6 shadow-2xl">
-        <ModalHeader eyebrow="Open jurisdiction account" title="选择开通账户" onClose={onClose} />
+  const accounts = [
+    {
+      id: 'us',
+      title: '美国账户',
+      Icon: Landmark,
+      tone: 'blue',
+      fee: 'USD 500',
+      description: '保留原有美国账户开户资料提交流程，提交后进入开户费扣费与审核。',
+      status: accountStatuses.us,
+      onApply: onSelectUs,
+      onReapply: onSelectUs,
+    },
+    {
+      id: 'singapore',
+      title: '新加坡账户',
+      Icon: Building2,
+      tone: 'emerald',
+      fee: 'USD 1,000',
+      description: '无需上传或填写额外资料，确认扣费后进入后台审核与账户配置。',
+      status: accountStatuses.singapore,
+      onApply: onSelectSingapore,
+      onReapply: onReapplySingapore,
+      disabled: !enableSingaporeOpening,
+      disabledLabel: '待开放',
+    },
+  ]
+
+  const getAction = (account) => {
+    if (account.disabled) return { label: account.disabledLabel, action: undefined, disabled: true }
+    if (account.status === 'failed') return { label: jurisdictionStatusMeta.failed.actionLabel, action: account.onReapply }
+    if (account.status === 'not_opened') return { label: jurisdictionStatusMeta.not_opened.actionLabel, action: account.onApply }
+    if (account.status === 'reviewing') return { label: jurisdictionStatusMeta.reviewing.actionLabel, action: undefined, disabled: true }
+    return { label: jurisdictionStatusMeta.opened.actionLabel, action: undefined, disabled: true }
+  }
+
+  const content = (
+    <div className={embedded ? 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm' : 'w-full max-w-[760px] rounded-3xl bg-white p-6 shadow-2xl'}>
+        <ModalHeader eyebrow="Jurisdiction accounts" title="其他法域账户" onClose={onClose} />
         <p className="mt-2 text-sm leading-6 text-slate-500">
-          美国账户保留原开户资料提交流程；新加坡账户无需上传或填写额外资料，确认后扣除开户费并进入后台审核。
+          不同法域账户独立维护申请状态，可分别申请、查看进度或重新申请。
         </p>
         <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-          <div className="text-xs font-semibold text-blue-700">仅原型演示使用：选择账户后接口余额判断</div>
-          <div className="mt-3 flex gap-2">
+          <div className="text-xs font-semibold text-blue-700">仅原型演示使用：开户费余额校验</div>
+          <div className="mt-3 flex flex-wrap gap-2">
             {[
               ['sufficient', '余额充足'],
               ['insufficient', '余额不足'],
@@ -746,48 +812,93 @@ function JurisdictionPicker({
             ))}
           </div>
         </div>
-        <div className="mt-6 grid gap-3">
-          <button type="button" onClick={onSelectUs} className="flex items-center justify-between rounded-2xl border border-blue-200 bg-blue-50 p-4 text-left hover:border-blue-400">
-            <div className="flex items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm">
-                <Landmark className="h-5 w-5" />
-              </span>
-              <span>
-                <span className="font-bold text-slate-950">美国账户</span>
-                <span className="mt-1 block text-sm text-slate-500">
-                  创建/继续填写开户申请，提交后进入 USD 500 开户费扣费流程。
-                </span>
-              </span>
-            </div>
-          </button>
-          {enableSingaporeOpening ? (
-            <button type="button" onClick={onSelectSingapore} className="flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left hover:border-emerald-400">
-              <div className="flex items-center gap-3">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm">
-                  <Building2 className="h-5 w-5" />
-                </span>
-                <span>
-                  <span className="block font-bold text-slate-950">新加坡账户</span>
-                  <span className="mt-1 block text-sm text-slate-500">无需补充资料，确认扣除 USD 1,000 后进入后台审核。</span>
-                </span>
+        <div className="mt-6 grid gap-4">
+          {accounts.map((account) => {
+            const meta = jurisdictionStatusMeta[account.disabled ? 'not_opened' : account.status]
+            const action = getAction(account)
+            const toneClass = account.tone === 'emerald'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
+              : 'border-blue-200 bg-blue-50 text-blue-600'
+            const Icon = account.Icon
+
+            return (
+              <div key={account.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border bg-white shadow-sm ${toneClass}`}>
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="font-bold text-slate-950">{account.title}</h4>
+                        <Badge variant={account.disabled ? 'secondary' : meta.badge}>{account.disabled ? account.disabledLabel : meta.label}</Badge>
+                      </div>
+                      <p className="mt-1 text-sm leading-6 text-slate-500">{account.description}</p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
+                        <span className="rounded-full bg-slate-100 px-3 py-1">开户费 {account.fee}</span>
+                        <span className="rounded-full bg-slate-100 px-3 py-1">{account.disabled ? '当前不可申请' : meta.description}</span>
+                      </div>
+                      {account.status === 'failed' && !account.disabled ? (
+                        <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800">
+                          <span className="font-semibold">申请未通过：</span>
+                          身份证明文件不完整，请补充后重新提交。
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-3">
+                    <Button
+                      type="button"
+                      onClick={action.action}
+                      disabled={action.disabled}
+                      variant={action.disabled ? 'outline' : 'default'}
+                      className="rounded-lg"
+                    >
+                      {action.label}
+                    </Button>
+                    <select
+                      value={account.status}
+                      onChange={(event) => onAccountStatusChange(account.id, event.target.value)}
+                      disabled={account.disabled}
+                      className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-500 outline-none"
+                      aria-label={`${account.title}原型状态`}
+                    >
+                      {Object.entries(jurisdictionStatusMeta).map(([value, item]) => (
+                        <option key={value} value={value}>{item.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
-            </button>
-          ) : (
-            <button type="button" disabled className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left opacity-70">
-              <div className="flex items-center gap-3">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm">
-                  <Building2 className="h-5 w-5" />
-                </span>
-                <span>
-                  <span className="block font-bold text-slate-700">新加坡账户</span>
-                  <span className="mt-1 block text-sm text-slate-500">后续支持，当前不可申请。</span>
-                </span>
-              </div>
-              <Badge variant="secondary">待开放</Badge>
-            </button>
-          )}
+            )
+          })}
         </div>
       </div>
+  )
+
+  if (embedded) return content
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+      {content}
+    </div>
+  )
+}
+
+function JurisdictionAccountsPage({
+  onBack,
+  topNavProps,
+  ...jurisdictionProps
+}) {
+  return (
+    <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
+      <ClientTopNav onBack={onBack} {...topNavProps} />
+      <main className="mx-auto max-w-[980px] px-5 py-8">
+        <Button type="button" variant="outline" onClick={onBack} className="mb-5 rounded-lg">
+          返回账户
+        </Button>
+        <JurisdictionPicker embedded onClose={onBack} {...jurisdictionProps} />
+      </main>
     </div>
   )
 }
@@ -814,6 +925,40 @@ function InsufficientBalanceModal({ onClose, openingAccountVariant = 'us' }) {
         <div className="mt-6 flex justify-end">
           <Button type="button" onClick={onClose} variant="outline" className="rounded-lg">
             关闭
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SingaporeReapplyModal({ onClose, onConfirm }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-[520px] rounded-3xl bg-white p-6 shadow-2xl">
+        <ModalHeader eyebrow="Singapore account" title="重新提交新加坡账户申请" onClose={onClose} />
+        <div className="mt-5 rounded-2xl border border-red-100 bg-red-50 p-5">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm">
+              <CircleAlert className="h-5 w-5" />
+            </span>
+            <div>
+              <div className="text-sm font-semibold text-red-900">拒绝原因</div>
+              <p className="mt-2 text-sm leading-6 text-red-800">
+                身份证明文件不完整，请补充后重新提交。
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm leading-6 text-blue-800">
+          您可以根据审核意见修改信息后重新提交申请。系统会保留历史申请记录，并为本次重新提交生成新的申请记录。
+        </div>
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
+          <Button type="button" onClick={onClose} variant="outline" className="rounded-lg">
+            取消
+          </Button>
+          <Button type="button" onClick={onConfirm} className="rounded-lg bg-blue-600 px-6 hover:bg-blue-700">
+            重新申请
           </Button>
         </div>
       </div>
@@ -2679,13 +2824,21 @@ export function BaasOpeningPrototype({
   accountCurrencyConfigs = initialAccountCurrencyConfigs,
   onOpenBrokerageService,
   enableSingaporeOpening = false,
+  initialJurisdictionStatuses,
+  onJurisdictionStatusesChange,
 }) {
   const [status, setStatus] = useState(initialStatus)
+  const [jurisdictionStatuses, setJurisdictionStatuses] = useState(() => ({
+    us: initialStatus,
+    singapore: enableSingaporeOpening ? (initialStatus === 'failed' ? 'reviewing' : initialStatus) : 'not_opened',
+    ...initialJurisdictionStatuses,
+  }))
   const [activeAccount, setActiveAccount] = useState('trust')
   const [pickerOpen, setPickerOpen] = useState(false)
   const [feeBalanceMode, setFeeBalanceMode] = useState('sufficient')
   const [balanceWarningOpen, setBalanceWarningOpen] = useState(false)
   const [pendingOpeningVariant, setPendingOpeningVariant] = useState('us')
+  const [singaporeReapplyOpen, setSingaporeReapplyOpen] = useState(false)
   const [accountInfoOpen, setAccountInfoOpen] = useState(false)
   const [activeOpenedPage, setActiveOpenedPage] = useState('account')
   const [internalTransferDirection, setInternalTransferDirection] = useState('trust-to-us')
@@ -2702,10 +2855,19 @@ export function BaasOpeningPrototype({
   const showBrokerageTab = !hideBrokerageAccountEntry
     && status === 'opened'
     && (Boolean(onOpenBrokerageService) || brokerageSummary.hasAnyActivity)
-  const showSingaporeAccount = enableSingaporeOpening && status === 'opened'
+  const showSingaporeAccount = enableSingaporeOpening && jurisdictionStatuses.singapore === 'opened'
+
+  const updateJurisdictionStatuses = (updater) => {
+    setJurisdictionStatuses((current) => {
+      const next = typeof updater === 'function' ? updater(current) : updater
+      onJurisdictionStatusesChange?.(next)
+      return next
+    })
+  }
 
   const changeStatus = (nextStatus) => {
     setStatus(nextStatus)
+    updateJurisdictionStatuses((current) => ({ ...current, us: nextStatus }))
     setActiveAccount('trust')
     setActiveOpenedPage('account')
   }
@@ -2713,10 +2875,12 @@ export function BaasOpeningPrototype({
   const selectOpeningAccount = (variant) => {
     setPendingOpeningVariant(variant)
     setPickerOpen(false)
+    setActiveOpenedPage('account')
     if (feeBalanceMode === 'insufficient') {
       setBalanceWarningOpen(true)
       return
     }
+    updateJurisdictionStatuses((current) => ({ ...current, [variant === 'singapore' ? 'singapore' : 'us']: 'reviewing' }))
     if (onOpenApplication) {
       onOpenApplication(variant)
       return
@@ -2730,6 +2894,18 @@ export function BaasOpeningPrototype({
 
   const selectSingaporeAccount = () => {
     selectOpeningAccount('singapore')
+  }
+
+  const confirmSingaporeReapply = () => {
+    setSingaporeReapplyOpen(false)
+    selectSingaporeAccount()
+  }
+
+  const changeJurisdictionStatus = (accountId, nextStatus) => {
+    updateJurisdictionStatuses((current) => ({ ...current, [accountId]: nextStatus }))
+    if (accountId === 'us') {
+      setStatus(nextStatus)
+    }
   }
 
   const topNavProps = {
@@ -2820,15 +2996,40 @@ export function BaasOpeningPrototype({
     )
   }
 
+  if (activeOpenedPage === 'jurisdiction-list') {
+    return (
+      <JurisdictionAccountsPage
+        onBack={() => setActiveOpenedPage('account')}
+        topNavProps={topNavProps}
+        balanceMode={feeBalanceMode}
+        onBalanceModeChange={setFeeBalanceMode}
+        onSelectUs={selectUsAccount}
+        onSelectSingapore={selectSingaporeAccount}
+        onReapplySingapore={() => {
+          setActiveOpenedPage('account')
+          setSingaporeReapplyOpen(true)
+        }}
+        accountStatuses={jurisdictionStatuses}
+        onAccountStatusChange={changeJurisdictionStatus}
+        enableSingaporeOpening={enableSingaporeOpening}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
-      <DemoBar status={status} onStatusChange={changeStatus} onPrototypeHome={onPrototypeHome} prototypeLabel={prototypeLabel} />
+      <DemoBar
+        status={status}
+        onStatusChange={changeStatus}
+        onPrototypeHome={onPrototypeHome}
+        prototypeLabel={prototypeLabel}
+      />
       <ClientTopNav onBack={onBack} {...topNavProps} />
       <AccountHero
         status={status}
         activeAccount={activeAccount}
         onAccountChange={setActiveAccount}
-        onOpenJurisdiction={() => setPickerOpen(true)}
+        onOpenJurisdiction={() => setActiveOpenedPage('jurisdiction-list')}
         onOpenIncomingDeposit={() => setActiveOpenedPage('external-fiat-transfer-in')}
         onOpenFiatTransferOut={() => setActiveOpenedPage('external-fiat-transfer-out')}
         brokerageAccountCards={normalizedBrokerageCards}
@@ -2868,10 +3069,22 @@ export function BaasOpeningPrototype({
           onClose={() => setPickerOpen(false)}
           onSelectUs={selectUsAccount}
           onSelectSingapore={selectSingaporeAccount}
+          onReapplySingapore={() => {
+            setPickerOpen(false)
+            setSingaporeReapplyOpen(true)
+          }}
+          accountStatuses={jurisdictionStatuses}
+          onAccountStatusChange={changeJurisdictionStatus}
           enableSingaporeOpening={enableSingaporeOpening}
         />
       ) : null}
       {balanceWarningOpen ? <InsufficientBalanceModal onClose={() => setBalanceWarningOpen(false)} openingAccountVariant={pendingOpeningVariant} /> : null}
+      {singaporeReapplyOpen ? (
+        <SingaporeReapplyModal
+          onClose={() => setSingaporeReapplyOpen(false)}
+          onConfirm={confirmSingaporeReapply}
+        />
+      ) : null}
       {accountInfoOpen ? <AccountInfoDrawer onClose={() => setAccountInfoOpen(false)} /> : null}
       {selectedBrokerageDetailId ? (
         <BrokerageAccountDetailDrawer
