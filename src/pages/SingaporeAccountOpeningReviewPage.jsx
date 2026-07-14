@@ -10,9 +10,7 @@ import {
   Eye,
   FileCheck2,
   LineChart,
-  LockKeyhole,
   Play,
-  Save,
   Search,
   UserRound,
   WalletCards,
@@ -63,7 +61,6 @@ const openingReviewRows = [
     email: application.email,
     accountName: application.accountName,
     submittedAt: application.submittedAt,
-    feeStatus: application.fee.debitStatus,
     status: '审核中',
   },
   {
@@ -73,7 +70,6 @@ const openingReviewRows = [
     email: 'voigtus1@123mails.org',
     accountName: '新加坡账户',
     submittedAt: '2026-07-13 15:10',
-    feeStatus: '扣费成功',
     status: '待处理',
   },
   {
@@ -83,8 +79,17 @@ const openingReviewRows = [
     email: 'luna.chen@example.com',
     accountName: '新加坡账户',
     submittedAt: '2026-07-12 09:36',
-    feeStatus: '扣费成功',
     status: '已开户',
+  },
+  {
+    initials: 'MT',
+    name: 'MING TANG',
+    id: 'UID-10004',
+    email: 'ming.tang@example.com',
+    accountName: '新加坡账户',
+    submittedAt: '2026-07-11 16:28',
+    status: '已拒绝',
+    rejectReason: '客户提交的身份证明文件已过期，请更新证件后重新提交申请。',
   },
 ]
 
@@ -149,6 +154,7 @@ function StatusBadge({ children, tone = 'blue' }) {
 
 function openingStatusTone(status) {
   if (status === '已开户') return 'green'
+  if (status === '已拒绝') return 'red'
   if (status === '审核中') return 'blue'
   return 'orange'
 }
@@ -220,7 +226,6 @@ function ConfirmModal({ customerName, accountName, onCancel, onConfirm }) {
           </div>
           <ReadOnlyField label="客户名称" value={customerName} subdued />
           <ReadOnlyField label="申请账户" value={accountName} subdued />
-          <ReadOnlyField label="开户方式" value="客户端申请" subdued />
         </div>
         <div className="grid grid-cols-2 gap-[10px] border-t border-[#e5e6ef] bg-white p-[14px]">
           <ActionButton icon={XCircle} onClick={onCancel}>取消</ActionButton>
@@ -238,7 +243,7 @@ function formatStamp() {
   return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())} ${pad(value.getHours())}:${pad(value.getMinutes())}`
 }
 
-function SingaporeOpeningReviewTable({ onOpenDetail, onOpenProcess }) {
+function SingaporeOpeningReviewTable({ rows = openingReviewRows, onOpenDetail, onOpenProcess }) {
   return (
     <div className="mt-[15px] border-t border-[#e5e6ef] pt-[15px]">
       <table className="w-full border-collapse text-left">
@@ -247,36 +252,43 @@ function SingaporeOpeningReviewTable({ onOpenDetail, onOpenProcess }) {
             <th className="w-[420px] px-[18px]">客户信息</th>
             <th className="w-[170px] px-[18px]">申请账户</th>
             <th className="w-[220px] px-[18px]">提交日期</th>
-            <th className="w-[140px] px-[18px]">扣费状态</th>
             <th className="w-[130px] px-[18px]">状态</th>
             <th className="px-[18px]">操作</th>
           </tr>
         </thead>
         <tbody className="text-[13px] text-[#55556e]">
-          {openingReviewRows.map((row) => (
-            <tr key={row.id} className="h-[86px] border-b border-[#e7e8ef] bg-white">
-              <td className="px-[18px]">
-                <div className="flex items-center gap-[14px]">
-                  <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-[#eeeeef] text-[13px] font-medium text-[#4b4b62]">{row.initials}</div>
-                  <div className="leading-[1.6]">
-                    <div className="text-[14px] font-semibold text-[#2b2940]">{row.name}</div>
-                    <div>ID: {row.id}</div>
-                    <div>{row.email}</div>
+          {rows.map((row) => {
+            const canProcess = !['已开户', '已拒绝'].includes(row.status)
+
+            return (
+              <tr key={row.id} className="h-[86px] border-b border-[#e7e8ef] bg-white">
+                <td className="px-[18px]">
+                  <div className="flex items-center gap-[14px]">
+                    <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-[#eeeeef] text-[13px] font-medium text-[#4b4b62]">{row.initials}</div>
+                    <div className="leading-[1.6]">
+                      <div className="text-[14px] font-semibold text-[#2b2940]">{row.name}</div>
+                      <div>ID: {row.id}</div>
+                      <div>{row.email}</div>
+                    </div>
                   </div>
-                </div>
-              </td>
-              <td className="px-[18px] font-semibold text-[#20213a]">{row.accountName}</td>
-              <td className="px-[18px]">{row.submittedAt}</td>
-              <td className="px-[18px]"><StatusBadge tone={row.feeStatus === '扣费成功' ? 'green' : 'red'}>{row.feeStatus}</StatusBadge></td>
-              <td className="px-[18px]"><StatusBadge tone={openingStatusTone(row.status)}>{row.status}</StatusBadge></td>
-              <td className="px-[18px]">
-                <div className="flex items-center gap-[7px]">
-                  <ActionButton icon={Eye} onClick={onOpenDetail}>查看详情</ActionButton>
-                  <ActionButton icon={Play} onClick={onOpenProcess}>开始处理</ActionButton>
-                </div>
-              </td>
+                </td>
+                <td className="px-[18px] font-semibold text-[#20213a]">{row.accountName}</td>
+                <td className="px-[18px]">{row.submittedAt}</td>
+                <td className="px-[18px]"><StatusBadge tone={openingStatusTone(row.status)}>{row.status}</StatusBadge></td>
+                <td className="px-[18px]">
+                  <div className="flex items-center gap-[7px]">
+                    <ActionButton icon={Eye} onClick={() => onOpenDetail(row)}>查看详情</ActionButton>
+                    {canProcess ? <ActionButton icon={Play} onClick={() => onOpenProcess(row)}>开始处理</ActionButton> : null}
+                  </div>
+                </td>
+              </tr>
+            )
+          })}
+          {rows.length === 0 ? (
+            <tr className="h-[86px] border-b border-[#e7e8ef] bg-white">
+              <td colSpan={5} className="px-[18px] text-center text-[13px] text-[#8a8ca0]">暂无符合条件的开户审核记录</td>
             </tr>
-          ))}
+          ) : null}
         </tbody>
       </table>
     </div>
@@ -284,6 +296,12 @@ function SingaporeOpeningReviewTable({ onOpenDetail, onOpenProcess }) {
 }
 
 function SingaporeOpeningReviewList({ onOpenDetail, onOpenProcess }) {
+  const [accountType, setAccountType] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const filteredRows = openingReviewRows.filter((row) => (
+    (!accountType || row.accountName === accountType) && (!statusFilter || row.status === statusFilter)
+  ))
+
   return (
     <AdminShell>
       <div className="grid w-[936px] grid-cols-3 gap-[21px]">
@@ -294,10 +312,36 @@ function SingaporeOpeningReviewList({ onOpenDetail, onOpenProcess }) {
 
       <Panel className="mt-[21px] px-[15px] pb-[18px] pt-[21px]">
         <PageTitle title="开户审核" subtitle="新加坡账户申请由客户确认并扣费后生成，运营在此完成开户审核及账户配置。" />
-        <div className="mt-[21px]">
+        <div className="mt-[21px] flex flex-wrap items-center gap-[12px]">
           <SearchBox placeholder="搜索客户名称、用户 ID、审核类型..." width="w-[440px]" />
+          <label className="flex h-[50px] w-[260px] items-center justify-between rounded-[4px] border border-[#cfd1dc] bg-white px-[14px] text-[13px] text-[#4c4c68]">
+            <span className="whitespace-nowrap">账户类型</span>
+            <select
+              value={accountType}
+              onChange={(event) => setAccountType(event.target.value)}
+              className="h-full min-w-[136px] bg-transparent text-right font-semibold text-[#20213a] outline-none"
+            >
+              <option value="">全部账户</option>
+              <option value="美国账户">美国账户</option>
+              <option value="新加坡账户">新加坡账户</option>
+            </select>
+          </label>
+          <label className="flex h-[50px] w-[240px] items-center justify-between rounded-[4px] border border-[#cfd1dc] bg-white px-[14px] text-[13px] text-[#4c4c68]">
+            <span className="whitespace-nowrap">状态</span>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="h-full min-w-[116px] bg-transparent text-right font-semibold text-[#20213a] outline-none"
+            >
+              <option value="">全部状态</option>
+              <option value="待处理">待处理</option>
+              <option value="审核中">审核中</option>
+              <option value="已开户">已开户</option>
+              <option value="已拒绝">已拒绝</option>
+            </select>
+          </label>
         </div>
-        <SingaporeOpeningReviewTable onOpenDetail={onOpenDetail} onOpenProcess={onOpenProcess} />
+        <SingaporeOpeningReviewTable rows={filteredRows} onOpenDetail={onOpenDetail} onOpenProcess={onOpenProcess} />
       </Panel>
     </AdminShell>
   )
@@ -308,11 +352,23 @@ export function SingaporeAccountOpeningReviewPage({
   onOpenUserAccountConfig,
 }) {
   const [reviewMode, setReviewMode] = useState('list')
+  const [selectedApplication, setSelectedApplication] = useState(openingReviewRows[0])
+
+  const openDetail = (row) => {
+    setSelectedApplication(row)
+    setReviewMode('detail')
+  }
+
+  const openProcess = (row) => {
+    setSelectedApplication(row)
+    setReviewMode('process')
+  }
 
   if (reviewMode === 'detail' || reviewMode === 'process') {
     return (
       <SingaporeAccountOpeningReviewDetailPage
         accountTypes={accountTypes}
+        record={selectedApplication}
         onOpenUserAccountConfig={onOpenUserAccountConfig}
         onBack={() => setReviewMode('list')}
         mode={reviewMode}
@@ -322,36 +378,48 @@ export function SingaporeAccountOpeningReviewPage({
 
   return (
     <SingaporeOpeningReviewList
-      onOpenDetail={() => setReviewMode('detail')}
-      onOpenProcess={() => setReviewMode('process')}
+      onOpenDetail={openDetail}
+      onOpenProcess={openProcess}
     />
   )
 }
 
 function SingaporeAccountOpeningReviewDetailPage({
   accountTypes = initialAccountTypeConfigs,
+  record = openingReviewRows[0],
   onOpenUserAccountConfig,
   onBack,
   mode = 'process',
 }) {
   const viewOnly = mode === 'detail'
+  const detailApplication = {
+    ...application,
+    customerName: record.name || application.customerName,
+    customerEnglishName: record.name || application.customerEnglishName,
+    userId: record.id || application.userId,
+    email: record.email || application.email,
+    accountName: record.accountName || application.accountName,
+    submittedAt: record.submittedAt || application.submittedAt,
+  }
+  const initialReviewResult = record.status === '已拒绝' ? 'reject' : 'approve'
   const singaporeAccountType = accountTypes.find((item) => item.code === 'SG_ACCOUNT')
   const supportedCurrencies = singaporeAccountType?.currencies?.map((currency) => currency.code) || ['USD', 'CNY', 'SGD', 'AED', 'JPY']
-  const [reviewResult, setReviewResult] = useState('approve')
-  const [rejectReason, setRejectReason] = useState('')
-  const [opened, setOpened] = useState(false)
+  const [reviewResult, setReviewResult] = useState(initialReviewResult)
+  const [rejectReason, setRejectReason] = useState(record.rejectReason || '')
+  const [opened, setOpened] = useState(record.status === '已开户')
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [message, setMessage] = useState('')
   const [, setLogs] = useState([
     { time: '2026-07-14 11:18', operator: '系统', action: '扣费成功', detail: '已扣除新加坡账户开户费 USD 1,000.00，并生成开户申请。' },
     { time: '2026-07-14 11:20', operator: '运营 Jane', action: '进入审核', detail: '待完成新加坡账户开户审核。' },
   ])
-  const readonly = viewOnly || opened
+  const readonly = viewOnly || opened || record.status === '已拒绝'
+  const rejectedReadonly = readonly && reviewResult === 'reject'
   const feeFailed = application.fee.debitStatus !== '扣费成功'
   const canConfirm = reviewResult === 'reject'
     ? Boolean(rejectReason.trim())
     : !feeFailed
-  const applicationStatus = opened ? '已开户' : reviewResult === 'reject' ? '已拒绝' : '待审核'
+  const applicationStatus = opened ? '已开户' : reviewResult === 'reject' ? '已拒绝' : record.status === '审核中' ? '审核中' : '待审核'
   const accountConfigStatus = '待配置'
 
   const addLog = (action, detail) => {
@@ -359,16 +427,6 @@ function SingaporeAccountOpeningReviewDetailPage({
       { time: formatStamp(), operator: '运营 Jane', action, detail },
       ...current,
     ])
-  }
-
-  const saveConfig = () => {
-    if (reviewResult === 'reject' && !rejectReason.trim()) {
-      setMessage('选择拒绝申请时，必须填写拒绝原因。')
-      return
-    }
-
-    setMessage('配置已保存，操作日志已记录。')
-    addLog('保存配置', reviewResult === 'reject' ? `暂存拒绝原因：${rejectReason}` : '已保存审核信息。')
   }
 
   const submitReview = () => {
@@ -425,28 +483,28 @@ function SingaporeAccountOpeningReviewDetailPage({
           <Panel className="p-[18px]">
             <div className="flex flex-col items-center pb-[18px]">
               <div className="flex h-[96px] w-[96px] items-center justify-center rounded-[5px] bg-[#d9c5ff] text-[28px] font-bold text-[#8b4fff]">WW</div>
-              <div className="mt-[14px] text-[16px] font-semibold text-[#20213a]">{application.customerName}</div>
+              <div className="mt-[14px] text-[16px] font-semibold text-[#20213a]">{detailApplication.customerName}</div>
               <StatusBadge tone="gray">{application.customerType}</StatusBadge>
             </div>
             <div className="space-y-[14px] border-t border-[#e5e6ef] pt-[16px] text-[13px] text-[#55556e]">
               <div className="flex gap-[12px]">
                 <WalletCards className="h-[18px] w-[18px] text-[#8b4fff]" />
                 <div>
-                  <div className="font-semibold text-[#20213a]">{application.accountName}</div>
+                  <div className="font-semibold text-[#20213a]">{detailApplication.accountName}</div>
                   <div className="text-[12px]">申请账户</div>
                 </div>
               </div>
               <div className="flex gap-[12px]">
                 <UserRound className="h-[18px] w-[18px] text-[#8b4fff]" />
                 <div>
-                  <div className="font-semibold text-[#20213a]">{application.userId}</div>
+                  <div className="font-semibold text-[#20213a]">{detailApplication.userId}</div>
                   <div className="text-[12px]">用户 ID</div>
                 </div>
               </div>
               <div className="flex gap-[12px]">
                 <CalendarDays className="h-[18px] w-[18px] text-[#8b4fff]" />
                 <div>
-                  <div className="font-semibold text-[#20213a]">{application.submittedAt}</div>
+                  <div className="font-semibold text-[#20213a]">{detailApplication.submittedAt}</div>
                   <div className="text-[12px]">申请时间</div>
                 </div>
               </div>
@@ -462,35 +520,51 @@ function SingaporeAccountOpeningReviewDetailPage({
               审核操作
             </div>
             <div className="space-y-[12px]">
-              <label className="block">
-                <span className="mb-[-8px] ml-[10px] inline-block bg-white px-[4px] text-[12px] text-[#66677f]">审核结果</span>
-                <select
-                  value={reviewResult}
-                  onChange={(event) => setReviewResult(event.target.value)}
-                  disabled={readonly}
-                  className="h-[50px] w-full rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] text-[14px] font-semibold text-[#24243d] outline-none focus:border-[#8b4fff] disabled:bg-[#f6f7fb]"
-                >
-                  <option value="approve">确认开户</option>
-                  <option value="reject">拒绝申请</option>
-                </select>
-              </label>
-              <label className="block">
-                <span className="mb-[-8px] ml-[10px] inline-block bg-white px-[4px] text-[12px] text-[#66677f]">拒绝原因</span>
-                <textarea
-                  value={rejectReason}
-                  onChange={(event) => setRejectReason(event.target.value)}
-                  disabled={readonly || reviewResult !== 'reject'}
-                  rows={3}
-                  placeholder="选择拒绝申请时必填"
-                  className="w-full rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] py-[12px] text-[14px] text-[#24243d] outline-none focus:border-[#8b4fff] disabled:bg-[#f6f7fb]"
-                />
-              </label>
-              <div className="grid grid-cols-2 gap-[10px]">
-                <ActionButton icon={Save} onClick={saveConfig} disabled={readonly}>保存配置</ActionButton>
-                <PrimaryButton icon={CheckCircle2} onClick={submitReview} disabled={readonly || !canConfirm}>
-                  {reviewResult === 'reject' ? '确认拒绝' : '确认开户'}
-                </PrimaryButton>
-              </div>
+              {rejectedReadonly ? (
+                <div className="rounded-[5px] border border-[#ffd0d5] bg-[#fff4f5] px-[14px] py-[13px]">
+                  <div className="flex items-center justify-between gap-[12px]">
+                    <span className="text-[12px] font-semibold text-[#9f2f3c]">审核结果</span>
+                    <StatusBadge tone="red">已拒绝</StatusBadge>
+                  </div>
+                  <div className="mt-[12px] border-t border-[#ffd0d5] pt-[12px]">
+                    <div className="text-[12px] font-semibold text-[#9f2f3c]">拒绝原因</div>
+                    <div className="mt-[7px] text-[13px] font-semibold leading-[22px] text-[#f04f5f]">
+                      {rejectReason || '未填写拒绝原因'}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <label className="block">
+                    <span className="mb-[-8px] ml-[10px] inline-block bg-white px-[4px] text-[12px] text-[#66677f]">审核结果</span>
+                    <select
+                      value={reviewResult}
+                      onChange={(event) => setReviewResult(event.target.value)}
+                      disabled={readonly}
+                      className="h-[50px] w-full rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] text-[14px] font-semibold text-[#24243d] outline-none focus:border-[#8b4fff] disabled:bg-[#f6f7fb]"
+                    >
+                      <option value="approve">确认开户</option>
+                      <option value="reject">拒绝申请</option>
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="mb-[-8px] ml-[10px] inline-block bg-white px-[4px] text-[12px] text-[#66677f]">拒绝原因</span>
+                    <textarea
+                      value={rejectReason}
+                      onChange={(event) => setRejectReason(event.target.value)}
+                      disabled={readonly || reviewResult !== 'reject'}
+                      rows={3}
+                      placeholder="选择拒绝申请时必填"
+                      className="w-full rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] py-[12px] text-[14px] text-[#24243d] outline-none focus:border-[#8b4fff] disabled:bg-[#f6f7fb]"
+                    />
+                  </label>
+                  <div className="grid grid-cols-1 gap-[10px]">
+                    <PrimaryButton icon={CheckCircle2} onClick={submitReview} disabled={readonly || !canConfirm}>
+                      {reviewResult === 'reject' ? '确认拒绝' : '确认开户'}
+                    </PrimaryButton>
+                  </div>
+                </>
+              )}
               {message ? (
                 <div className="rounded-[5px] bg-[#e7f5ff] px-[12px] py-[10px] text-[12px] font-semibold leading-[20px] text-[#2586d9]">{message}</div>
               ) : null}
@@ -509,10 +583,10 @@ function SingaporeAccountOpeningReviewDetailPage({
             </div>
             <div className="grid grid-cols-4 gap-[10px]">
               <ReadOnlyField label="客户中文名称" value={application.customerChineseName} subdued />
-              <ReadOnlyField label="客户英文名称" value={application.customerEnglishName} subdued />
+              <ReadOnlyField label="客户英文名称" value={detailApplication.customerEnglishName} subdued />
               <ReadOnlyField label="客户类型" value={application.customerType} subdued />
               <ReadOnlyField label="手机号" value={application.phone} subdued />
-              <ReadOnlyField label="邮箱" value={application.email} subdued />
+              <ReadOnlyField label="邮箱" value={detailApplication.email} subdued />
               <ReadOnlyField label="国籍" value={application.nationality} subdued />
               <ReadOnlyField label="客户编号" value={application.customerNo} subdued />
               <ReadOnlyField label="现有信托账户" value={application.existingTrustAccounts} subdued />
@@ -527,14 +601,7 @@ function SingaporeAccountOpeningReviewDetailPage({
                   新加坡账户申请信息
                 </div>
                 <div className="flex items-center gap-[8px]">
-                  <StatusBadge tone={accountConfigStatus === '已配置' ? 'green' : 'orange'}>{accountConfigStatus}</StatusBadge>
                   {accountConfigStatus === '待配置' ? <ActionButton icon={Edit3} onClick={openUserAccountConfig}>配置账户</ActionButton> : null}
-                  {readonly ? (
-                    <span className="inline-flex items-center gap-[6px] text-[12px] font-semibold text-[#66677f]">
-                      <LockKeyhole className="h-[14px] w-[14px]" />
-                      已锁定
-                    </span>
-                  ) : null}
                 </div>
               </div>
             </div>
@@ -542,10 +609,8 @@ function SingaporeAccountOpeningReviewDetailPage({
               <div className="grid grid-cols-2 gap-[12px]">
                 <ReadOnlyField label="账户类型" value="新加坡账户" subdued />
                 <ReadOnlyField label="申请状态" value={applicationStatus} subdued />
-                <ReadOnlyField label="申请时间" value={application.submittedAt} subdued />
-                <ReadOnlyField label="开户方式" value="客户端申请" subdued />
+                <ReadOnlyField label="申请时间" value={detailApplication.submittedAt} subdued />
                 <ReadOnlyField label="支持币种" value={supportedCurrencies.join(' / ')} subdued />
-                <ReadOnlyField label="账户配置状态" value={accountConfigStatus} subdued />
               </div>
               <div className="mt-[12px] rounded-[5px] bg-[#f6f7fb] px-[12px] py-[10px] text-[12px] font-semibold leading-[20px] text-[#66677f]">
                 系统默认收款银行配置仅在账户类型配置页面维护；客户实际账户信息仅在用户账户配置页面维护。
@@ -558,8 +623,8 @@ function SingaporeAccountOpeningReviewDetailPage({
 
       {confirmOpen ? (
         <ConfirmModal
-          customerName={application.customerName}
-          accountName={application.accountName}
+          customerName={detailApplication.customerName}
+          accountName={detailApplication.accountName}
           onCancel={() => setConfirmOpen(false)}
           onConfirm={confirmAccountOpening}
         />

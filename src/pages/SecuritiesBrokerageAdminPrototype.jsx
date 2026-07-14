@@ -98,7 +98,7 @@ function BrokerageAdminSidebar({ activePage, onSelect, showAccountTypeConfig = f
         <SidebarGroup icon={ShieldCheck} label="KYC审核" />
         <div className="mt-[10px] space-y-[4px]">
           <SidebarItem icon={BriefcaseBusiness} label="案件工作台" />
-          <SidebarItem icon={WalletCards} label="券商开户管理" marked active={activePage === 'brokerage-applications'} onClick={() => onSelect('brokerage-applications')} />
+          <SidebarItem icon={WalletCards} label="券商开户管理" active={activePage === 'brokerage-applications'} onClick={() => onSelect('brokerage-applications')} />
           {showAccountTypeConfig ? <SidebarItem icon={ListChecks} label="开户审核" marked active={activePage === 'account-opening-review'} onClick={() => onSelect('account-opening-review')} /> : <SidebarItem icon={ListChecks} label="开户审核" />}
           <SidebarItem icon={UsersRound} label="用户管理" active={activePage === 'user-management'} onClick={() => onSelect('user-management')} />
           <SidebarItem icon={Gauge} label="处理中审核" />
@@ -114,7 +114,7 @@ function BrokerageAdminSidebar({ activePage, onSelect, showAccountTypeConfig = f
           <SidebarItem icon={UserRound} label="客户" />
           <SidebarItem icon={UserRound} label="资产中心" />
           <SidebarItem icon={ShoppingCart} label="法币资产管理" marked active={activePage === 'fiat-assets'} onClick={() => onSelect('fiat-assets')} />
-          <SidebarItem icon={Coins} label="券商管理" marked active={activePage === 'brokerage-management'} onClick={() => onSelect('brokerage-management')} />
+          <SidebarItem icon={Coins} label="券商管理" active={activePage === 'brokerage-management'} onClick={() => onSelect('brokerage-management')} />
           {showAccountTypeConfig ? <SidebarItem icon={WalletCards} label="账户类型配置" marked active={activePage === 'account-type-config'} onClick={() => onSelect('account-type-config')} /> : null}
           {showAccountTypeConfig ? <SidebarItem icon={UserCog} label="用户新加坡账户配置" marked active={activePage === 'user-account-config'} onClick={() => onSelect('user-account-config')} /> : null}
           <SidebarItem icon={CircleDot} label="数字资产管理" />

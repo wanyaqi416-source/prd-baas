@@ -96,13 +96,11 @@ const jurisdictionStatusMeta = {
   reviewing: {
     label: '审核中',
     badge: 'warning',
-    actionLabel: '查看进度',
     description: '申请已提交，当前正在审核中。',
   },
   opened: {
     label: '已开户',
     badge: 'success',
-    actionLabel: '查看账户',
     description: '账户已开通，可在资产分布中查看。',
   },
   failed: {
@@ -781,18 +779,17 @@ function JurisdictionPicker({
   ]
 
   const getAction = (account) => {
-    if (account.disabled) return { label: account.disabledLabel, action: undefined, disabled: true }
+    if (account.disabled) return null
     if (account.status === 'failed') return { label: jurisdictionStatusMeta.failed.actionLabel, action: account.onReapply }
     if (account.status === 'not_opened') return { label: jurisdictionStatusMeta.not_opened.actionLabel, action: account.onApply }
-    if (account.status === 'reviewing') return { label: jurisdictionStatusMeta.reviewing.actionLabel, action: undefined, disabled: true }
-    return { label: jurisdictionStatusMeta.opened.actionLabel, action: undefined, disabled: true }
+    return null
   }
 
   const content = (
     <div className={embedded ? 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm' : 'w-full max-w-[760px] rounded-3xl bg-white p-6 shadow-2xl'}>
         <ModalHeader eyebrow="Jurisdiction accounts" title="其他法域账户" onClose={onClose} />
         <p className="mt-2 text-sm leading-6 text-slate-500">
-          不同法域账户独立维护申请状态，可分别申请、查看进度或重新申请。
+          不同法域账户独立维护申请状态，可分别查看状态、发起申请或重新申请。
         </p>
         <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
           <div className="text-xs font-semibold text-blue-700">仅原型演示使用：开户费余额校验</div>
@@ -847,15 +844,15 @@ function JurisdictionPicker({
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-3">
-                    <Button
-                      type="button"
-                      onClick={action.action}
-                      disabled={action.disabled}
-                      variant={action.disabled ? 'outline' : 'default'}
-                      className="rounded-lg"
-                    >
-                      {action.label}
-                    </Button>
+                    {action ? (
+                      <Button
+                        type="button"
+                        onClick={action.action}
+                        className="rounded-lg"
+                      >
+                        {action.label}
+                      </Button>
+                    ) : null}
                     <select
                       value={account.status}
                       onChange={(event) => onAccountStatusChange(account.id, event.target.value)}

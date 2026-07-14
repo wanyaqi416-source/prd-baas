@@ -176,6 +176,48 @@ const userRows = [
   { initials: '2', name: '2342', id: '98', email: 'ac1yanch@gongjua.com', type: '企业', approvedAt: '2026-05-13 17:13:39', lastActiveAt: '2026-05-19 17:04:53' },
 ]
 
+const fiatAccountCurrencyCodes = {
+  香港账户: ['USD', 'HKD', 'CNY', 'EUR', 'SGD'],
+  新加坡账户: ['USD', 'CNY', 'SGD', 'AED', 'JPY'],
+  美国账户: ['USD'],
+  'IBKR 盈透证券账户': ['USD', 'HKD', 'CNY'],
+  'Webull 微牛证券账户': ['USD', 'HKD', 'CNY'],
+}
+
+const fiatCurrencySelectLabels = {
+  AED: 'AED - 阿联酋迪拉姆',
+  CNY: 'CNY - 人民币',
+  EUR: 'EUR - 欧元',
+  HKD: 'HKD - 港币',
+  JPY: 'JPY - 日元',
+  SGD: 'SGD - 新加坡元',
+  USD: 'USD - 美元',
+}
+
+const createEmptyFiatBalances = (currencies) => currencies.map((currency) => ({
+  currency,
+  available: '0',
+  frozen: '0',
+  inTransit: '0',
+  total: '0',
+  recentIn: '0',
+  recentOut: '0',
+}))
+
+const fiatAccountCurrencyOptions = Object.fromEntries(
+  Object.entries(fiatAccountCurrencyCodes).map(([accountType, currencies]) => [
+    accountType,
+    currencies.map((currency) => fiatCurrencySelectLabels[currency] || currency),
+  ]),
+)
+
+const emptyFiatAccountBalancesByType = Object.fromEntries(
+  Object.entries(fiatAccountCurrencyCodes).map(([accountType, currencies]) => [
+    accountType,
+    createEmptyFiatBalances(currencies),
+  ]),
+)
+
 const transferRows = [
   {
     requestId: 'IT-1780221843260',
@@ -258,11 +300,43 @@ const transferRows = [
     submittedAt: '2026-06-22 11:36',
     completedAt: '2026-06-22 12:10',
   },
+  {
+    requestId: 'IT-1780221843265',
+    transferType: '信托账户互转',
+    customer: { name: 'jin wu ye', id: '130', email: 'orvafrew@123mails.org' },
+    fromAccount: '香港账户',
+    toAccount: '新加坡账户',
+    currency: 'USD',
+    amount: 'USD 25.60',
+    transferAmount: 'USD 25.60',
+    fee: 'USD 15.00',
+    estimatedArrival: 'USD 10.60',
+    actualArrivalAmount: '',
+    status: '待审核',
+    submittedAt: '2026-06-23 09:42',
+    completedAt: '',
+  },
+  {
+    requestId: 'IT-1780221843266',
+    transferType: '信托账户互转',
+    customer: { name: 'QIXUE', id: '4', email: 'voigtus1@123mails.org' },
+    fromAccount: '新加坡账户',
+    toAccount: '香港账户',
+    currency: 'SGD',
+    amount: 'SGD 120.00',
+    transferAmount: 'SGD 120.00',
+    fee: 'SGD 0.00',
+    estimatedArrival: 'SGD 120.00',
+    actualArrivalAmount: 'SGD 120.00',
+    status: '已批准',
+    submittedAt: '2026-06-23 10:08',
+    completedAt: '2026-06-23 10:26',
+  },
 ]
 
-const manualAccountOptions = ['香港账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户']
+const manualAccountOptions = ['香港账户', '新加坡账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户']
 
-const accountFilterOptions = ['香港账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户']
+const accountFilterOptions = ['香港账户', '新加坡账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户']
 
 const incomingClaimRows = [
   {
@@ -333,6 +407,20 @@ const incomingClaimRows = [
     matchStatus: '已匹配',
     status: '处理完成',
   },
+  {
+    id: 'IC-20260623-001',
+    submittedAt: '2026-06-23 09:18:20',
+    accountType: '新加坡账户',
+    currencyAmount: 'SGD 120',
+    claimableAmount: 'SGD 120',
+    payer: 'WAN YARA WAN',
+    channel: '电汇',
+    referenceNo: 'SG-IN-120',
+    voucher: '-',
+    matchedCustomer: 'jin wu ye',
+    matchStatus: '已匹配',
+    status: '待审核',
+  },
 ]
 
 const fiatLedgerRows = [
@@ -342,14 +430,11 @@ const fiatLedgerRows = [
   { id: 'LEDGER-20260525-004', time: '2026-05-25 10:49:22', customer: 'yejin', customerId: '130', accountType: '香港账户', currencyAmount: 'USD 1', type: '出金', channel: '其他', referenceNo: '-', status: '待处理' },
   { id: 'LEDGER-20260523-001', time: '2026-05-23 09:18:20', customer: 'wanyara', customerId: '120', accountType: '香港账户', currencyAmount: 'HKD 100', type: '入金', channel: '电汇', referenceNo: 'REF-HK-100', status: '处理完成' },
   { id: 'LEDGER-20260520-001', time: '2026-05-20 11:05:44', customer: '2342', customerId: '98', accountType: '美国账户', currencyAmount: 'USD 20', type: '入金', channel: 'ACH', referenceNo: 'REF-US-020', status: '处理完成' },
+  { id: 'LEDGER-20260623-001', time: '2026-06-23 09:18:20', customer: 'jin wu ye', customerId: '130', accountType: '新加坡账户', currencyAmount: 'SGD 120', type: '入金', channel: '电汇', referenceNo: 'SG-IN-120', status: '待处理' },
+  { id: 'LEDGER-20260623-002', time: '2026-06-23 10:08:11', customer: 'QIXUE', customerId: '4', accountType: '新加坡账户', currencyAmount: 'AED 300', type: '出金', channel: '电汇', referenceNo: 'SG-WD-AED-300', status: '处理完成' },
 ]
 
-const fiatAssetAccountCardTypes = ['香港账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户']
-
-const emptyFiatAccountBalances = [
-  { currency: 'USD', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
-  { currency: 'HKD', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
-]
+const fiatAssetAccountCardTypes = ['香港账户', '新加坡账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户']
 
 const customerAssetRows = [
   {
@@ -358,8 +443,8 @@ const customerAssetRows = [
     name: 'jin wu ye',
     email: 'orvafrew@123mails.org',
     type: '个人',
-    accountTypes: ['香港账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户'],
-    totalUsd: '107.72',
+    accountTypes: ['香港账户', '新加坡账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户'],
+    totalUsd: '257.32',
     yesterdayChange: '0',
     lastActivity: '2026-05-25 07:36',
     accountBalances: {
@@ -369,6 +454,13 @@ const customerAssetRows = [
       ],
       美国账户: [
         { currency: 'USD', available: '95.72', frozen: '0', inTransit: '0', total: '95.72', recentIn: '20', recentOut: '11' },
+      ],
+      新加坡账户: [
+        { currency: 'USD', available: '25.60', frozen: '0', inTransit: '0', total: '25.60', recentIn: '25.60', recentOut: '0' },
+        { currency: 'CNY', available: '500.00', frozen: '0', inTransit: '0', total: '500.00', recentIn: '500', recentOut: '0' },
+        { currency: 'SGD', available: '120.00', frozen: '0', inTransit: '0', total: '120.00', recentIn: '120', recentOut: '0' },
+        { currency: 'AED', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
+        { currency: 'JPY', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
       ],
       'IBKR 盈透证券账户': [
         { currency: 'USD', available: '320.00', frozen: '0', inTransit: '0', total: '320.00', recentIn: '320', recentOut: '0' },
@@ -380,9 +472,9 @@ const customerAssetRows = [
       ],
     },
     recentFlows: [
+      { time: '2026-06-23 09:18:20', accountType: '新加坡账户', currencyAmount: 'SGD 120', direction: '入金', channel: '电汇', status: '待处理' },
       { time: '2026-05-25 08:01:10', accountType: '香港账户', currencyAmount: 'HKD 10', direction: '出金', channel: '其他', status: '待处理' },
       { time: '2026-05-25 03:29:03', accountType: '美国账户', currencyAmount: 'USD 1', direction: '出金', channel: '未知', status: '处理完成' },
-      { time: '2026-05-25 03:28:18', accountType: '美国账户', currencyAmount: 'USD 2', direction: '入金', channel: '未知', status: '处理完成' },
     ],
   },
   {
@@ -391,8 +483,8 @@ const customerAssetRows = [
     name: 'QIXUE',
     email: 'voigtus1@123mails.org',
     type: '个人',
-    accountTypes: ['美国账户', 'IBKR 盈透证券账户'],
-    totalUsd: '44.00',
+    accountTypes: ['新加坡账户', '美国账户', 'IBKR 盈透证券账户'],
+    totalUsd: '125.65',
     yesterdayChange: '0',
     lastActivity: '2026-05-25 14:49',
     accountBalances: {
@@ -403,15 +495,22 @@ const customerAssetRows = [
       美国账户: [
         { currency: 'USD', available: '44', frozen: '0', inTransit: '0', total: '44', recentIn: '0', recentOut: '22' },
       ],
+      新加坡账户: [
+        { currency: 'USD', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
+        { currency: 'CNY', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
+        { currency: 'SGD', available: '120.00', frozen: '0', inTransit: '0', total: '120.00', recentIn: '0', recentOut: '120' },
+        { currency: 'AED', available: '300.00', frozen: '0', inTransit: '0', total: '300.00', recentIn: '0', recentOut: '300' },
+        { currency: 'JPY', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
+      ],
       'IBKR 盈透证券账户': [
         { currency: 'USD', available: '120.00', frozen: '0', inTransit: '0', total: '120.00', recentIn: '120', recentOut: '0' },
         { currency: 'HKD', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
       ],
     },
     recentFlows: [
+      { time: '2026-06-23 10:08:11', accountType: '新加坡账户', currencyAmount: 'AED 300', direction: '出金', channel: '电汇', status: '处理完成' },
       { time: '2026-05-25 14:49:52', accountType: '美国账户', currencyAmount: 'USD 11', direction: '出金', channel: '其他', status: '待处理' },
       { time: '2026-05-25 14:23:43', accountType: '美国账户', currencyAmount: 'USD 11', direction: '出金', channel: '其他', status: '待处理' },
-      { time: '2026-05-20 11:05:44', accountType: '美国账户', currencyAmount: 'USD 20', direction: '入金', channel: 'ACH', status: '处理完成' },
     ],
   },
   {
@@ -432,6 +531,7 @@ const customerAssetRows = [
       美国账户: [
         { currency: 'USD', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
       ],
+      新加坡账户: createEmptyFiatBalances(fiatAccountCurrencyCodes.新加坡账户),
       'Webull 微牛证券账户': [
         { currency: 'USD', available: '260.00', frozen: '0', inTransit: '0', total: '260.00', recentIn: '260', recentOut: '0' },
         { currency: 'HKD', available: '120.00', frozen: '0', inTransit: '0', total: '120.00', recentIn: '120', recentOut: '0' },
@@ -536,6 +636,21 @@ const withdrawalApprovalRows = [
     status: '处理完成',
     channel: '内部转账',
     bank: 'Fidere Trust',
+  },
+  {
+    id: 'WO-20260623-001',
+    appliedAt: '2026-06-23 10:08:11',
+    customer: { name: 'QIXUE', id: '4', email: 'voigtus1@123mails.org' },
+    accountType: '新加坡账户',
+    currencyAmount: 'AED 300',
+    transferAmount: 'AED 300',
+    fee: 'AED 0',
+    actualArrivalAmount: 'AED 300',
+    recipient: 'QIXUE GLDB Account',
+    purpose: '新加坡账户出金',
+    status: '处理完成',
+    channel: '电汇',
+    bank: 'Green Link Digital Bank',
   },
 ]
 
@@ -3633,6 +3748,7 @@ function ManualFiatDrawer({ type, accountType, onAccountTypeChange, onClose }) {
   const title = isDeposit ? '手动入金' : '手动出金'
   const toneClass = isDeposit ? 'bg-[#d8f0ff] text-[#1295d8]' : 'bg-[#fff1d6] text-[#f39800]'
   const confirmClass = isDeposit ? 'bg-[#46c800] hover:bg-[#3bb000]' : 'bg-[#ff4c57] hover:bg-[#e53d48]'
+  const currencyOptions = fiatAccountCurrencyOptions[accountType] || fiatAccountCurrencyOptions.香港账户
   const message = isDeposit
     ? '手动入金将直接增加客户账户余额，请谨慎操作并确保信息准确。'
     : '手动出金将直接扣减客户账户余额，请谨慎操作并确保客户有足够余额。'
@@ -3654,9 +3770,9 @@ function ManualFiatDrawer({ type, accountType, onAccountTypeChange, onClose }) {
         </div>
         <DrawerSelectField label="选择客户 *" value="" options={customers.map((customer) => `ID: ${customer.id} / ${customer.email}`)} placeholder="选择客户 *" />
         <DrawerSelectField label="选择账户 *" value={accountType} onChange={onAccountTypeChange} options={manualAccountOptions} />
-        <DrawerSelectField label="币种 *" value="USD - 美元" options={['USD - 美元', 'HKD - 港币']} />
+        <DrawerSelectField label="币种 *" value={currencyOptions[0]} options={currencyOptions} />
         <DrawerSelectField label="打款渠道" value="电汇" options={['电汇', 'FPS', 'ACH']} />
-        {!isDeposit ? <DrawerSelectField label="银行账号 *" value="" options={['WO · 测试银行 · 232232', 'JW · Fidere Partner Bank · 026009593']} placeholder="银行账号 *" /> : null}
+        {!isDeposit ? <DrawerSelectField label="银行账号 *" value="" options={['GLDB · Green Link Digital Bank · 0950', 'WO · 测试银行 · 232232', 'JW · Fidere Partner Bank · 026009593']} placeholder="银行账号 *" /> : null}
         <DrawerInputField label={isDeposit ? '入金金额 *' : '出金金额 *'} prefix="USD" placeholder="请输入正确的金额" />
         <DrawerTextareaField label="备注说明 *" placeholder="必填项，用于审计追踪" />
         <button type="button" className="flex h-[40px] w-full items-center justify-center gap-[8px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">
@@ -3915,7 +4031,7 @@ function WithdrawalApprovalDrawer({ record, onClose }) {
           ))}
         </div>
         <DrawerSelectField label="打款渠道 *" value={record.channel} options={['电汇', 'FPS', 'ACH']} />
-        <DrawerSelectField label="打款银行 *" value={record.bank} options={['测试银行', 'WO Bank', 'Fidere Partner Bank']} />
+        <DrawerSelectField label="打款银行 *" value={record.bank} options={['Green Link Digital Bank', '测试银行', 'WO Bank', 'Fidere Partner Bank']} />
         <button type="button" className="flex h-[40px] w-full items-center justify-center gap-[8px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">
           <FileText className="h-[15px] w-[15px]" />
           选择文件
@@ -4038,9 +4154,11 @@ function FiatTransferPanel({ onOpenRecord }) {
 
 function CurrencyPill({ currency }) {
   const toneClass = {
+    AED: 'bg-[#f2f8ef] text-[#18864b]',
     CNY: 'bg-[#fff1f1] text-[#d62d2d]',
     EUR: 'bg-[#eef4ff] text-[#3267d6]',
     HKD: 'bg-[#fff1d6] text-[#f39800]',
+    JPY: 'bg-[#fff1f1] text-[#c43535]',
     SGD: 'bg-[#fff1f1] text-[#d62d2d]',
     USD: 'bg-[#e7f5ff] text-[#237be8]',
   }[String(currency || '').toUpperCase()] || 'bg-[#f0f2f7] text-[#55556e]'
@@ -4243,7 +4361,7 @@ function CustomerAssetsPanel() {
                         <td colSpan={8} className="px-[18px] py-[18px]">
                           <div className="space-y-[16px]">
                             {fiatAssetAccountCardTypes.map((accountName) => (
-                              <AssetAccountCard key={`${row.id}-${accountName}`} title={accountName} balances={row.accountBalances[accountName] || emptyFiatAccountBalances} />
+                              <AssetAccountCard key={`${row.id}-${accountName}`} title={accountName} balances={row.accountBalances[accountName] || emptyFiatAccountBalancesByType[accountName] || []} />
                             ))}
                           </div>
                         </td>
