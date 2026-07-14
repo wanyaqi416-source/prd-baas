@@ -132,23 +132,6 @@ const bankAccountRows = [
   ['币种', 'USD'],
 ]
 
-const internalTransferDirections = {
-  'trust-to-us': {
-    title: '资金互转至美国账户',
-    sourceAccount: '香港账户',
-    targetAccount: '美国账户',
-    sourceBalance: 'USD 96,037.39',
-    targetBalance: 'USD 82,430.27',
-  },
-  'us-to-trust': {
-    title: '资金互转至香港账户',
-    sourceAccount: '美国账户',
-    targetAccount: '香港账户',
-    sourceBalance: 'USD 82,430.27',
-    targetBalance: 'USD 96,037.39',
-  },
-}
-
 const internalTransferFiatAccounts = [
   {
     id: 'hk',
@@ -167,9 +150,52 @@ const internalTransferFiatAccounts = [
     id: 'us',
     kind: 'fiat',
     name: '美国账户',
+    helper: '美国账户当前仅支持 USD 互转。',
     currencies: ['USD'],
     balance: {
       USD: 'USD 82,430.27',
+    },
+  },
+  {
+    id: 'sg',
+    kind: 'fiat',
+    name: '新加坡账户',
+    helper: '新加坡账户支持 USD / CNY / SGD / AED / JPY 互转。',
+    currencies: ['USD', 'CNY', 'SGD', 'AED', 'JPY'],
+    balance: {
+      USD: 'USD 36,280.00',
+      CNY: 'CNY 128,600.00',
+      SGD: 'SGD 74,920.50',
+      AED: 'AED 91,400.00',
+      JPY: 'JPY 4,280,000',
+    },
+  },
+]
+
+const defaultInternalTransferBrokerageAccounts = [
+  {
+    id: 'ibkr-transfer',
+    label: 'IBKR 盈透证券账户',
+    brokerName: 'IBKR 盈透证券',
+    accountName: 'WANYARA OP WAN',
+    accountNumber: 'U88912045',
+    currencies: ['USD', 'HKD', 'CNY'],
+    balance: {
+      USD: 'USD 58,600.00',
+      HKD: 'HKD 210,000.00',
+      CNY: 'CNY 86,500.00',
+    },
+  },
+  {
+    id: 'webull-transfer',
+    label: 'Webull 微牛证券账户',
+    brokerName: 'Webull 微牛证券',
+    accountName: 'WANYARA OP WAN',
+    accountNumber: 'WB2026070950',
+    currencies: ['USD', 'HKD'],
+    balance: {
+      USD: 'USD 24,900.00',
+      HKD: 'HKD 112,000.00',
     },
   },
 ]
@@ -185,13 +211,55 @@ const getConfiguredTransferCurrencies = (configs, accountType, fallback = []) =>
 
 const formatTransferCurrencyLabel = (currency) => `${currency} ${getCurrencyName(currency)}`
 
-const trustUserTransferCurrencies = [
-  { value: 'HKD', label: 'HKD 港币' },
-  { value: 'USD', label: 'USD 美元' },
-  { value: 'CNY', label: 'CNY 人民币' },
-  { value: 'EUR', label: 'EUR 欧元' },
-  { value: 'SGD', label: 'SGD 新币' },
+const userTransferCurrencyNames = {
+  USD: '美元',
+  HKD: '港币',
+  CNY: '人民币',
+  EUR: '欧元',
+  SGD: '新加坡元',
+  AED: '阿联酋迪拉姆',
+  JPY: '日元',
+}
+
+const userTransferAccountOptions = [
+  {
+    id: 'hk',
+    label: '香港账户',
+    helper: '适合处理香港本地及多币种资金。',
+    currencies: ['HKD', 'CNY', 'USD', 'EUR', 'SGD'],
+    balance: {
+      HKD: 'HKD 625,106.36',
+      CNY: 'CNY 238,000.00',
+      USD: 'USD 96,037.39',
+      EUR: 'EUR 18,600.00',
+      SGD: 'SGD 42,800.00',
+    },
+  },
+  {
+    id: 'us',
+    label: '美国账户',
+    helper: '美国账户当前仅支持 USD 转账。',
+    currencies: ['USD'],
+    balance: {
+      USD: 'USD 82,430.27',
+    },
+  },
+  {
+    id: 'sg',
+    label: '新加坡账户',
+    helper: '适合覆盖新加坡及跨境多币种资金。',
+    currencies: ['USD', 'CNY', 'SGD', 'AED', 'JPY'],
+    balance: {
+      USD: 'USD 36,280.00',
+      CNY: 'CNY 128,600.00',
+      SGD: 'SGD 74,920.50',
+      AED: 'AED 91,400.00',
+      JPY: 'JPY 4,280,000',
+    },
+  },
 ]
+
+const formatUserTransferCurrencyLabel = (currency) => `${currency} ${userTransferCurrencyNames[currency] || getCurrencyName(currency)}`
 
 const defaultFiatTransferPurposeOptions = [
   'Investment',
@@ -645,14 +713,23 @@ function QuickActionDock({
   )
 }
 
-function JurisdictionPicker({ balanceMode, onBalanceModeChange, onClose, onSelectUs }) {
+function JurisdictionPicker({
+  balanceMode,
+  onBalanceModeChange,
+  onClose,
+  onSelectUs,
+  onSelectSingapore,
+  enableSingaporeOpening = false,
+}) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
       <div className="w-full max-w-[520px] rounded-3xl bg-white p-6 shadow-2xl">
         <ModalHeader eyebrow="Open jurisdiction account" title="选择开通账户" onClose={onClose} />
-        <p className="mt-2 text-sm leading-6 text-slate-500">开设美国账户需扣除 USD 500 开户费，提交资料并确认扣费后等待审核。</p>
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          美国账户保留原开户资料提交流程；新加坡账户无需上传或填写额外资料，确认后扣除开户费并进入后台审核。
+        </p>
         <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-          <div className="text-xs font-semibold text-blue-700">仅原型演示使用：选择美国账户后接口余额判断</div>
+          <div className="text-xs font-semibold text-blue-700">仅原型演示使用：选择账户后接口余额判断</div>
           <div className="mt-3 flex gap-2">
             {[
               ['sufficient', '余额充足'],
@@ -677,29 +754,47 @@ function JurisdictionPicker({ balanceMode, onBalanceModeChange, onClose, onSelec
               </span>
               <span>
                 <span className="font-bold text-slate-950">美国账户</span>
-                <span className="mt-1 block text-sm text-slate-500">创建/继续填写开户申请，提交后进入开户费扣费流程。</span>
+                <span className="mt-1 block text-sm text-slate-500">
+                  创建/继续填写开户申请，提交后进入 USD 500 开户费扣费流程。
+                </span>
               </span>
             </div>
           </button>
-          <button type="button" disabled className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left opacity-70">
-            <div className="flex items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm">
-                <Building2 className="h-5 w-5" />
-              </span>
-              <span>
-                <span className="block font-bold text-slate-700">新加坡账户</span>
-                <span className="mt-1 block text-sm text-slate-500">后续支持，当前不可申请。</span>
-              </span>
-            </div>
-            <Badge variant="secondary">待开放</Badge>
-          </button>
+          {enableSingaporeOpening ? (
+            <button type="button" onClick={onSelectSingapore} className="flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left hover:border-emerald-400">
+              <div className="flex items-center gap-3">
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm">
+                  <Building2 className="h-5 w-5" />
+                </span>
+                <span>
+                  <span className="block font-bold text-slate-950">新加坡账户</span>
+                  <span className="mt-1 block text-sm text-slate-500">无需补充资料，确认扣除 USD 1,000 后进入后台审核。</span>
+                </span>
+              </div>
+            </button>
+          ) : (
+            <button type="button" disabled className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left opacity-70">
+              <div className="flex items-center gap-3">
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm">
+                  <Building2 className="h-5 w-5" />
+                </span>
+                <span>
+                  <span className="block font-bold text-slate-700">新加坡账户</span>
+                  <span className="mt-1 block text-sm text-slate-500">后续支持，当前不可申请。</span>
+                </span>
+              </div>
+              <Badge variant="secondary">待开放</Badge>
+            </button>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-function InsufficientBalanceModal({ onClose }) {
+function InsufficientBalanceModal({ onClose, openingAccountVariant = 'us' }) {
+  const feeAmount = openingAccountVariant === 'singapore' ? 'USD 1,000' : 'USD 500'
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
       <div className="w-full max-w-[480px] rounded-3xl bg-white p-6 shadow-2xl">
@@ -710,7 +805,7 @@ function InsufficientBalanceModal({ onClose }) {
         </div>
         <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-5">
           <div className="text-sm font-semibold text-red-900">
-            当前可用余额低于 USD 500 开户费
+            当前可用余额低于 {feeAmount} 开户费
           </div>
           <p className="mt-2 text-sm leading-6 text-red-800">
             请先充值或换入足够 USD 后再申请。
@@ -747,6 +842,7 @@ function MainContent({
   onOpenBrokerageTransfer,
   onOpenBrokerageDetail,
   onOpenBrokerageService,
+  showSingaporeAccount = false,
 }) {
   if (activeAccount === 'brokerage') {
     return (
@@ -764,7 +860,7 @@ function MainContent({
     return <DigitalAssetDistribution />
   }
 
-  return <AssetDistribution status={status} />
+  return <AssetDistribution status={status} showSingaporeAccount={showSingaporeAccount} />
 }
 
 function UsAccountStatusPanel({ status }) {
@@ -834,6 +930,49 @@ const usAssetRows = [
   },
 ]
 
+const sgAssetRows = [
+  {
+    currency: 'USD 美元',
+    balance: '36,280.00 USD',
+    available: '36,280.00 USD',
+    frozen: '0.00 USD',
+    usdValue: '36,280.00',
+    rate: '1 USD = 1.00 USD',
+  },
+  {
+    currency: 'CNY 人民币',
+    balance: '128,600.00 CNY',
+    available: '128,600.00 CNY',
+    frozen: '0.00 CNY',
+    usdValue: '17,804.71',
+    rate: '1 CNY = 0.14 USD',
+  },
+  {
+    currency: 'SGD 新加坡元',
+    balance: '74,920.50 SGD',
+    available: '74,920.50 SGD',
+    frozen: '0.00 SGD',
+    usdValue: '55,071.99',
+    rate: '1 SGD = 0.74 USD',
+  },
+  {
+    currency: 'AED 阿联酋迪拉姆',
+    balance: '91,400.00 AED',
+    available: '91,400.00 AED',
+    frozen: '0.00 AED',
+    usdValue: '24,886.41',
+    rate: '1 AED = 0.27 USD',
+  },
+  {
+    currency: 'JPY 日元',
+    balance: '4,280,000 JPY',
+    available: '4,280,000 JPY',
+    frozen: '0 JPY',
+    usdValue: '27,192.80',
+    rate: '1 JPY = 0.0064 USD',
+  },
+]
+
 function AssetAccountCard({ title, subtitle, total, badge, badgeVariant, rows, statusInfo, showQuickColumn = true }) {
   const headers = showQuickColumn ? ['币种', '余额', '可用余额', '冻结金额', '美元价值', '24H汇率', '快捷操作'] : ['币种', '余额', '可用余额', '冻结金额', '美元价值', '24H汇率']
 
@@ -895,10 +1034,11 @@ function AssetAccountCard({ title, subtitle, total, badge, badgeVariant, rows, s
   )
 }
 
-function AssetDistribution({ status }) {
+function AssetDistribution({ status, showSingaporeAccount = false }) {
   const usMeta = usStatusMeta[status]
   const showUsCard = status !== 'not_opened'
   const usOpened = status === 'opened'
+  const sgOpened = showSingaporeAccount && status === 'opened'
   const usStatusInfo = [
     ...(status === 'failed' ? [['拒绝原因', usMeta.reason, 'danger']] : []),
   ]
@@ -908,7 +1048,8 @@ function AssetDistribution({ status }) {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-slate-950">资产分布</h3>
-          <p className="mt-1 text-sm text-slate-500">信托账户下的香港账户 / 美国账户分类</p>
+          <p className="mt-1 text-sm text-slate-500">信托账户下的香港账户 / 美国账户{showSingaporeAccount ? ' / 新加坡账户' : ''}分类</p>
+          <p className="mt-1 text-xs font-semibold text-amber-700">说明：用户未开通新加坡账户时，不展示新加坡账户资产卡片。</p>
         </div>
       </div>
 
@@ -928,6 +1069,14 @@ function AssetDistribution({ status }) {
             badgeVariant={usOpened ? undefined : usMeta.badge}
             rows={usOpened ? usAssetRows : []}
             statusInfo={usStatusInfo}
+          />
+        ) : null}
+        {sgOpened ? (
+          <AssetAccountCard
+            title="新加坡账户"
+            subtitle="信托账户下的新加坡法币资产分类，支持 USD / CNY / SGD / AED / JPY。"
+            total="$161235.91"
+            rows={sgAssetRows}
           />
         ) : null}
       </div>
@@ -1149,11 +1298,26 @@ const fiatTransferOutAccounts = {
       HKD: 'HKD 0.00',
     },
   },
+  sg: {
+    label: '新加坡账户',
+    holderName: 'WANYARA OP WAN',
+    accountName: '新加坡账户',
+    accountNumber: 'SG-AC-202607-11020160454',
+    balance: {
+      USD: 'USD 36,280.00',
+      CNY: 'CNY 128,600.00',
+      SGD: 'SGD 74,920.50',
+      AED: 'AED 91,400.00',
+      JPY: 'JPY 4,280,000',
+    },
+  },
 }
 
 const fiatTransferOutBanks = [
   {
-    id: 'wo-main',
+    id: 'hk-usd-main',
+    accountTypes: ['hk'],
+    currencies: ['USD'],
     name: 'WO',
     bank: '万银',
     accountNumber: '232232',
@@ -1162,22 +1326,81 @@ const fiatTransferOutBanks = [
     currency: 'USD',
   },
   {
-    id: 'wo-test',
+    id: 'hk-hkd-main',
+    accountTypes: ['hk'],
+    currencies: ['HKD'],
     name: 'WO',
-    bank: '测试银行',
+    bank: 'Bank of China (Hong Kong)',
     accountNumber: '232232',
     swift: '12313232',
     country: '香港',
-    currency: 'USD',
+    currency: 'HKD',
   },
   {
-    id: 'wo-011',
+    id: 'us-usd-main',
+    accountTypes: ['us'],
+    currencies: ['USD'],
     name: 'WO111',
-    bank: '测试银行',
+    bank: 'JPMorgan Chase Bank, N.A.',
     accountNumber: '12',
     swift: '12313233',
     country: '美国',
     currency: 'USD',
+  },
+  {
+    id: 'sg-usd-main',
+    accountTypes: ['sg'],
+    currencies: ['USD'],
+    name: 'FIDERE TRUST LIMITED',
+    bank: 'Green Link Digital Bank Pte. Ltd.',
+    accountNumber: '11020160454',
+    swift: 'GLDTSGSG',
+    country: '新加坡',
+    currency: 'USD',
+  },
+  {
+    id: 'sg-cny-main',
+    accountTypes: ['sg'],
+    currencies: ['CNY'],
+    name: 'FIDERE TRUST LIMITED',
+    bank: 'Green Link Digital Bank Pte. Ltd.',
+    accountNumber: '11020160454',
+    swift: 'GLDTSGSG',
+    country: '新加坡',
+    currency: 'CNY',
+  },
+  {
+    id: 'sg-sgd-main',
+    accountTypes: ['sg'],
+    currencies: ['SGD'],
+    name: 'FIDERE TRUST LIMITED',
+    bank: 'Green Link Digital Bank Pte. Ltd.',
+    accountNumber: '11020160454',
+    swift: 'GLDTSGSG',
+    country: '新加坡',
+    currency: 'SGD',
+  },
+  {
+    id: 'sg-aed-main',
+    accountTypes: ['sg'],
+    currencies: ['AED'],
+    name: 'FIDERE TRUST LIMITED',
+    bank: 'Green Link Digital Bank Pte. Ltd.',
+    accountNumber: '11020160454',
+    swift: 'GLDTSGSG',
+    country: '新加坡',
+    currency: 'AED',
+  },
+  {
+    id: 'sg-jpy-main',
+    accountTypes: ['sg'],
+    currencies: ['JPY'],
+    name: 'FIDERE TRUST LIMITED',
+    bank: 'Green Link Digital Bank Pte. Ltd.',
+    accountNumber: '11020160454',
+    swift: 'GLDTSGSG',
+    country: '新加坡',
+    currency: 'JPY',
   },
 ]
 
@@ -1289,18 +1512,23 @@ function ExternalFiatTransferOutDetailPage({ record, onBack, onClose }) {
   )
 }
 
-function ExternalFiatTransferOutPage({ onBack, records, onSubmit, topNavProps, showGuidanceMarks = true }) {
+function ExternalFiatTransferOutPage({ onBack, records, onSubmit, topNavProps, showGuidanceMarks = true, includeSingaporeAccount = false }) {
   const [view, setView] = useState('form')
   const [selectedRecord, setSelectedRecord] = useState(null)
   const [accountType, setAccountType] = useState('hk')
   const [currency, setCurrency] = useState('USD')
-  const [selectedBankId, setSelectedBankId] = useState('wo-main')
+  const [selectedBankId, setSelectedBankId] = useState('hk-usd-main')
   const [amount, setAmount] = useState('')
   const [purpose, setPurpose] = useState('')
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
+  const accountOptions = includeSingaporeAccount ? ['hk', 'us', 'sg'] : ['hk', 'us']
   const account = fiatTransferOutAccounts[accountType]
-  const selectedBank = fiatTransferOutBanks.find((bank) => bank.id === selectedBankId) || fiatTransferOutBanks[0]
+  const currencyOptions = Object.keys(account.balance)
+  const filteredBanks = fiatTransferOutBanks.filter((bank) => (
+    bank.accountTypes.includes(accountType) && bank.currencies.includes(currency)
+  ))
+  const selectedBank = filteredBanks.find((bank) => bank.id === selectedBankId) || filteredBanks[0]
   const scopedRecords = records.filter((record) => record.accountType === accountType && record.currency === currency)
   const serviceFeeAmount = 2
   const serviceFeeDisplay = formatCurrencyAmount(currency, serviceFeeAmount)
@@ -1313,9 +1541,22 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit, topNavProps, s
 
   const changeAccountType = (nextType) => {
     setAccountType(nextType)
-    if (nextType === 'us') {
-      setCurrency('USD')
-    }
+    const nextCurrency = Object.keys(fiatTransferOutAccounts[nextType].balance)[0] || 'USD'
+    const nextBank = fiatTransferOutBanks.find((bank) => (
+      bank.accountTypes.includes(nextType) && bank.currencies.includes(nextCurrency)
+    ))
+    setCurrency(nextCurrency)
+    setSelectedBankId(nextBank?.id || '')
+    setError('')
+  }
+
+  const changeCurrency = (nextCurrency) => {
+    const nextBank = fiatTransferOutBanks.find((bank) => (
+      bank.accountTypes.includes(accountType) && bank.currencies.includes(nextCurrency)
+    ))
+    setCurrency(nextCurrency)
+    setSelectedBankId(nextBank?.id || '')
+    setError('')
   }
 
   const openDetail = (record) => {
@@ -1329,6 +1570,10 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit, topNavProps, s
     const numericAmount = Number(amount)
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       setError('请输入大于 0 的转账金额。')
+      return
+    }
+    if (!selectedBank) {
+      setError('当前账户币种暂无可用收款银行。')
       return
     }
     setError('')
@@ -1389,21 +1634,36 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit, topNavProps, s
 
       <main className="mx-auto max-w-[1280px] px-6 py-5">
         <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm font-bold text-slate-900">选择账户</span>
-            {[
-              ['hk', '香港账户'],
-              ['us', '美国账户'],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => changeAccountType(value)}
-                className={accountType === value ? 'h-10 rounded-xl bg-blue-50 px-4 text-sm font-bold text-slate-950 shadow-sm' : 'h-10 rounded-xl bg-slate-100 px-4 text-sm font-bold text-slate-600 hover:bg-slate-200'}
+          <div className="grid gap-3 md:grid-cols-[220px_220px_1fr]">
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-slate-500">选择账户</span>
+              <select
+                value={accountType}
+                onChange={(event) => changeAccountType(event.target.value)}
+                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 outline-none focus:border-blue-500"
               >
-                {label}
-              </button>
-            ))}
+                {accountOptions.map((value) => (
+                  <option key={value} value={value}>{fiatTransferOutAccounts[value].label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-slate-500">选择币种</span>
+              <select
+                value={currency}
+                onChange={(event) => changeCurrency(event.target.value)}
+                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 outline-none focus:border-blue-500"
+              >
+                {currencyOptions.map((value) => (
+                  <option key={value} value={value}>{formatTransferCurrencyLabel(value)}</option>
+                ))}
+              </select>
+            </label>
+            <div className="flex items-end">
+              <div className="rounded-xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">
+                收款银行将按所选账户和币种自动展示。
+              </div>
+            </div>
           </div>
         </section>
 
@@ -1456,7 +1716,7 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit, topNavProps, s
                   搜索银行地址
                 </div>
                 <div className="space-y-3">
-                  {fiatTransferOutBanks.map((bank) => {
+                  {filteredBanks.map((bank) => {
                     const selected = selectedBankId === bank.id
                     return (
                       <button
@@ -1495,18 +1755,16 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit, topNavProps, s
                       </button>
                     )
                   })}
+                  {filteredBanks.length === 0 ? (
+                    <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+                      当前账户币种暂无可用收款银行。
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="mt-5 grid gap-4 md:grid-cols-[1fr_1fr]">
                   <label className="flex h-12 overflow-hidden rounded-full border border-slate-200 bg-white">
-                    {accountType === 'us' ? (
-                      <span className="flex w-24 items-center border-r border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-950">USD</span>
-                    ) : (
-                      <select value={currency} onChange={(event) => setCurrency(event.target.value)} className="w-24 border-r border-slate-200 bg-white px-4 text-sm font-bold outline-none">
-                        <option value="USD">USD</option>
-                        <option value="HKD">HKD</option>
-                      </select>
-                    )}
+                    <span className="flex w-24 items-center border-r border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-950">{currency}</span>
                     <input
                       type="number"
                       min="0"
@@ -1663,20 +1921,36 @@ function InternalTransferConfirmModal({ draft, onClose, onConfirm }) {
 
 function UserTransferPage({ onBack, topNavProps }) {
   const [email, setEmail] = useState('')
-  const [currency, setCurrency] = useState('HKD')
+  const [accountId, setAccountId] = useState(userTransferAccountOptions[0].id)
+  const [currency, setCurrency] = useState(userTransferAccountOptions[0].currencies[0])
   const [amount, setAmount] = useState('')
   const [error, setError] = useState('')
   const [submittedRecord, setSubmittedRecord] = useState(null)
+  const selectedAccount = userTransferAccountOptions.find((account) => account.id === accountId) || userTransferAccountOptions[0]
+  const currencyOptions = selectedAccount.currencies
+  const effectiveCurrency = currencyOptions.includes(currency) ? currency : currencyOptions[0] || ''
+  const selectedBalance = selectedAccount.balance?.[effectiveCurrency] || `${effectiveCurrency} --`
   const numericAmount = Number(amount)
   const hasValidAmount = Number.isFinite(numericAmount) && numericAmount > 0
-  const amountDisplay = formatCurrencyAmount(currency, hasValidAmount ? numericAmount : 0)
+  const amountDisplay = formatCurrencyAmount(effectiveCurrency, hasValidAmount ? numericAmount : 0)
+
+  const changeAccount = (nextAccountId) => {
+    const nextAccount = userTransferAccountOptions.find((account) => account.id === nextAccountId) || userTransferAccountOptions[0]
+    setAccountId(nextAccount.id)
+    setCurrency(nextAccount.currencies[0] || '')
+    setError('')
+  }
 
   const submit = () => {
     if (!email.trim()) {
       setError('请输入收款用户邮箱。')
       return
     }
-    if (!currency) {
+    if (!selectedAccount) {
+      setError('请选择付款账户。')
+      return
+    }
+    if (!effectiveCurrency) {
       setError('请选择币种。')
       return
     }
@@ -1689,7 +1963,8 @@ function UserTransferPage({ onBack, topNavProps }) {
     setSubmittedRecord({
       id: `UT-${Date.now()}`,
       email: email.trim(),
-      currency,
+      accountLabel: selectedAccount.label,
+      currency: effectiveCurrency,
       amount: numericAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       statusLabel: '待审核',
       createdAt: formatTransferTime(),
@@ -1731,17 +2006,36 @@ function UserTransferPage({ onBack, topNavProps }) {
               </label>
               <div className="grid gap-5 md:grid-cols-2">
                 <label className="block">
-                  <span className="text-sm font-semibold text-slate-700">币种</span>
+                  <span className="text-sm font-semibold text-slate-700">付款账户</span>
                   <select
-                    value={currency}
-                    onChange={(event) => setCurrency(event.target.value)}
+                    value={accountId}
+                    onChange={(event) => changeAccount(event.target.value)}
                     className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
                   >
-                    {trustUserTransferCurrencies.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
+                    {userTransferAccountOptions.map((account) => (
+                      <option key={account.id} value={account.id}>{account.label}</option>
                     ))}
                   </select>
+                  <div className="mt-2 text-xs leading-5 text-slate-500">{selectedAccount.helper}</div>
                 </label>
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">币种</span>
+                  <select
+                    value={effectiveCurrency}
+                    onChange={(event) => {
+                      setCurrency(event.target.value)
+                      setError('')
+                    }}
+                    className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
+                  >
+                    {currencyOptions.map((option) => (
+                      <option key={option} value={option}>{formatUserTransferCurrencyLabel(option)}</option>
+                    ))}
+                  </select>
+                  <div className="mt-2 text-xs leading-5 text-slate-500">仅展示该付款账户支持的币种。</div>
+                </label>
+              </div>
+              <div className="grid gap-5 md:grid-cols-2">
                 <label className="block">
                   <span className="text-sm font-semibold text-slate-700">金额</span>
                   <input
@@ -1754,6 +2048,11 @@ function UserTransferPage({ onBack, topNavProps }) {
                     className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
                   />
                 </label>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">当前可用余额</div>
+                  <div className="mt-2 text-lg font-bold text-slate-950">{selectedBalance}</div>
+                  <div className="mt-1 text-xs leading-5 text-slate-500">{selectedAccount.label} · {formatUserTransferCurrencyLabel(effectiveCurrency)}</div>
+                </div>
               </div>
 
               <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4">
@@ -1784,7 +2083,8 @@ function UserTransferPage({ onBack, topNavProps }) {
               <div className="text-sm font-semibold text-amber-900">审核说明</div>
               <p className="mt-2 text-sm leading-6 text-amber-800">提交后记录进入待审核状态，后台人工处理后客户可查看转账状态。</p>
               <div className="mt-5 space-y-3 text-sm text-amber-900">
-                <div className="rounded-xl bg-white/70 p-3">支持币种：HKD / USD / CNY / EUR / SGD</div>
+                <div className="rounded-xl bg-white/70 p-3">当前账户：{selectedAccount.label}</div>
+                <div className="rounded-xl bg-white/70 p-3">支持币种：{currencyOptions.join(' / ')}</div>
                 <div className="rounded-xl bg-white/70 p-3">初始状态：待审核</div>
               </div>
             </section>
@@ -1795,6 +2095,7 @@ function UserTransferPage({ onBack, topNavProps }) {
                 <div className="mt-4 space-y-3 text-sm">
                   {[
                     ['申请编号', submittedRecord.id],
+                    ['付款账户', submittedRecord.accountLabel],
                     ['收款邮箱', submittedRecord.email],
                     ['转账金额', `${submittedRecord.currency} ${submittedRecord.amount}`],
                     ['状态', submittedRecord.statusLabel],
@@ -1824,22 +2125,26 @@ function InternalTransferPage({
   onViewRecords,
   brokerageAccounts = [],
   accountCurrencyConfigs = initialAccountCurrencyConfigs,
+  includeSingaporeAccount = false,
 }) {
-  const [currentDirection, setCurrentDirection] = useState(direction)
   const [transferMode, setTransferMode] = useState(initialTransferMode)
   const [currency, setCurrency] = useState('USD')
   const [sourceAccountId, setSourceAccountId] = useState(initialTransferMode === 'brokerage' ? defaultBrokerageSourceAccountId : 'hk')
-  const [targetAccountId, setTargetAccountId] = useState('')
+  const [targetAccountId, setTargetAccountId] = useState(direction === 'us-to-trust' ? 'hk' : 'us')
   const [amount, setAmount] = useState('')
   const [purpose, setPurpose] = useState('')
   const [error, setError] = useState('')
   const [confirmDraft, setConfirmDraft] = useState(null)
-  const config = internalTransferDirections[currentDirection]
-  const configuredFiatAccounts = useMemo(() => internalTransferFiatAccounts.map((account) => ({
-    ...account,
-    currencies: getConfiguredTransferCurrencies(accountCurrencyConfigs, account.name, account.currencies),
-  })), [accountCurrencyConfigs])
-  const normalizedBrokerageAccounts = useMemo(() => brokerageAccounts.map((account) => ({
+  const configuredFiatAccounts = useMemo(() => internalTransferFiatAccounts
+    .filter((account) => includeSingaporeAccount || account.id !== 'sg')
+    .map((account) => ({
+      ...account,
+      currencies: getConfiguredTransferCurrencies(accountCurrencyConfigs, account.name, account.currencies),
+    })), [accountCurrencyConfigs, includeSingaporeAccount])
+  const transferBrokerageAccounts = includeSingaporeAccount && brokerageAccounts.length === 0
+    ? defaultInternalTransferBrokerageAccounts
+    : brokerageAccounts
+  const normalizedBrokerageAccounts = useMemo(() => transferBrokerageAccounts.map((account) => ({
     id: account.id,
     kind: 'brokerage',
     name: account.label || account.brokerName || account.accountName || '券商账户',
@@ -1857,7 +2162,7 @@ function InternalTransferPage({
       HKD: 'HKD 0.00',
       CNY: 'CNY 0.00',
     },
-  })), [brokerageAccounts, accountCurrencyConfigs])
+  })), [transferBrokerageAccounts, accountCurrencyConfigs])
   const hasBrokerageAccounts = normalizedBrokerageAccounts.length > 0
   const brokerageTransferAccounts = useMemo(() => [
     ...configuredFiatAccounts,
@@ -1874,10 +2179,14 @@ function InternalTransferPage({
   const brokerageCurrencyOptions = (selectedRawSourceAccount?.currencies || selectedRawTargetAccount?.currencies || allBrokerageTransferCurrencies)
     .filter((currencyCode) => oppositeCurrencyOptions.includes(currencyCode))
   const effectiveBrokerageCurrency = brokerageCurrencyOptions.includes(currency) ? currency : brokerageCurrencyOptions[0] || 'USD'
-  const fiatSourceAccount = configuredFiatAccounts.find((account) => account.name === config.sourceAccount)
-  const fiatTargetAccount = configuredFiatAccounts.find((account) => account.name === config.targetAccount)
-  const fiatCurrencyOptions = (fiatSourceAccount?.currencies || ['USD'])
-    .filter((currencyCode) => (fiatTargetAccount?.currencies || ['USD']).includes(currencyCode))
+  const selectedRawFiatSourceAccount = configuredFiatAccounts.find((account) => account.id === sourceAccountId) || configuredFiatAccounts[0]
+  const fiatOppositeCurrencyOptions = selectedRawFiatSourceAccount
+    ? [...new Set(configuredFiatAccounts
+        .filter((account) => account.id !== selectedRawFiatSourceAccount.id)
+        .flatMap((account) => account.currencies))]
+    : [...new Set(configuredFiatAccounts.flatMap((account) => account.currencies))]
+  const fiatCurrencyOptions = (selectedRawFiatSourceAccount?.currencies || ['USD'])
+    .filter((currencyCode) => fiatOppositeCurrencyOptions.includes(currencyCode))
   const effectiveFiatCurrency = fiatCurrencyOptions.includes(currency) ? currency : fiatCurrencyOptions[0] || 'USD'
   const activeCurrency = transferMode === 'brokerage' ? effectiveBrokerageCurrency : effectiveFiatCurrency
   const numericAmount = Number(amount)
@@ -1891,12 +2200,22 @@ function InternalTransferPage({
     && account.kind !== brokerageSourceAccount?.kind
   ))
   const brokerageTargetAccount = brokerageTargetOptions.find((account) => account.id === targetAccountId) || (brokerageSourceAccount ? brokerageTargetOptions[0] : null)
+  const fiatSourceOptions = configuredFiatAccounts.filter((account) => account.currencies.includes(activeCurrency))
+  const fiatSourceAccount = fiatSourceOptions.find((account) => account.id === sourceAccountId) || fiatSourceOptions[0]
+  const fiatTargetOptions = configuredFiatAccounts.filter((account) => (
+    account.currencies.includes(activeCurrency)
+    && account.id !== fiatSourceAccount?.id
+  ))
+  const fiatTargetAccount = fiatTargetOptions.find((account) => account.id === targetAccountId) || (fiatSourceAccount ? fiatTargetOptions[0] : null)
 
   const switchMode = (nextMode) => {
     setTransferMode(nextMode)
     if (nextMode === 'brokerage') {
       setSourceAccountId('hk')
       setTargetAccountId(normalizedBrokerageAccounts[0]?.id || '')
+    } else {
+      setSourceAccountId(direction === 'us-to-trust' ? 'us' : 'hk')
+      setTargetAccountId(direction === 'us-to-trust' ? 'hk' : 'us')
     }
     setError('')
     setConfirmDraft(null)
@@ -1922,16 +2241,29 @@ function InternalTransferPage({
         setError('请填写转账用途。')
         return
       }
+    } else {
+      if (!fiatSourceAccount || !fiatTargetAccount) {
+        setError('当前币种下没有可用的转出账户或转入账户。')
+        return
+      }
+      if (fiatSourceAccount.id === fiatTargetAccount.id) {
+        setError('转出账户和转入账户不能相同。')
+        return
+      }
+      if (!fiatSourceAccount.currencies.includes(activeCurrency) || !fiatTargetAccount.currencies.includes(activeCurrency)) {
+        setError('转出账户与转入账户必须支持相同币种。')
+        return
+      }
     }
 
-    const sourceAccount = transferMode === 'brokerage' ? brokerageSourceAccount.name : config.sourceAccount
-    const targetAccount = transferMode === 'brokerage' ? brokerageTargetAccount.name : config.targetAccount
+    const sourceAccount = transferMode === 'brokerage' ? brokerageSourceAccount.name : fiatSourceAccount.name
+    const targetAccount = transferMode === 'brokerage' ? brokerageTargetAccount.name : fiatTargetAccount.name
 
     setError('')
     setConfirmDraft({
       direction: transferMode === 'brokerage'
         ? brokerageSourceAccount.kind === 'brokerage' ? 'brokerage-to-fiat' : 'fiat-to-brokerage'
-        : currentDirection,
+        : `${fiatSourceAccount.id}-to-${fiatTargetAccount.id}`,
       transferMode,
       sourceAccount,
       targetAccount,
@@ -1976,7 +2308,7 @@ function InternalTransferPage({
       <main className="mx-auto max-w-[1180px] px-5 py-8">
         <div className="mb-6">
           <Badge variant="secondary">{transferMode === 'brokerage' ? '券商账户转账' : '内部法币转账'}</Badge>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">{transferMode === 'brokerage' ? '券商账户资金互转' : config.title}</h1>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">{transferMode === 'brokerage' ? '券商账户资金互转' : '账户资金互转'}</h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">当前为前端原型流程。提交后生成待后台审核记录，实际余额和审核结果以后台处理为准。</p>
         </div>
 
@@ -2002,25 +2334,52 @@ function InternalTransferPage({
             </div>
 
             {transferMode === 'fiat' ? (
-              <div className="grid items-center gap-4 md:grid-cols-[1fr_auto_1fr]">
+              <div className="grid items-start gap-4 md:grid-cols-2">
                 <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
-                  <div className="text-sm font-semibold text-blue-700">转出账户</div>
-                  <div className="mt-2 text-xl font-bold text-slate-950">{config.sourceAccount}</div>
-                  <div className="mt-2 text-sm text-slate-500">参考余额：{config.sourceBalance}</div>
+                  <label className="block">
+                    <span className="text-sm font-semibold text-blue-700">付款账户</span>
+                    <select
+                      value={fiatSourceAccount?.id || ''}
+                      onChange={(event) => {
+                        const nextSourceId = event.target.value
+                        const nextTargetAccount = configuredFiatAccounts.find((account) => (
+                          account.id !== nextSourceId
+                          && account.currencies.includes(activeCurrency)
+                        ))
+                        setSourceAccountId(nextSourceId)
+                        setTargetAccountId(nextTargetAccount?.id || '')
+                        if (nextSourceId === 'us') setCurrency('USD')
+                        setError('')
+                      }}
+                      className="mt-2 h-11 w-full rounded-xl border border-blue-100 bg-white px-3 text-sm font-semibold text-slate-900 outline-none"
+                    >
+                      {fiatSourceOptions.map((account) => (
+                        <option key={account.id} value={account.id}>{account.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="mt-3 text-sm text-slate-500">{fiatSourceAccount?.helper || '当前币种下暂无可用付款账户'}</div>
+                  <div className="mt-2 text-sm font-semibold text-slate-900">参考余额：{getInternalTransferBalance(fiatSourceAccount, activeCurrency)}</div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setCurrentDirection((current) => (current === 'trust-to-us' ? 'us-to-trust' : 'trust-to-us'))}
-                  className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-blue-200 bg-white text-blue-700 shadow-sm hover:bg-blue-50"
-                  aria-label="互换转出和转入账户"
-                  title="互换转出和转入账户"
-                >
-                  <RefreshCw className="h-5 w-5" />
-                </button>
                 <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
-                  <div className="text-sm font-semibold text-emerald-700">转入账户</div>
-                  <div className="mt-2 text-xl font-bold text-slate-950">{config.targetAccount}</div>
-                  <div className="mt-2 text-sm text-slate-500">参考余额：{config.targetBalance}</div>
+                  <label className="block">
+                    <span className="text-sm font-semibold text-emerald-700">收款账户</span>
+                    <select
+                      value={fiatTargetAccount?.id || ''}
+                      onChange={(event) => {
+                        setTargetAccountId(event.target.value)
+                        if (event.target.value === 'us') setCurrency('USD')
+                        setError('')
+                      }}
+                      className="mt-2 h-11 w-full rounded-xl border border-emerald-100 bg-white px-3 text-sm font-semibold text-slate-900 outline-none"
+                    >
+                      {fiatTargetOptions.map((account) => (
+                        <option key={account.id} value={account.id}>{account.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="mt-3 text-sm text-slate-500">{fiatTargetAccount?.helper || '当前币种下暂无可用收款账户'}</div>
+                  <div className="mt-2 text-sm font-semibold text-slate-900">参考余额：{getInternalTransferBalance(fiatTargetAccount, activeCurrency)}</div>
                 </div>
               </div>
             ) : (
@@ -2247,7 +2606,7 @@ function InternalTransferRecordsPage({ records, onBack, onCreate }) {
         <div className="mb-6">
           <Badge variant="warning">待后台审核</Badge>
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">内部转账记录</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500">客户提交香港账户与美国账户之间的法币转账申请后，金额会先冻结并扣减转出账户可用余额，后台审核通过后再入账到转入账户。</p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">客户提交账户间法币转账申请后，金额会先冻结并扣减转出账户可用余额，后台审核通过后再入账到转入账户。</p>
         </div>
 
         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -2319,12 +2678,14 @@ export function BaasOpeningPrototype({
   hideBrokerageAccountEntry = false,
   accountCurrencyConfigs = initialAccountCurrencyConfigs,
   onOpenBrokerageService,
+  enableSingaporeOpening = false,
 }) {
   const [status, setStatus] = useState(initialStatus)
   const [activeAccount, setActiveAccount] = useState('trust')
   const [pickerOpen, setPickerOpen] = useState(false)
   const [feeBalanceMode, setFeeBalanceMode] = useState('sufficient')
   const [balanceWarningOpen, setBalanceWarningOpen] = useState(false)
+  const [pendingOpeningVariant, setPendingOpeningVariant] = useState('us')
   const [accountInfoOpen, setAccountInfoOpen] = useState(false)
   const [activeOpenedPage, setActiveOpenedPage] = useState('account')
   const [internalTransferDirection, setInternalTransferDirection] = useState('trust-to-us')
@@ -2341,6 +2702,7 @@ export function BaasOpeningPrototype({
   const showBrokerageTab = !hideBrokerageAccountEntry
     && status === 'opened'
     && (Boolean(onOpenBrokerageService) || brokerageSummary.hasAnyActivity)
+  const showSingaporeAccount = enableSingaporeOpening && status === 'opened'
 
   const changeStatus = (nextStatus) => {
     setStatus(nextStatus)
@@ -2348,17 +2710,26 @@ export function BaasOpeningPrototype({
     setActiveOpenedPage('account')
   }
 
-  const selectUsAccount = () => {
+  const selectOpeningAccount = (variant) => {
+    setPendingOpeningVariant(variant)
     setPickerOpen(false)
     if (feeBalanceMode === 'insufficient') {
       setBalanceWarningOpen(true)
       return
     }
     if (onOpenApplication) {
-      onOpenApplication()
+      onOpenApplication(variant)
       return
     }
     changeStatus('reviewing')
+  }
+
+  const selectUsAccount = () => {
+    selectOpeningAccount('us')
+  }
+
+  const selectSingaporeAccount = () => {
+    selectOpeningAccount('singapore')
   }
 
   const topNavProps = {
@@ -2398,7 +2769,7 @@ export function BaasOpeningPrototype({
   }
 
   if (status === 'opened' && activeOpenedPage === 'external-fiat-transfer-in') {
-    return <IncomingFiatDepositComponent onBack={() => setActiveOpenedPage('account')} />
+    return <IncomingFiatDepositComponent onBack={() => setActiveOpenedPage('account')} includeSingaporeAccount={showSingaporeAccount} />
   }
 
   if (status === 'opened' && activeOpenedPage === 'external-fiat-transfer-out') {
@@ -2409,6 +2780,7 @@ export function BaasOpeningPrototype({
         onSubmit={submitFiatTransferOut}
         topNavProps={topNavProps}
         showGuidanceMarks={showGuidanceMarks}
+        includeSingaporeAccount={showSingaporeAccount}
       />
     )
   }
@@ -2424,6 +2796,7 @@ export function BaasOpeningPrototype({
         onViewRecords={() => setActiveOpenedPage('internal-transfer-records')}
         brokerageAccounts={brokerageAccounts}
         accountCurrencyConfigs={accountCurrencyConfigs}
+        includeSingaporeAccount={showSingaporeAccount}
       />
     )
   }
@@ -2485,6 +2858,7 @@ export function BaasOpeningPrototype({
           onOpenBrokerageTransfer={openBrokerageTransfer}
           onOpenBrokerageDetail={openBrokerageDetail}
           onOpenBrokerageService={onOpenBrokerageService}
+          showSingaporeAccount={showSingaporeAccount}
         />
       </main>
       {pickerOpen ? (
@@ -2493,9 +2867,11 @@ export function BaasOpeningPrototype({
           onBalanceModeChange={setFeeBalanceMode}
           onClose={() => setPickerOpen(false)}
           onSelectUs={selectUsAccount}
+          onSelectSingapore={selectSingaporeAccount}
+          enableSingaporeOpening={enableSingaporeOpening}
         />
       ) : null}
-      {balanceWarningOpen ? <InsufficientBalanceModal onClose={() => setBalanceWarningOpen(false)} /> : null}
+      {balanceWarningOpen ? <InsufficientBalanceModal onClose={() => setBalanceWarningOpen(false)} openingAccountVariant={pendingOpeningVariant} /> : null}
       {accountInfoOpen ? <AccountInfoDrawer onClose={() => setAccountInfoOpen(false)} /> : null}
       {selectedBrokerageDetailId ? (
         <BrokerageAccountDetailDrawer

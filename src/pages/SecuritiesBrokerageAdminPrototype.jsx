@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   ShoppingCart,
   Sun,
+  UserCog,
   UsersRound,
   UserRound,
   WalletCards,
@@ -22,9 +23,14 @@ import {
 import { useState } from 'react'
 
 import { BrokerageApplicationManagementPage, BrokerageManagementPage, FiatAssetManagementPage, UserManagementPage } from './BaasAdminReviewPrototype'
+import { AccountTypeConfigPage } from './AccountTypeConfigPage'
+import { SingaporeAccountOpeningReviewPage } from './SingaporeAccountOpeningReviewPage'
+import { UserAccountConfigPage } from './UserAccountConfigPage'
+import { initialAccountTypeConfigs } from '../data/accountTypeConfig'
 import { initialAccountCurrencyConfigs } from '../data/accountCurrencyConfig'
 import { initialBrokerageConfigs } from '../data/brokerageConfig'
 import { initialBrokerageApplications } from '../data/securitiesBrokerageApplications'
+import { initialUserAccountConfigs } from '../data/userAccountConfig'
 
 function BrokerageAdminHeader({ onBack }) {
   return (
@@ -85,7 +91,7 @@ function SidebarGroup({ icon: Icon, label }) {
   )
 }
 
-function BrokerageAdminSidebar({ activePage, onSelect }) {
+function BrokerageAdminSidebar({ activePage, onSelect, showAccountTypeConfig = false }) {
   return (
     <aside className="fixed bottom-0 left-0 top-[64px] z-20 w-[220px] overflow-y-auto bg-[#f4f5fb] pr-[4px]">
       <nav className="pb-8 pt-[2px]">
@@ -93,7 +99,7 @@ function BrokerageAdminSidebar({ activePage, onSelect }) {
         <div className="mt-[10px] space-y-[4px]">
           <SidebarItem icon={BriefcaseBusiness} label="案件工作台" />
           <SidebarItem icon={WalletCards} label="券商开户管理" marked active={activePage === 'brokerage-applications'} onClick={() => onSelect('brokerage-applications')} />
-          <SidebarItem icon={ListChecks} label="开户审核" />
+          {showAccountTypeConfig ? <SidebarItem icon={ListChecks} label="开户审核" marked active={activePage === 'account-opening-review'} onClick={() => onSelect('account-opening-review')} /> : <SidebarItem icon={ListChecks} label="开户审核" />}
           <SidebarItem icon={UsersRound} label="用户管理" active={activePage === 'user-management'} onClick={() => onSelect('user-management')} />
           <SidebarItem icon={Gauge} label="处理中审核" />
           <SidebarItem icon={WalletCards} label="法币账户审核" />
@@ -109,6 +115,8 @@ function BrokerageAdminSidebar({ activePage, onSelect }) {
           <SidebarItem icon={UserRound} label="资产中心" />
           <SidebarItem icon={ShoppingCart} label="法币资产管理" marked active={activePage === 'fiat-assets'} onClick={() => onSelect('fiat-assets')} />
           <SidebarItem icon={Coins} label="券商管理" marked active={activePage === 'brokerage-management'} onClick={() => onSelect('brokerage-management')} />
+          {showAccountTypeConfig ? <SidebarItem icon={WalletCards} label="账户类型配置" marked active={activePage === 'account-type-config'} onClick={() => onSelect('account-type-config')} /> : null}
+          {showAccountTypeConfig ? <SidebarItem icon={UserCog} label="用户新加坡账户配置" marked active={activePage === 'user-account-config'} onClick={() => onSelect('user-account-config')} /> : null}
           <SidebarItem icon={CircleDot} label="数字资产管理" />
           <SidebarItem icon={LineChart} label="理财产品" />
           <SidebarItem icon={CircleDot} label="交易管理" />
@@ -127,14 +135,26 @@ export function SecuritiesBrokerageAdminPrototype({
   onChangeAccountCurrencyConfigs,
   brokerageConfigs = initialBrokerageConfigs,
   onChangeBrokerageConfigs,
+  accountTypeConfigs = initialAccountTypeConfigs,
+  onChangeAccountTypeConfigs,
+  userAccountConfigs = initialUserAccountConfigs,
+  onChangeUserAccountConfigs,
+  showAccountTypeConfig = false,
+  defaultActivePage = 'brokerage-applications',
 }) {
-  const [activePage, setActivePage] = useState('brokerage-applications')
+  const [activePage, setActivePage] = useState(defaultActivePage)
   const [selectedUserDetail, setSelectedUserDetail] = useState(null)
   const [localAccountCurrencyConfigs, setLocalAccountCurrencyConfigs] = useState(initialAccountCurrencyConfigs)
   const [localBrokerageConfigs, setLocalBrokerageConfigs] = useState(initialBrokerageConfigs)
+  const [localAccountTypeConfigs, setLocalAccountTypeConfigs] = useState(initialAccountTypeConfigs)
+  const [localUserAccountConfigs, setLocalUserAccountConfigs] = useState(initialUserAccountConfigs)
   const effectiveAccountCurrencyConfigs = onChangeAccountCurrencyConfigs ? accountCurrencyConfigs : localAccountCurrencyConfigs
   const effectiveBrokerageConfigs = onChangeBrokerageConfigs ? brokerageConfigs : localBrokerageConfigs
+  const effectiveAccountTypeConfigs = onChangeAccountTypeConfigs ? accountTypeConfigs : localAccountTypeConfigs
+  const effectiveUserAccountConfigs = onChangeUserAccountConfigs ? userAccountConfigs : localUserAccountConfigs
   const updateBrokerageConfigs = onChangeBrokerageConfigs || setLocalBrokerageConfigs
+  const updateAccountTypeConfigs = onChangeAccountTypeConfigs || setLocalAccountTypeConfigs
+  const updateUserAccountConfigs = onChangeUserAccountConfigs || setLocalUserAccountConfigs
   const selectPage = (page) => {
     setActivePage(page)
     setSelectedUserDetail(null)
@@ -143,7 +163,7 @@ export function SecuritiesBrokerageAdminPrototype({
   return (
     <div className="min-h-screen bg-[#f4f5fb] font-sans text-[#24243d]">
       <BrokerageAdminHeader onBack={onBack} />
-      <BrokerageAdminSidebar activePage={activePage} onSelect={selectPage} />
+      <BrokerageAdminSidebar activePage={activePage} onSelect={selectPage} showAccountTypeConfig={showAccountTypeConfig} />
       {activePage === 'brokerage-applications' ? (
         <BrokerageApplicationManagementPage
           applications={brokerageApplications}
@@ -155,12 +175,31 @@ export function SecuritiesBrokerageAdminPrototype({
           }}
         />
       ) : null}
+      {activePage === 'account-opening-review' ? (
+        <SingaporeAccountOpeningReviewPage
+          accountTypes={effectiveAccountTypeConfigs}
+          onOpenUserAccountConfig={() => setActivePage('user-account-config')}
+        />
+      ) : null}
       {activePage === 'user-management' ? <UserManagementPage focusedCustomer={selectedUserDetail} /> : null}
       {activePage === 'fiat-assets' ? <FiatAssetManagementPage /> : null}
       {activePage === 'brokerage-management' ? (
         <BrokerageManagementPage
           brokers={effectiveBrokerageConfigs}
           onChangeBrokers={updateBrokerageConfigs}
+        />
+      ) : null}
+      {activePage === 'account-type-config' ? (
+        <AccountTypeConfigPage
+          configs={effectiveAccountTypeConfigs}
+          onChangeConfigs={updateAccountTypeConfigs}
+        />
+      ) : null}
+      {activePage === 'user-account-config' ? (
+        <UserAccountConfigPage
+          users={effectiveUserAccountConfigs}
+          onChangeUsers={updateUserAccountConfigs}
+          accountTypes={effectiveAccountTypeConfigs}
         />
       ) : null}
       <button

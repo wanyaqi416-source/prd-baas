@@ -43,27 +43,49 @@ const makeOpeningFeeTransactionId = () => {
   return `TXN-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${Date.now().toString(16).slice(-8)}`
 }
 
-const createOpeningFeeRecord = () => {
+const openingFeeConfigs = {
+  us: {
+    amount: '500.00',
+    amountText: 'USD 500.00',
+    accountLabel: '美国账户',
+    applicationName: '个人 BaaS 开户申请',
+    accountType: '美国账户开户申请',
+    description: '开户资料提交后，开户费扣款成功，申请进入后台审核流程。',
+  },
+  singapore: {
+    amount: '1000.00',
+    amountText: 'USD 1,000.00',
+    accountLabel: '新加坡账户',
+    applicationName: '新加坡账户开户申请',
+    accountType: '新加坡账户开户申请',
+    description: '客户确认新加坡账户开户后，开户费扣款成功，申请进入后台审核流程。',
+  },
+}
+
+const getOpeningFeeConfig = (variant = 'us') => openingFeeConfigs[variant] || openingFeeConfigs.us
+
+const createOpeningFeeRecord = (variant = 'us') => {
+  const config = getOpeningFeeConfig(variant)
   const createdAt = formatOpeningFeeTime()
   return {
     id: makeOpeningFeeTransactionId(),
     transactionType: 'account_opening_fee',
     type: '开户费扣款',
     statusLabel: '已完成',
-    amount: '500.00',
+    amount: config.amount,
     currency: 'USD',
     feeAmount: '0.00',
     customerName: 'Wanyara Wan',
     customerId: '154',
     customerEmail: 'xr3kes66@123mails.org',
-    applicationName: '个人 BaaS 开户申请',
+    applicationName: config.applicationName,
     debitAccount: '信托账户',
-    accountType: '美国账户开户申请',
+    accountType: config.accountType,
     createdAt,
     transactionTime: createdAt,
     chargedAt: createdAt,
     nextStatus: '开户审核中',
-    description: '开户资料提交后，开户费扣款成功，申请进入后台审核流程。',
+    description: config.description,
   }
 }
 
@@ -172,11 +194,12 @@ function FatcaSigningModal({ onCancel, onConfirm }) {
   )
 }
 
-function FeeConfirmModal({ onClose, onConfirm }) {
+function FeeConfirmModal({ onClose, onConfirm, openingAccountVariant = 'us' }) {
+  const config = getOpeningFeeConfig(openingAccountVariant)
   const rows = [
     ['扣费账户', '信托账户'],
     ['扣费币种', 'USD'],
-    ['扣费金额', 'USD 500.00'],
+    ['扣费金额', config.amountText],
   ]
 
   return (
@@ -188,7 +211,7 @@ function FeeConfirmModal({ onClose, onConfirm }) {
         </div>
         <button type="button" onClick={onClose} className="rounded-full p-2 text-slate-400 hover:bg-slate-100"><X className="h-5 w-5" /></button>
       </div>
-      <p className="mt-2 text-sm leading-6 text-slate-500">开通美国账户将扣除 USD 500 开户费。扣费成功后生成开户交易记录。</p>
+      <p className="mt-2 text-sm leading-6 text-slate-500">开通{config.accountLabel}将扣除 {config.amountText} 开户费。扣费成功后生成开户交易记录。</p>
       <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
         {rows.map(([label, value]) => (
           <div key={label} className="flex items-center justify-between border-b border-slate-200 py-3 last:border-b-0">
@@ -205,7 +228,9 @@ function FeeConfirmModal({ onClose, onConfirm }) {
   )
 }
 
-function FeeResultModal({ type, onClose, onProceedToAccount, onViewPrototypeRecord }) {
+function FeeResultModal({ type, onClose, onProceedToAccount, onViewPrototypeRecord, openingAccountVariant = 'us' }) {
+  const config = getOpeningFeeConfig(openingAccountVariant)
+
   return (
     <ModalShell>
       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
@@ -213,7 +238,7 @@ function FeeResultModal({ type, onClose, onProceedToAccount, onViewPrototypeReco
       </div>
       <h3 className="mt-5 text-2xl font-bold text-slate-950">扣费成功</h3>
       <p className="mt-2 text-sm leading-6 text-slate-500">
-        USD 500 开户费已扣除，并生成开户交易记录。
+        {config.amountText} 开户费已扣除，并生成开户交易记录。
       </p>
       <div className="mt-6 flex gap-3">
         <Button type="button" onClick={onProceedToAccount} className="flex-1 rounded-lg bg-blue-600 hover:bg-blue-700">返回账户页面</Button>
@@ -408,7 +433,117 @@ function FatcaSigningCard({ signed, error, onOpen }) {
   )
 }
 
-export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, defaultAccountType = 'personal' }) {
+function SingaporeOpeningApplicationPage({ onBack, onProceedToOpeningStatus }) {
+  const [feeConfirmOpen, setFeeConfirmOpen] = useState(false)
+  const [feeResult, setFeeResult] = useState(null)
+  const [openingFeeRecord, setOpeningFeeRecord] = useState(null)
+  const [openingFeeDetailOpen, setOpeningFeeDetailOpen] = useState(false)
+  const config = getOpeningFeeConfig('singapore')
+
+  const confirmFee = () => {
+    setFeeConfirmOpen(false)
+    setOpeningFeeRecord(createOpeningFeeRecord('singapore'))
+    setFeeResult('success')
+  }
+
+  const proceedToOpeningStatus = () => {
+    setOpeningFeeDetailOpen(false)
+    onProceedToOpeningStatus()
+  }
+
+  if (openingFeeDetailOpen && openingFeeRecord) {
+    return (
+      <OpeningFeeTransactionDetailPage
+        record={openingFeeRecord}
+        onBack={() => setOpeningFeeDetailOpen(false)}
+        onProceedToOpeningStatus={proceedToOpeningStatus}
+      />
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f4f7fb] pb-28 text-slate-950">
+      <ApplicationTopNav onBack={onBack} />
+      <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex min-h-16 max-w-[1280px] flex-wrap items-center justify-between gap-3 px-5 py-3">
+          <div>
+            <button type="button" onClick={onBack} className="text-sm font-semibold text-blue-700 hover:text-blue-900">返回开户流程</button>
+            <h1 className="mt-1 text-2xl font-bold text-slate-950">新加坡账户开户确认</h1>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">新加坡账户开户不需要上传资料或填写补充信息。确认后将扣除开户费，并生成后台审核申请。</p>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto grid max-w-[960px] gap-5 px-5 py-6">
+        <section className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+              <Building2 className="h-6 w-6" />
+            </span>
+            <div>
+              <Badge variant="secondary">无需资料</Badge>
+              <h2 className="mt-3 text-2xl font-bold text-slate-950">确认开通新加坡账户</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">系统将使用当前客户资料生成开户申请，运营后台完成审核与账户配置。客户侧只需要确认开户费用。</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-base font-bold text-slate-950">开户费用</h2>
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            {[
+              ['申请账户', config.accountLabel],
+              ['扣费账户', '信托账户'],
+              ['扣费币种', 'USD'],
+              ['扣费金额', config.amountText],
+              ['提交后状态', '后台审核中'],
+            ].map(([label, value]) => (
+              <div key={label} className="flex items-center justify-between border-b border-slate-200 py-3 last:border-b-0">
+                <span className="text-sm text-slate-500">{label}</span>
+                <span className="text-sm font-bold text-slate-950">{value}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+          <div className="text-sm font-bold text-emerald-900">流程说明</div>
+          <p className="mt-2 text-sm leading-6 text-emerald-800">扣费成功后会立即生成开户申请。运营将在后台审核页面确认申请，并配置公共收款银行信息。</p>
+        </section>
+      </main>
+
+      <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-5 py-4 shadow-2xl backdrop-blur">
+        <div className="mx-auto flex max-w-[960px] flex-wrap items-center justify-between gap-3">
+          <div className="text-sm font-semibold text-slate-600">无需上传资料，确认后扣除 {config.amountText}</div>
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button type="button" onClick={onBack} variant="outline" className="rounded-lg">取消</Button>
+            <Button type="button" onClick={() => setFeeConfirmOpen(true)} className="rounded-lg bg-blue-600 hover:bg-blue-700">确认开户并扣费</Button>
+          </div>
+        </div>
+      </footer>
+
+      {feeConfirmOpen ? <FeeConfirmModal onClose={() => setFeeConfirmOpen(false)} onConfirm={confirmFee} openingAccountVariant="singapore" /> : null}
+      {feeResult ? (
+        <FeeResultModal
+          type={feeResult}
+          onClose={() => setFeeResult(null)}
+          onProceedToAccount={proceedToOpeningStatus}
+          onViewPrototypeRecord={() => {
+            setFeeResult(null)
+            setOpeningFeeDetailOpen(true)
+          }}
+          openingAccountVariant="singapore"
+        />
+      ) : null}
+    </div>
+  )
+}
+
+export function BaasOpeningApplicationPage({ onBack, onProceedToOpeningStatus, defaultAccountType = 'personal', openingAccountVariant = 'us' }) {
+  if (openingAccountVariant === 'singapore') {
+    return <SingaporeOpeningApplicationPage onBack={onBack} onProceedToOpeningStatus={onProceedToOpeningStatus} />
+  }
+
   const [accountType, setAccountType] = useState(defaultAccountType)
   const [profileValues] = useState(mockBaasOpeningProfile)
   const [supplementValues, setSupplementValues] = useState(createEmptyBaasApplication)

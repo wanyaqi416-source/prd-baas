@@ -5,7 +5,6 @@ import {
   BankOutlined,
   CopyOutlined,
   FileTextOutlined,
-  GlobalOutlined,
   SafetyCertificateOutlined,
   SunOutlined,
   TranslationOutlined,
@@ -23,14 +22,13 @@ import {
   Row,
   Select,
   Space,
-  Tabs,
   Tag,
   Typography,
 } from 'antd'
 import { useMemo, useState } from 'react'
 
-type Currency = 'USD' | 'HKD'
-type AccountType = 'hk' | 'us'
+type Currency = 'USD' | 'HKD' | 'CNY' | 'SGD' | 'AED' | 'JPY'
+type AccountType = 'hk' | 'us' | 'sg'
 type DepositStatus = 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED'
 
 type BankAccount = {
@@ -60,9 +58,25 @@ type IncomingRecord = {
 const accountLabels: Record<AccountType, string> = {
   hk: '香港账户',
   us: '美国账户',
+  sg: '新加坡账户',
 }
 
-const receivingBankAccounts: Record<AccountType, Record<Currency, BankAccount>> = {
+const accountCurrencyOptions: Record<AccountType, Currency[]> = {
+  hk: ['USD', 'HKD', 'CNY', 'SGD'],
+  us: ['USD'],
+  sg: ['USD', 'CNY', 'SGD', 'AED', 'JPY'],
+}
+
+const currencyLabels: Record<Currency, string> = {
+  USD: 'USD 美元',
+  HKD: 'HKD 港币',
+  CNY: 'CNY 人民币',
+  SGD: 'SGD 新加坡元',
+  AED: 'AED 阿联酋迪拉姆',
+  JPY: 'JPY 日元',
+}
+
+const receivingBankAccounts: Record<AccountType, Partial<Record<Currency, BankAccount>>> = {
   hk: {
     USD: {
       bank_name: 'Fidere Hong Kong Receiving Bank',
@@ -84,6 +98,26 @@ const receivingBankAccounts: Record<AccountType, Record<Currency, BankAccount>> 
       country: 'Hong Kong',
       city: 'Hong Kong',
     },
+    CNY: {
+      bank_name: 'Bank of China (Hong Kong)',
+      swift_code: 'BKCHHKHH',
+      routing_number: '012',
+      bank_address: '1 Garden Road, Central, Hong Kong',
+      account_name: 'FIDERE TRUST LIMITED - HK CNY',
+      account_number: '012-888-88888866',
+      country: 'Hong Kong',
+      city: 'Hong Kong',
+    },
+    SGD: {
+      bank_name: 'DBS Bank (Hong Kong)',
+      swift_code: 'DHBKHKHH',
+      routing_number: 'HK-SGD-001',
+      bank_address: '11/F, The Center, 99 Queen Road Central, Hong Kong',
+      account_name: 'FIDERE TRUST LIMITED - HK SGD',
+      account_number: '001-234567-SGD',
+      country: 'Hong Kong',
+      city: 'Hong Kong',
+    },
   },
   us: {
     USD: {
@@ -96,15 +130,57 @@ const receivingBankAccounts: Record<AccountType, Record<Currency, BankAccount>> 
       country: 'United States',
       city: 'Chicago',
     },
-    HKD: {
-      bank_name: 'Fidere US Receiving Bank',
-      swift_code: 'FIDRUS33HKD',
-      routing_number: '026009594',
-      bank_address: '110 North Carpenter Street, Chicago, IL',
-      account_name: 'Fidere Trust Limited - US HKD',
-      account_number: 'US-VA-HKD-00067890',
-      country: 'United States',
-      city: 'Chicago',
+  },
+  sg: {
+    USD: {
+      bank_name: 'Green Link Digital Bank Pte. Ltd.',
+      swift_code: 'GLDTSGSG',
+      routing_number: 'Green Link Digital Bank',
+      bank_address: '20 PASIR PANJANG ROAD #07-25-28 MAPLETREE BUSINESS CITY SINGAPORE 117439',
+      account_name: 'FIDERE TRUST LIMITED',
+      account_number: '11020160454',
+      country: 'Singapore',
+      city: 'Singapore',
+    },
+    CNY: {
+      bank_name: 'Green Link Digital Bank Pte. Ltd.',
+      swift_code: 'GLDTSGSG',
+      routing_number: 'Green Link Digital Bank',
+      bank_address: '20 PASIR PANJANG ROAD #07-25-28 MAPLETREE BUSINESS CITY SINGAPORE 117439',
+      account_name: 'FIDERE TRUST LIMITED',
+      account_number: '11020160454',
+      country: 'Singapore',
+      city: 'Singapore',
+    },
+    SGD: {
+      bank_name: 'Green Link Digital Bank Pte. Ltd.',
+      swift_code: 'GLDTSGSG',
+      routing_number: 'Green Link Digital Bank',
+      bank_address: '20 PASIR PANJANG ROAD #07-25-28 MAPLETREE BUSINESS CITY SINGAPORE 117439',
+      account_name: 'FIDERE TRUST LIMITED',
+      account_number: '11020160454',
+      country: 'Singapore',
+      city: 'Singapore',
+    },
+    AED: {
+      bank_name: 'Green Link Digital Bank Pte. Ltd.',
+      swift_code: 'GLDTSGSG',
+      routing_number: 'Green Link Digital Bank',
+      bank_address: '20 PASIR PANJANG ROAD #07-25-28 MAPLETREE BUSINESS CITY SINGAPORE 117439',
+      account_name: 'FIDERE TRUST LIMITED',
+      account_number: '11020160454',
+      country: 'Singapore',
+      city: 'Singapore',
+    },
+    JPY: {
+      bank_name: 'Green Link Digital Bank Pte. Ltd.',
+      swift_code: 'GLDTSGSG',
+      routing_number: 'Green Link Digital Bank',
+      bank_address: '20 PASIR PANJANG ROAD #07-25-28 MAPLETREE BUSINESS CITY SINGAPORE 117439',
+      account_name: 'FIDERE TRUST LIMITED',
+      account_number: '11020160454',
+      country: 'Singapore',
+      city: 'Singapore',
     },
   },
 }
@@ -136,7 +212,7 @@ const whitelistBanks: Record<string, BankAccount & { id: string; label: string }
   },
 }
 
-const initialRecords: Record<AccountType, Record<Currency, IncomingRecord[]>> = {
+const initialRecords: Record<AccountType, Partial<Record<Currency, IncomingRecord[]>>> = {
   hk: {
     USD: [
       { id: 'TXN-20260518-8bba6e13', account_type: 'hk', amount: 12, currency: 'USD', fee_amount: 0, receiving_bank: 'Fidere Hong Kong Receiving Bank', remitting_bank: 'HSBC Hong Kong', remitting_account_number: '808-123456-838', created_at: '2026-05-18 14:26', status: 'REJECTED' },
@@ -146,13 +222,21 @@ const initialRecords: Record<AccountType, Record<Currency, IncomingRecord[]>> = 
       { id: 'TXN-20260517-210af998', account_type: 'hk', amount: 10000, currency: 'HKD', fee_amount: 0, receiving_bank: 'Fidere Hong Kong Receiving Bank', remitting_bank: 'HSBC Hong Kong', remitting_account_number: '808-123456-838', created_at: '2026-05-17 16:20', status: 'UNDER_REVIEW' },
       { id: 'TXN-20260511-6f7c120a', account_type: 'hk', amount: 5600, currency: 'HKD', fee_amount: 0, receiving_bank: 'Fidere Hong Kong Receiving Bank', remitting_bank: 'HSBC Hong Kong', remitting_account_number: '808-123456-838', created_at: '2026-05-11 11:05', status: 'APPROVED' },
     ],
+    CNY: [],
+    SGD: [],
   },
   us: {
     USD: [
       { id: 'TXN-20260515-b65e881c', account_type: 'us', amount: 123, currency: 'USD', fee_amount: 0, receiving_bank: 'Fidere US Receiving Bank', remitting_bank: 'JPMorgan Chase Bank, N.A.', remitting_account_number: '7788990011', created_at: '2026-05-15 16:53', status: 'REJECTED' },
       { id: 'TXN-20260427-e2f005c4', account_type: 'us', amount: 20, currency: 'USD', fee_amount: 0, receiving_bank: 'Fidere US Receiving Bank', remitting_bank: 'JPMorgan Chase Bank, N.A.', remitting_account_number: '7788990011', created_at: '2026-04-27 15:15', status: 'APPROVED' },
     ],
-    HKD: [],
+  },
+  sg: {
+    USD: [],
+    CNY: [],
+    SGD: [],
+    AED: [],
+    JPY: [],
   },
 }
 
@@ -237,24 +321,32 @@ function TopNav() {
   )
 }
 
-export function IncomingFiatDepositPrototype({ onBack }: { onBack: () => void }) {
+export function IncomingFiatDepositPrototype({ onBack, includeSingaporeAccount = false }: { onBack: () => void; includeSingaporeAccount?: boolean }) {
   const [view, setView] = useState<'form' | 'detail'>('form')
   const [selectedRecord, setSelectedRecord] = useState<IncomingRecord | null>(null)
   const [accountType, setAccountType] = useState<AccountType>('hk')
   const [currency, setCurrency] = useState<Currency>('USD')
   const [selectedRemittingBankId, setSelectedRemittingBankId] = useState('hsbc')
-  const [records, setRecords] = useState<Record<AccountType, Record<Currency, IncomingRecord[]>>>(initialRecords)
+  const [records, setRecords] = useState<Record<AccountType, Partial<Record<Currency, IncomingRecord[]>>>>(initialRecords)
   const [form] = Form.useForm()
-  const activeReceivingBank = receivingBankAccounts[accountType][currency]
+  const accountOptions = includeSingaporeAccount
+    ? (['hk', 'us', 'sg'] as AccountType[])
+    : (['hk', 'us'] as AccountType[])
+  const currencyOptions = accountCurrencyOptions[accountType]
+  const activeReceivingBank = receivingBankAccounts[accountType][currency] || receivingBankAccounts[accountType][currencyOptions[0]]!
   const activeRemittingBank = whitelistBanks[selectedRemittingBankId]
-  const activeRecords = records[accountType][currency]
+  const activeRecords = records[accountType][currency] || []
 
   const changeAccountType = (nextType: AccountType) => {
     setAccountType(nextType)
-    if (nextType === 'us') {
-      setCurrency('USD')
-      form.setFieldsValue({ currency: 'USD' })
-    }
+    const nextCurrency = accountCurrencyOptions[nextType][0]
+    setCurrency(nextCurrency)
+    form.setFieldsValue({ currency: nextCurrency })
+  }
+
+  const changeCurrency = (nextCurrency: Currency) => {
+    setCurrency(nextCurrency)
+    form.setFieldsValue({ currency: nextCurrency })
   }
 
   const balanceHint = useMemo(() => {
@@ -268,8 +360,12 @@ export function IncomingFiatDepositPrototype({ onBack }: { onBack: () => void })
   }, [activeRecords])
 
   const submitDeposit = (values: { amount: number; currency: Currency; purpose: string; source_of_funds: string; reference_note?: string }) => {
-    const submitCurrency = accountType === 'us' ? 'USD' : values.currency
+    const submitCurrency = accountCurrencyOptions[accountType].includes(values.currency) ? values.currency : currency
     const receivingBank = receivingBankAccounts[accountType][submitCurrency]
+    if (!receivingBank) {
+      message.error('当前账户币种未配置收款银行')
+      return
+    }
     const nextRecord: IncomingRecord = {
       id: `TXN-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${Date.now().toString(16).slice(-8)}`,
       account_type: accountType,
@@ -287,7 +383,7 @@ export function IncomingFiatDepositPrototype({ onBack }: { onBack: () => void })
       ...current,
       [accountType]: {
         ...current[accountType],
-        [submitCurrency]: [nextRecord, ...current[accountType][submitCurrency]],
+        [submitCurrency]: [nextRecord, ...(current[accountType][submitCurrency] || [])],
       },
     }))
     form.resetFields()
@@ -307,7 +403,7 @@ export function IncomingFiatDepositPrototype({ onBack }: { onBack: () => void })
   }
 
   if (view === 'detail' && selectedRecord) {
-    const detailReceivingBank = receivingBankAccounts[selectedRecord.account_type][selectedRecord.currency]
+    const detailReceivingBank = receivingBankAccounts[selectedRecord.account_type][selectedRecord.currency]!
     const amountPrefix = selectedRecord.status === 'REJECTED' ? '' : '+ '
     return (
       <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
@@ -415,7 +511,7 @@ export function IncomingFiatDepositPrototype({ onBack }: { onBack: () => void })
           <Button type="text" icon={<ArrowLeftOutlined />} onClick={onBack}>返回</Button>
           <div>
             <Typography.Title level={5} style={{ margin: 0 }}>银行电汇入金</Typography.Title>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>通过外部银行转账将法币转入所选香港账户或美国账户</Typography.Text>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>通过外部银行转账将法币转入所选账户，收款银行按账户与币种展示</Typography.Text>
           </div>
         </div>
       </div>
@@ -423,17 +519,28 @@ export function IncomingFiatDepositPrototype({ onBack }: { onBack: () => void })
       <main className="mx-auto max-w-[1280px] px-5 py-5">
         <Card className="mb-5 rounded-2xl border-slate-200 shadow-sm" bodyStyle={{ padding: 16 }}>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <Space size="middle">
-              <span className="text-sm font-semibold text-slate-700">选择账户</span>
-              <Tabs
-                activeKey={accountType}
-                onChange={(key) => changeAccountType(key as AccountType)}
-                items={[
-                  { key: 'hk', label: '香港账户' },
-                  { key: 'us', label: '美国账户' },
-                ]}
-              />
-            </Space>
+            <div className="grid flex-1 gap-3 md:grid-cols-[220px_220px_1fr]">
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-slate-500">选择账户</span>
+                <Select
+                  size="large"
+                  value={accountType}
+                  onChange={(value) => changeAccountType(value as AccountType)}
+                  options={accountOptions.map((item) => ({ value: item, label: accountLabels[item] }))}
+                  style={{ width: '100%' }}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-slate-500">选择币种</span>
+                <Select
+                  size="large"
+                  value={currency}
+                  onChange={(value) => changeCurrency(value as Currency)}
+                  options={currencyOptions.map((item) => ({ value: item, label: currencyLabels[item] }))}
+                  style={{ width: '100%' }}
+                />
+              </label>
+            </div>
             <div className="rounded-lg bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-800">
               <SafetyCertificateOutlined /> 重要提示：请在转账时备注您的账户 ID，以便快速处理入金。
             </div>
@@ -464,28 +571,14 @@ export function IncomingFiatDepositPrototype({ onBack }: { onBack: () => void })
                 <Form form={form} layout="vertical" onFinish={submitDeposit} initialValues={{ currency }}>
                   <Row gutter={16}>
                     <Col xs={24} md={12}>
-                      {accountType === 'us' ? (
-                        <>
-                          <Form.Item name="currency" hidden initialValue="USD">
-                            <Input />
-                          </Form.Item>
-                          <div className="mb-6">
-                            <div className="mb-2 text-sm font-semibold text-slate-700">入金币种 *</div>
-                            <div className="flex h-10 items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-950">USD 美元</div>
-                          </div>
-                        </>
-                      ) : (
-                        <Form.Item name="currency" label="入金币种 *" rules={[{ required: true, message: '请选择入金币种' }]}>
-                          <Select
-                            size="large"
-                            onChange={(value) => setCurrency(value)}
-                            options={[
-                              { value: 'USD', label: 'USD 美元' },
-                              { value: 'HKD', label: 'HKD 港币' },
-                            ]}
-                          />
-                        </Form.Item>
-                      )}
+                      <Form.Item name="currency" label="入金币种 *" rules={[{ required: true, message: '请选择入金币种' }]}>
+                        <Select
+                          size="large"
+                          value={currency}
+                          onChange={(value) => changeCurrency(value as Currency)}
+                          options={currencyOptions.map((item) => ({ value: item, label: currencyLabels[item] }))}
+                        />
+                      </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
                       <Form.Item name="amount" label="入金金额 *" rules={[{ required: true, message: '请输入入金金额' }]}>

@@ -1,0 +1,13 @@
+[  500266ms] [ERROR] [vite] SyntaxError: The requested module '/src/pages/SingaporeAccountOpeningReviewPage.jsx?t=1784000289420' does not provide an export named 'SingaporeAccountOpeningReviewPage' @ http://127.0.0.1:5175/@vite/client:509
+[  500266ms] [ERROR] [vite] Failed to reload /src/pages/SecuritiesBrokerageAdminPrototype.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5175/@vite/client:509
+[  508529ms] [ERROR] [vite] SyntaxError: The requested module '/src/pages/SingaporeAccountOpeningReviewPage.jsx?t=1784000297696' does not provide an export named 'SingaporeAccountOpeningReviewPage' @ http://127.0.0.1:5175/@vite/client:509
+[  508529ms] [ERROR] [vite] Failed to reload /src/pages/SecuritiesBrokerageAdminPrototype.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5175/@vite/client:509
+[ 1441806ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:5175/src/data/accountTypeConfig.js?t=1784001231144:0
+[ 1441806ms] [ERROR] [vite] Failed to reload /src/pages/SingaporeAccountOpeningReviewPage.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5175/@vite/client:509
+[ 1441807ms] [ERROR] [vite] Failed to reload /src/pages/SecuritiesBrokerageAdminPrototype.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5175/@vite/client:509
+[ 1441807ms] [ERROR] [vite] Failed to reload /src/pages/UserAccountConfigPage.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5175/@vite/client:509
+[ 1441807ms] [ERROR] [vite] Failed to reload /src/App.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5175/@vite/client:509
+[ 1444081ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/node_modules/.vite/deps/client-Ce_9biLG.js?v=9d936361:14336
+[ 1588861ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/node_modules/.vite/deps/client-Ce_9biLG.js?v=9d936361:14336
+[ 5901701ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:5175/@vite/client:968
+[ 6051168ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/node_modules/.vite/deps/client-Ce_9biLG.js?v=9d936361:14336

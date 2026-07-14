@@ -1,0 +1,9 @@
+[  596314ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:5175/src/data/userAccountConfig.js?t=1783999579162:0
+[  596315ms] [ERROR] [vite] Failed to reload /src/App.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5175/@vite/client:509
+[  596316ms] [ERROR] [vite] Failed to reload /src/pages/SecuritiesBrokerageAdminPrototype.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5175/@vite/client:509
+[  596316ms] [ERROR] [vite] Failed to reload /src/pages/UserAccountConfigPage.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5175/@vite/client:509
+[  599832ms] The requested module '/src/data/userAccountConfig.js?t=1783999581348' does not provide an export named 'createUserAccountRecord'
+[  646439ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/node_modules/.vite/deps/client-Ce_9biLG.js?v=9d936361:14336
+[  695924ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:5175/src/pages/UserAccountConfigPage.jsx?t=1783999678941:0
+[  695925ms] [ERROR] [vite] Failed to reload /src/pages/UserAccountConfigPage.jsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:5175/@vite/client:509
+[  699093ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5175/node_modules/.vite/deps/client-Ce_9biLG.js?v=9d936361:14336

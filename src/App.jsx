@@ -28,6 +28,7 @@ import { BaasAdminReviewPrototype } from './pages/BaasAdminReviewPrototype'
 import { BaasOpeningApplicationPage } from './pages/BaasOpeningApplicationPage'
 import { BaasOpeningPrototype } from './pages/BaasOpeningPrototype'
 import { BaasAdminWorkbenchPrototype } from './pages/BaasAdminWorkbenchPrototype'
+import { AccountManagementPrototypeHome } from './pages/AccountManagementPrototypeHome'
 import { BaasPrototypeHome } from './pages/BaasPrototypeHome'
 import { BaasSystemReformPage } from './pages/BaasSystemReformPage'
 import { ProductManualHome } from './pages/ProductManualHome'
@@ -40,8 +41,10 @@ import {
 } from './pages/SecuritiesAccountPrototype'
 import { SecuritiesBrokerageAdminPrototype } from './pages/SecuritiesBrokerageAdminPrototype'
 import { initialAccountCurrencyConfigs } from './data/accountCurrencyConfig'
+import { initialAccountTypeConfigs } from './data/accountTypeConfig'
 import { initialBrokerageConfigs } from './data/brokerageConfig'
 import { initialBrokerageApplications } from './data/securitiesBrokerageApplications'
+import { initialUserAccountConfigs } from './data/userAccountConfig'
 
 function useCurrentPath() {
   const [path, setPath] = useState(window.location.pathname)
@@ -95,9 +98,13 @@ function BaasInterlacePage({ onBack }) {
 function App() {
   const [path, navigate] = useCurrentPath()
   const [baasOpeningInitialStatus, setBaasOpeningInitialStatus] = useState('not_opened')
+  const [accountManagementOpeningStatus, setAccountManagementOpeningStatus] = useState('not_opened')
+  const [accountManagementApplicationVariant, setAccountManagementApplicationVariant] = useState('us')
   const [brokerageApplications, setBrokerageApplications] = useState(initialBrokerageApplications)
   const [brokerageConfigs, setBrokerageConfigs] = useState(initialBrokerageConfigs)
   const [accountCurrencyConfigs, setAccountCurrencyConfigs] = useState(initialAccountCurrencyConfigs)
+  const [accountTypeConfigs, setAccountTypeConfigs] = useState(initialAccountTypeConfigs)
+  const [userAccountConfigs, setUserAccountConfigs] = useState(initialUserAccountConfigs)
 
   const updateBrokerageApplication = (applicationId, patch) => {
     setBrokerageApplications((current) => current.map((application) => (
@@ -164,6 +171,65 @@ function App() {
         onChangeAccountCurrencyConfigs={setAccountCurrencyConfigs}
         brokerageConfigs={brokerageConfigs}
         onChangeBrokerageConfigs={setBrokerageConfigs}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/account-management-prototype') {
+    return (
+      <AccountManagementPrototypeHome
+        onBack={() => navigate('/')}
+        onNavigate={navigate}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/account-management-prototype/opening') {
+    return (
+      <BaasOpeningPrototype
+        onBack={() => navigate('/admin/product-manual/account-management-prototype')}
+        onOpenApplication={(variant = 'us') => {
+          setAccountManagementApplicationVariant(variant)
+          navigate('/admin/product-manual/account-management-prototype/account-opening/create')
+        }}
+        onPrototypeHome={() => navigate('/admin/product-manual/account-management-prototype')}
+        initialStatus={accountManagementOpeningStatus}
+        prototypeLabel="用户新加坡账户配置"
+        accountCurrencyConfigs={accountCurrencyConfigs}
+        enableSingaporeOpening
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/account-management-prototype/account-opening/create') {
+    return (
+      <BaasOpeningApplicationPage
+        onBack={() => navigate('/admin/product-manual/account-management-prototype/opening')}
+        onProceedToOpeningStatus={() => {
+          setAccountManagementOpeningStatus('reviewing')
+          navigate('/admin/product-manual/account-management-prototype/opening')
+        }}
+        openingAccountVariant={accountManagementApplicationVariant}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/account-management-prototype/admin-review') {
+    return (
+      <SecuritiesBrokerageAdminPrototype
+        onBack={() => navigate('/admin/product-manual/account-management-prototype')}
+        brokerageApplications={brokerageApplications}
+        onUpdateBrokerageApplication={updateBrokerageApplication}
+        accountCurrencyConfigs={accountCurrencyConfigs}
+        onChangeAccountCurrencyConfigs={setAccountCurrencyConfigs}
+        brokerageConfigs={brokerageConfigs}
+        onChangeBrokerageConfigs={setBrokerageConfigs}
+        accountTypeConfigs={accountTypeConfigs}
+        onChangeAccountTypeConfigs={setAccountTypeConfigs}
+        userAccountConfigs={userAccountConfigs}
+        onChangeUserAccountConfigs={setUserAccountConfigs}
+        showAccountTypeConfig
+        defaultActivePage="account-opening-review"
       />
     )
   }

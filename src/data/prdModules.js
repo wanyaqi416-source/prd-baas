@@ -82,6 +82,21 @@ export const prdModules = [
     buttonLabel: '进入原型',
   },
   {
+    id: 'account-management-prototype',
+    title: '用户新加坡账户配置',
+    subtitle: '新加坡账户客户端开户流程与后台审核双入口原型',
+    description:
+      '将 BaaS 原型的客户端开户流程搬到用户新加坡账户配置下，并保留当前新加坡账户后台审核页面作为运营处理入口。',
+    category: '原型',
+    status: 'Prototype',
+    phase: 'Prototype Draft',
+    route: '/admin/product-manual/account-management-prototype',
+    tags: ['新加坡账户', '开户流程', '后台审核', '客户端', '后台管理'],
+    source: 'Current Project',
+    moduleType: 'prototype',
+    buttonLabel: '进入原型',
+  },
+  {
     id: 'user-transfer-prototype',
     title: '转账给其他用户原型',
     subtitle: '信托用户之间互转原型入口',
