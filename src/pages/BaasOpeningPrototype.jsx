@@ -2823,6 +2823,8 @@ export function BaasOpeningPrototype({
   enableSingaporeOpening = false,
   initialJurisdictionStatuses,
   onJurisdictionStatusesChange,
+  demoStatusAccount,
+  demoStatusAccounts,
 }) {
   const [status, setStatus] = useState(initialStatus)
   const [jurisdictionStatuses, setJurisdictionStatuses] = useState(() => ({
@@ -2853,6 +2855,12 @@ export function BaasOpeningPrototype({
     && status === 'opened'
     && (Boolean(onOpenBrokerageService) || brokerageSummary.hasAnyActivity)
   const showSingaporeAccount = enableSingaporeOpening && jurisdictionStatuses.singapore === 'opened'
+  const demoStatusTargets = demoStatusAccounts?.length
+    ? demoStatusAccounts
+    : demoStatusAccount
+      ? [demoStatusAccount]
+      : []
+  const demoStatus = demoStatusTargets.length ? (jurisdictionStatuses[demoStatusTargets[0]] || 'not_opened') : status
 
   const updateJurisdictionStatuses = (updater) => {
     setJurisdictionStatuses((current) => {
@@ -2863,6 +2871,22 @@ export function BaasOpeningPrototype({
   }
 
   const changeStatus = (nextStatus) => {
+    if (demoStatusTargets.length) {
+      updateJurisdictionStatuses((current) => {
+        const next = { ...current }
+        demoStatusTargets.forEach((accountId) => {
+          next[accountId] = nextStatus
+        })
+        return next
+      })
+      if (demoStatusTargets.includes('us')) {
+        setStatus(nextStatus)
+      }
+      setActiveAccount('trust')
+      setActiveOpenedPage('account')
+      return
+    }
+
     setStatus(nextStatus)
     updateJurisdictionStatuses((current) => ({ ...current, us: nextStatus }))
     setActiveAccount('trust')
@@ -3016,7 +3040,7 @@ export function BaasOpeningPrototype({
   return (
     <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
       <DemoBar
-        status={status}
+        status={demoStatus}
         onStatusChange={changeStatus}
         onPrototypeHome={onPrototypeHome}
         prototypeLabel={prototypeLabel}

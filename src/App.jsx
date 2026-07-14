@@ -202,6 +202,7 @@ function App() {
         prototypeLabel="用户新加坡账户配置"
         accountCurrencyConfigs={accountCurrencyConfigs}
         enableSingaporeOpening
+        demoStatusAccounts={['us', 'singapore']}
       />
     )
   }
