@@ -2,10 +2,12 @@ import { useMemo, useState } from 'react'
 import {
   ArrowLeft,
   Banknote,
+  CalendarDays,
   Clock3,
   Eye,
   Pencil,
   Search,
+  UserRound,
   WalletCards,
   X,
 } from 'lucide-react'
@@ -234,14 +236,14 @@ function SingaporeAccountDetail({ user, singaporeType, onBack, onEdit }) {
   const userAccount = user?.singaporeAccount || createSingaporeAccountRecord()
   const receivingAccount = getEffectiveReceivingAccount(singaporeType, userAccount)
   const isConfigured = Boolean(userAccount.beneficiaryName && userAccount.accountNumber)
-  const supportedCurrencies = singaporeType?.currencies?.map((currency) => currency.code) || ['USD', 'CNY', 'SGD', 'AED', 'JPY']
+  const userInitials = (user.userName || user.userId || 'U').slice(0, 2).toUpperCase()
   const accountOverviewRows = [
     ['账户类型', '新加坡账户'],
     ['账户状态', userAccount.status || '-'],
     ['账户号码', receivingAccount.accountNumber || '-'],
     ['收款人', receivingAccount.beneficiaryName || '-'],
     ['开户完成时间', userAccount.approvedAt || '-'],
-    ['信息来源', isConfigured ? '用户实际配置' : '系统默认模板'],
+    ['信息来源', isConfigured ? '运营配置' : '系统默认模板'],
   ]
   const receivingRows = [
     ['收款人', receivingAccount.beneficiaryName],
@@ -267,66 +269,88 @@ function SingaporeAccountDetail({ user, singaporeType, onBack, onEdit }) {
             />
           </div>
           <div className="flex items-center gap-[8px]">
-            <ActionButton icon={Eye}>查看客户完整资料</ActionButton>
             <ActionButton icon={Pencil} onClick={onEdit} disabled={userAccount.status !== '已开户'}>编辑账户信息</ActionButton>
           </div>
         </div>
       </Panel>
 
-      <Panel className="mt-[21px] overflow-hidden">
-        <div className="border-b border-[#e5e6ef] bg-[#fbfbfd] px-[18px] py-[18px]">
-          <div className="flex items-center justify-between gap-[16px]">
-            <div className="flex items-center gap-[10px] text-[16px] font-semibold text-[#20213a]">
+      <div className="mt-[21px] grid grid-cols-[320px_1fr] gap-[18px]">
+        <Panel className="p-[18px]">
+          <div className="flex flex-col items-center pb-[18px]">
+            <div className="flex h-[88px] w-[88px] items-center justify-center rounded-[5px] bg-[#d9c5ff] text-[26px] font-bold text-[#8b4fff]">{userInitials}</div>
+            <div className="mt-[14px] text-center text-[16px] font-semibold text-[#20213a]">{user.userName}</div>
+            <StatusBadge tone="gray">{user.userStatus}</StatusBadge>
+          </div>
+          <div className="space-y-[14px] border-t border-[#e5e6ef] pt-[16px] text-[13px] text-[#55556e]">
+            <div className="flex gap-[12px]">
               <WalletCards className="h-[18px] w-[18px] text-[#8b4fff]" />
-              新加坡账户概览
-            </div>
-            <StatusBadge tone={singaporeStatusTone(userAccount.status)}>{userAccount.status}</StatusBadge>
-          </div>
-          <div className="mt-[18px] grid grid-cols-3 border border-[#e2e4ec] bg-white">
-            {accountOverviewRows.map(([label, value], index) => (
-              <div key={label} className={`px-[14px] py-[13px] ${index > 2 ? 'border-t border-[#e5e6ef]' : ''} ${(index + 1) % 3 === 0 ? '' : 'border-r border-[#e5e6ef]'}`}>
-                <div className="text-[12px] text-[#66677f]">{label}</div>
-                <div className="mt-[7px] break-words text-[14px] font-semibold text-[#20213a]">{value}</div>
+              <div>
+                <div className="font-semibold text-[#20213a]">新加坡账户</div>
+                <div className="text-[12px]">账户类型</div>
               </div>
-            ))}
+            </div>
+            <div className="flex gap-[12px]">
+              <UserRound className="h-[18px] w-[18px] text-[#8b4fff]" />
+              <div>
+                <div className="font-semibold text-[#20213a]">{user.userId}</div>
+                <div className="text-[12px]">用户 ID</div>
+              </div>
+            </div>
+            <div className="flex gap-[12px]">
+              <CalendarDays className="h-[18px] w-[18px] text-[#8b4fff]" />
+              <div>
+                <div className="font-semibold text-[#20213a]">{user.registeredAt || '-'}</div>
+                <div className="text-[12px]">注册时间</div>
+              </div>
+            </div>
           </div>
-        </div>
+          <button type="button" className="mt-[18px] flex h-[36px] w-full items-center justify-center gap-[7px] rounded-[5px] border border-[#8b4fff] text-[12px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">
+            <Eye className="h-[14px] w-[14px]" />
+            查看客户完整资料
+          </button>
+        </Panel>
 
-        <div className="space-y-[18px] p-[18px]">
-          <div>
-            <div className="mb-[12px] flex items-center justify-between gap-[12px]">
-              <div className="flex items-center gap-[8px] text-[14px] font-semibold text-[#20213a]">
-                <Banknote className="h-[17px] w-[17px] text-[#8b4fff]" />
-                收款信息
+        <Panel className="overflow-hidden">
+          <div className="border-b border-[#e5e6ef] bg-[#fbfbfd] px-[18px] py-[18px]">
+            <div className="flex items-center justify-between gap-[16px]">
+              <div className="flex items-center gap-[10px] text-[16px] font-semibold text-[#20213a]">
+                <WalletCards className="h-[18px] w-[18px] text-[#8b4fff]" />
+                新加坡账户概览
               </div>
-              <span className="text-[12px] text-[#8a8ca0]">收款人和账户号码支持用户级配置，其他银行信息读取系统默认配置。</span>
+              <StatusBadge tone={singaporeStatusTone(userAccount.status)}>{userAccount.status}</StatusBadge>
             </div>
-            <div className="rounded-[5px] border border-[#e2e4ec]">
-              {receivingRows.map(([label, value], index) => (
-                <div key={label} className={`grid grid-cols-[112px_1fr] gap-[14px] px-[12px] py-[11px] text-[13px] ${index === receivingRows.length - 1 ? '' : 'border-b border-[#e5e6ef]'}`}>
-                  <div className="text-[#66677f]">{label}</div>
-                  <div className="break-words font-semibold text-[#20213a]">{value || '-'}</div>
+            <div className="mt-[18px] grid grid-cols-3 border border-[#e2e4ec] bg-white">
+              {accountOverviewRows.map(([label, value], index) => (
+                <div key={label} className={`px-[14px] py-[13px] ${index > 2 ? 'border-t border-[#e5e6ef]' : ''} ${(index + 1) % 3 === 0 ? '' : 'border-r border-[#e5e6ef]'}`}>
+                  <div className="text-[12px] text-[#66677f]">{label}</div>
+                  <div className="mt-[7px] break-words text-[14px] font-semibold text-[#20213a]">{value}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div>
-            <div className="mb-[12px] flex items-center gap-[8px] text-[14px] font-semibold text-[#20213a]">
-              <WalletCards className="h-[17px] w-[17px] text-[#8b4fff]" />
-              支持币种
-            </div>
-            <div className="rounded-[5px] border border-[#e2e4ec] px-[12px] py-[12px]">
-              <div className="flex flex-wrap gap-[8px]">
-                {supportedCurrencies.map((currency) => (
-                  <span key={currency} className="rounded-full bg-[#e7f5ff] px-[10px] py-[5px] text-[12px] font-semibold text-[#2586d9]">{currency}</span>
+          <div className="space-y-[18px] p-[18px]">
+            <div>
+              <div className="mb-[12px] flex items-center justify-between gap-[12px]">
+                <div className="flex items-center gap-[8px] text-[14px] font-semibold text-[#20213a]">
+                  <Banknote className="h-[17px] w-[17px] text-[#8b4fff]" />
+                  收款信息
+                </div>
+                <span className="text-[12px] text-[#8a8ca0]">收款人和账户号码支持用户级配置，其他银行信息读取系统默认配置。</span>
+              </div>
+              <div className="rounded-[5px] border border-[#e2e4ec]">
+                {receivingRows.map(([label, value], index) => (
+                  <div key={label} className={`grid grid-cols-[112px_1fr] gap-[14px] px-[12px] py-[11px] text-[13px] ${index === receivingRows.length - 1 ? '' : 'border-b border-[#e5e6ef]'}`}>
+                    <div className="text-[#66677f]">{label}</div>
+                    <div className="break-words font-semibold text-[#20213a]">{value || '-'}</div>
+                  </div>
                 ))}
               </div>
-              <div className="mt-[10px] text-[12px] text-[#8a8ca0]">币种来自系统账户类型配置，用户账户页面不可修改。</div>
             </div>
+
           </div>
-        </div>
-      </Panel>
+        </Panel>
+      </div>
 
     </AdminShell>
   )
