@@ -42,6 +42,7 @@ import {
   getCurrencyName,
   initialAccountCurrencyConfigs,
 } from '../data/accountCurrencyConfig'
+import { initialAccountTypeConfigs } from '../data/accountTypeConfig'
 import {
   brokerageConfigStatusOptions,
   brokerageDisplayTagOptions,
@@ -56,6 +57,7 @@ import {
   brokerageOpeningStatusTones,
   initialBrokerageApplications,
 } from '../data/securitiesBrokerageApplications'
+import { createSingaporeAccountRecord } from '../data/userAccountConfig'
 import { CurrencyIcon } from '../components/baas/CurrencyIcon'
 
 const pendingApplications = [
@@ -749,7 +751,7 @@ function Sidebar({ activePage, onSelect }) {
         <div className="mt-[10px] space-y-[4px]">
           <SidebarItem icon={BriefcaseBusiness} label="案件工作台" onClick={() => onSelect('opening-review')} />
           <SidebarItem icon={ListChecks} label="开户审核" marked active={activePage === 'opening-review'} onClick={() => onSelect('opening-review')} />
-          <SidebarItem icon={UsersRound} label="用户管理" active={activePage === 'user-management'} onClick={() => onSelect('user-management')} />
+          <SidebarItem icon={UsersRound} label="用户管理" marked active={activePage === 'user-management'} onClick={() => onSelect('user-management')} />
           <SidebarItem icon={Gauge} label="处理中审核" />
           <SidebarItem icon={WalletCards} label="法币账户审核" />
           <SidebarItem icon={FileCheck2} label="数字资产地址审核" />
@@ -1169,7 +1171,196 @@ function OpeningReviewDetailPage({ onBack, mode = 'detail' }) {
   )
 }
 
-function UserManagementTable() {
+function getSingaporeAccountActionLabel(status) {
+  if (status === '未开通') return '开通新加坡账户'
+  if (status === '待处理') return '查看申请'
+  if (status === '审核中') return '查看申请'
+  if (status === '已开户') return '编辑新加坡账户'
+  if (status === '已拒绝') return '查看申请'
+  return '新加坡账户'
+}
+
+function singaporeAccountTone(status) {
+  if (status === '已开户') return 'green'
+  if (status === '审核中') return 'blue'
+  if (status === '待处理') return 'orange'
+  if (status === '已拒绝') return 'red'
+  return 'gray'
+}
+
+function getManagementStamp() {
+  const value = new Date()
+  const pad = (item) => String(item).padStart(2, '0')
+
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())} ${pad(value.getHours())}:${pad(value.getMinutes())}`
+}
+
+function shortSingaporeAccountNumber(accountNumber = '') {
+  if (!accountNumber) return ''
+  return accountNumber.length > 4 ? accountNumber.slice(-4) : accountNumber
+}
+
+function findSingaporeTypeForUserManagement(accountTypes = initialAccountTypeConfigs) {
+  return accountTypes.find((item) => item.code === 'SG_ACCOUNT')
+    || initialAccountTypeConfigs.find((item) => item.code === 'SG_ACCOUNT')
+    || {}
+}
+
+function getSingaporeAccountDefaults(accountTypes = initialAccountTypeConfigs) {
+  const singaporeType = findSingaporeTypeForUserManagement(accountTypes)
+  const receivingAccount = singaporeType.receivingAccount || {}
+
+  return {
+    beneficiaryName: receivingAccount.beneficiaryName || 'FIDERE TRUST LIMITED',
+    accountNumber: shortSingaporeAccountNumber(receivingAccount.accountNumber) || '0454',
+    bankName: receivingAccount.bankName || 'Green Link Digital Bank Pte. Ltd.',
+    bankAddress: receivingAccount.bankAddress || '20 PASIR PANJANG ROAD #07-25-28 MAPLETREE BUSINESS CITY SINGAPORE 117439',
+    receivingBank: receivingAccount.receivingBank || 'Green Link Digital Bank',
+    swiftCode: receivingAccount.swiftCode || 'GLDTSGSG',
+    currencies: singaporeType.currencies?.map((currency) => currency.code).join(' / ') || 'USD / CNY / SGD / AED / JPY',
+  }
+}
+
+function getSingaporeOpeningSource(account) {
+  if (account.status === '未开通') return '后台手动开通'
+  return account.openingSource || (account.appliedAt ? '客户申请' : '后台手动开通')
+}
+
+function createUnopenedSingaporeDemoUser(index = 1) {
+  const suffix = String(index).padStart(2, '0')
+
+  return {
+    id: `user-sg-unopened-demo-${suffix}`,
+    userName: `未开通Demo${suffix}`,
+    userId: `UID-DEMO-${suffix}`,
+    email: `sg-demo-${suffix}@example.com`,
+    customerType: '个人',
+    registeredAt: '2026-07-14 10:00',
+    userStatus: '正常',
+    createdAt: '2026-07-14 10:01',
+    updatedAt: '2026-07-14 10:01',
+    singaporeAccount: createSingaporeAccountRecord({
+      status: '未开通',
+      updatedAt: '2026-07-14 10:01',
+      updatedBy: '系统',
+    }),
+  }
+}
+
+function mapSingaporeUserRows(singaporeAccountUsers = []) {
+  return singaporeAccountUsers.map((user) => ({
+    initials: (user.userName || user.userId || 'U').slice(0, 2).toUpperCase(),
+    name: user.userName,
+    id: user.userId,
+    sourceId: user.id,
+    email: user.email || `${String(user.userId || user.id).toLowerCase()}@example.com`,
+    type: user.customerType || '个人',
+    approvedAt: user.createdAt || user.registeredAt || '-',
+    lastActiveAt: user.updatedAt || '-',
+    singaporeAccount: user.singaporeAccount || {},
+  }))
+}
+
+function SingaporeAccountListModal({ user, accountTypes, onClose, onSave }) {
+  const sgAccount = user.singaporeAccount || createSingaporeAccountRecord()
+  const defaults = getSingaporeAccountDefaults(accountTypes)
+  const mode = sgAccount.status === '未开通' ? 'open' : 'edit'
+  const title = mode === 'open' ? '开通新加坡账户' : '编辑新加坡账户'
+  const confirmText = mode === 'open' ? '确认开通' : '保存'
+  const openingSource = getSingaporeOpeningSource(sgAccount)
+  const [beneficiaryName, setBeneficiaryName] = useState(sgAccount.beneficiaryName || defaults.beneficiaryName)
+  const [accountNumber, setAccountNumber] = useState(sgAccount.accountNumber || defaults.accountNumber)
+  const [error, setError] = useState('')
+
+  const submit = () => {
+    if (!beneficiaryName.trim() || !accountNumber.trim()) {
+      setError('请填写收款人和账户号码。')
+      return
+    }
+    onSave({
+      beneficiaryName: beneficiaryName.trim(),
+      accountNumber: accountNumber.trim(),
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#252236]/55 px-[24px] py-[28px]">
+      <section className="w-[720px] overflow-hidden rounded-[8px] bg-white shadow-[0_18px_48px_rgba(28,29,42,0.28)]">
+        <div className="flex h-[62px] items-center justify-between border-b border-[#e5e6ef] px-[22px]">
+          <div>
+            <h2 className="text-[16px] font-semibold text-[#20213a]">{title}</h2>
+            <div className="mt-[3px] text-[11px] font-semibold uppercase text-[#8a8ca0]">{user.userName || '-'} / {user.userId || '-'}</div>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-[4px] p-[7px] text-[#66677f] hover:bg-[#f6f7fb]">
+            <X className="h-[16px] w-[16px]" />
+          </button>
+        </div>
+        <div className="space-y-[16px] px-[22px] py-[18px]">
+          {error ? <div className="rounded-[5px] bg-[#ffe8eb] px-[12px] py-[10px] text-[12px] font-semibold text-[#f04f5f]">{error}</div> : null}
+          <div className="grid grid-cols-2 gap-[12px]">
+            {[
+              ['用户名称', user.userName],
+              ['账户类型', '新加坡账户'],
+              ['开户来源', openingSource],
+              ['当前状态', sgAccount.status || '未开通'],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-[5px] border border-[#e2e4ec] bg-[#fbfbfd] px-[12px] py-[10px]">
+                <div className="text-[12px] text-[#66677f]">{label}</div>
+                <div className="mt-[7px] break-words text-[13px] font-semibold text-[#20213a]">{value || '-'}</div>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-[5px] border border-[#e2e4ec] bg-[#fbfbfd] p-[12px]">
+            <div className="mb-[12px] text-[13px] font-semibold text-[#20213a]">收款银行信息</div>
+            <div className="grid grid-cols-2 gap-[12px]">
+              <label className="block">
+                <span className="mb-[-8px] ml-[10px] inline-block bg-[#fbfbfd] px-[4px] text-[12px] text-[#66677f]">收款人 *</span>
+                <input value={beneficiaryName} onChange={(event) => setBeneficiaryName(event.target.value)} className="h-[50px] w-full rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] text-[14px] text-[#24243d] outline-none focus:border-[#8b4fff]" />
+              </label>
+              <label className="block">
+                <span className="mb-[-8px] ml-[10px] inline-block bg-[#fbfbfd] px-[4px] text-[12px] text-[#66677f]">账户号码 *</span>
+                <input value={accountNumber} onChange={(event) => setAccountNumber(event.target.value)} className="h-[50px] w-full rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] text-[14px] text-[#24243d] outline-none focus:border-[#8b4fff]" />
+              </label>
+              {[
+                ['银行名称', defaults.bankName],
+                ['收款银行', defaults.receivingBank],
+                ['SWIFT Code', defaults.swiftCode],
+                ['支持币种', defaults.currencies],
+                ['银行地址', defaults.bankAddress],
+              ].map(([label, value]) => (
+                <label key={label} className={`${label === '银行地址' || label === '支持币种' ? 'col-span-2' : ''} block`}>
+                  <span className="mb-[-8px] ml-[10px] inline-block bg-[#fbfbfd] px-[4px] text-[12px] text-[#66677f]">{label}</span>
+                  {label === '银行地址' ? (
+                    <textarea
+                      readOnly
+                      value={value || ''}
+                      className="h-[72px] w-full resize-none rounded-[5px] border border-[#d8dae4] bg-[#eef0f4] px-[12px] py-[11px] text-[13px] font-semibold leading-[20px] text-[#66677f] outline-none"
+                    />
+                  ) : (
+                    <input
+                      readOnly
+                      value={value || ''}
+                      className="h-[50px] w-full rounded-[5px] border border-[#d8dae4] bg-[#eef0f4] px-[12px] text-[13px] font-semibold text-[#66677f] outline-none"
+                    />
+                  )}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-[10px] border-t border-[#e5e6ef] bg-white p-[14px]">
+          <button type="button" onClick={onClose} className="h-[40px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">取消</button>
+          <button type="button" onClick={submit} className="h-[40px] rounded-[5px] bg-[#8b4fff] text-[13px] font-semibold text-white hover:bg-[#7f42f2]">{confirmText}</button>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function UserManagementTable({ singaporeAccountUsers, onOpenSingaporeAccount, onOpenSingaporeApplication }) {
+  const showSingaporeAccount = Array.isArray(singaporeAccountUsers)
+  const rows = showSingaporeAccount ? mapSingaporeUserRows(singaporeAccountUsers) : userRows
+
   return (
     <div className="mt-[15px] border-t border-[#e5e6ef] pt-[15px]">
       <table className="w-full border-collapse text-left">
@@ -1179,37 +1370,121 @@ function UserManagementTable() {
             <th className="w-[132px] px-[18px]">申请类型</th>
             <th className="w-[220px] px-[18px]">通过时间</th>
             <th className="w-[118px] px-[18px]">账户状态</th>
+            {showSingaporeAccount ? <th className="w-[150px] px-[18px]">新加坡账户状态</th> : null}
+            {showSingaporeAccount ? <th className="w-[230px] px-[18px]">新加坡账户信息</th> : null}
             <th className="w-[220px] px-[18px]">最后活动</th>
             <th className="px-[18px]">操作</th>
           </tr>
         </thead>
         <tbody className="text-[13px] text-[#55556e]">
-          {userRows.map((row) => (
-            <tr key={row.id} className="h-[86px] border-b border-[#e7e8ef] bg-white">
-              <td className="px-[18px]">
-                <div className="flex items-center gap-[14px]">
-                  <div className="flex h-[31px] w-[31px] shrink-0 items-center justify-center rounded-full bg-[#eeeeef] text-[13px] font-medium text-[#4b4b62]">{row.initials}</div>
-                  <div className="leading-[1.6]">
-                    <div className="text-[14px] font-semibold text-[#2b2940]">{row.name}</div>
-                    <div>ID: {row.id}</div>
-                    <div>{row.email}</div>
+          {rows.map((row) => {
+            const sgAccount = row.singaporeAccount || {}
+            const singaporeStatus = sgAccount.status || '未开通'
+            const sgActionLabel = getSingaporeAccountActionLabel(singaporeStatus)
+            const openSingapore = () => {
+              if (singaporeStatus === '待处理' || singaporeStatus === '审核中' || singaporeStatus === '已拒绝') {
+                onOpenSingaporeApplication?.(row)
+                return
+              }
+              onOpenSingaporeAccount?.(row.sourceId)
+            }
+
+            return (
+              <tr key={row.sourceId || row.id} className="h-[86px] border-b border-[#e7e8ef] bg-white">
+                <td className="px-[18px]">
+                  <div className="flex items-center gap-[14px]">
+                    <div className="flex h-[31px] w-[31px] shrink-0 items-center justify-center rounded-full bg-[#eeeeef] text-[13px] font-medium text-[#4b4b62]">{row.initials}</div>
+                    <div className="leading-[1.6]">
+                      <div className="text-[14px] font-semibold text-[#2b2940]">{row.name}</div>
+                      <div>ID: {row.id}</div>
+                      <div>{row.email}</div>
+                    </div>
                   </div>
-                </div>
-              </td>
-              <td className="px-[18px]"><span className="inline-flex items-center gap-[7px] text-[#424258]"><FileText className="h-[15px] w-[15px] text-[#6b687d]" strokeWidth={1.8} />{row.type}</span></td>
-              <td className="px-[18px]">{row.approvedAt}</td>
-              <td className="px-[18px]"><StatusSwitch /></td>
-              <td className="px-[18px]">{row.lastActiveAt}</td>
-              <td className="px-[18px]"><div className="flex items-center gap-[7px]"><ActionButton icon={Eye}>查看详情</ActionButton><ActionButton icon={KeyRound}>修改密码</ActionButton></div></td>
-            </tr>
-          ))}
+                </td>
+                <td className="px-[18px]"><span className="inline-flex items-center gap-[7px] text-[#424258]"><FileText className="h-[15px] w-[15px] text-[#6b687d]" strokeWidth={1.8} />{row.type}</span></td>
+                <td className="px-[18px]">{row.approvedAt}</td>
+                <td className="px-[18px]"><StatusSwitch /></td>
+                {showSingaporeAccount ? (
+                  <td className="px-[18px]">
+                    <StatusBadge tone={singaporeAccountTone(singaporeStatus)}>{singaporeStatus}</StatusBadge>
+                  </td>
+                ) : null}
+                {showSingaporeAccount ? (
+                  <td className="px-[18px]">
+                    {singaporeStatus === '已开户' ? (
+                      <div className="text-[12px] leading-[20px] text-[#66677f]">
+                        <div>账户号码：<span className="font-semibold text-[#20213a]">{sgAccount.accountNumber || '-'}</span></div>
+                        <div>收款人：<span className="font-semibold text-[#20213a]">{sgAccount.beneficiaryName || '-'}</span></div>
+                      </div>
+                    ) : (
+                      <span className="text-[12px] text-[#8a8ca0]">-</span>
+                    )}
+                  </td>
+                ) : null}
+                <td className="px-[18px]">{row.lastActiveAt}</td>
+                <td className="px-[18px]">
+                  <div className="flex flex-wrap items-center gap-[7px]">
+                    <ActionButton icon={Eye}>{showSingaporeAccount ? '查看' : '查看详情'}</ActionButton>
+                    {showSingaporeAccount ? <ActionButton icon={Pencil}>编辑</ActionButton> : null}
+                    {showSingaporeAccount ? <ActionButton icon={WalletCards} onClick={openSingapore}>{sgActionLabel}</ActionButton> : null}
+                    {!showSingaporeAccount ? <ActionButton icon={KeyRound}>修改密码</ActionButton> : null}
+                  </div>
+                </td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>
   )
 }
 
-export function UserManagementPage({ focusedCustomer }) {
+export function UserManagementPage({
+  focusedCustomer,
+  singaporeAccountUsers,
+  onChangeSingaporeAccountUsers,
+  accountTypes = initialAccountTypeConfigs,
+  onOpenSingaporeApplication,
+}) {
+  const [editingSingaporeUserId, setEditingSingaporeUserId] = useState('')
+  const editingSingaporeUser = Array.isArray(singaporeAccountUsers)
+    ? singaporeAccountUsers.find((user) => user.id === editingSingaporeUserId)
+    : null
+
+  const saveSingaporeAccount = (patch) => {
+    if (!editingSingaporeUser || !onChangeSingaporeAccountUsers) return
+    const stamp = getManagementStamp()
+
+    const nextUsers = singaporeAccountUsers.map((user) => {
+      if (user.id !== editingSingaporeUser.id) return user
+      const currentAccount = user.singaporeAccount || createSingaporeAccountRecord()
+      const openingSource = currentAccount.status === '未开通'
+        ? '后台手动开通'
+        : getSingaporeOpeningSource(currentAccount)
+
+      return {
+        ...user,
+        updatedAt: stamp,
+        singaporeAccount: {
+          ...currentAccount,
+          ...patch,
+          status: '已开户',
+          approvedAt: currentAccount.approvedAt || stamp,
+          updatedAt: stamp,
+          updatedBy: '运营管理员',
+          openingSource,
+        },
+      }
+    })
+
+    if (!nextUsers.some((user) => (user.singaporeAccount?.status || '未开通') === '未开通')) {
+      nextUsers.push(createUnopenedSingaporeDemoUser(nextUsers.length + 1))
+    }
+
+    onChangeSingaporeAccountUsers(nextUsers)
+    setEditingSingaporeUserId('')
+  }
+
   if (focusedCustomer) {
     return (
       <AdminShell>
@@ -1240,8 +1515,20 @@ export function UserManagementPage({ focusedCustomer }) {
           <SearchBox placeholder="搜索用户名、ID或客户编号..." />
           <SelectBox label="账户状态" />
         </div>
-        <UserManagementTable />
+        <UserManagementTable
+          singaporeAccountUsers={singaporeAccountUsers}
+          onOpenSingaporeAccount={setEditingSingaporeUserId}
+          onOpenSingaporeApplication={onOpenSingaporeApplication}
+        />
       </Panel>
+      {editingSingaporeUser ? (
+        <SingaporeAccountListModal
+          user={editingSingaporeUser}
+          accountTypes={accountTypes}
+          onClose={() => setEditingSingaporeUserId('')}
+          onSave={saveSingaporeAccount}
+        />
+      ) : null}
     </AdminShell>
   )
 }

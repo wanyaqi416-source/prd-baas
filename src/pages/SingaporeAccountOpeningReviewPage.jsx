@@ -420,7 +420,7 @@ function SingaporeAccountOpeningReviewDetailPage({
     ? Boolean(rejectReason.trim())
     : !feeFailed
   const applicationStatus = opened ? '已开户' : reviewResult === 'reject' ? '已拒绝' : record.status === '审核中' ? '审核中' : '待审核'
-  const accountConfigStatus = '待配置'
+  const accountConfigStatus = '待处理'
 
   const addLog = (action, detail) => {
     setLogs((current) => [
@@ -453,7 +453,7 @@ function SingaporeAccountOpeningReviewDetailPage({
     setOpened(true)
     setConfirmOpen(false)
     setMessage('开户成功，页面已切换为只读状态。')
-    addLog('确认开户', '已完成开户审核，客户实际账户信息需在用户账户配置页面维护。')
+    addLog('确认开户', '已完成开户审核，客户实际账户信息需在用户管理页面维护。')
   }
 
   const openUserAccountConfig = () => {
@@ -461,7 +461,7 @@ function SingaporeAccountOpeningReviewDetailPage({
       onOpenUserAccountConfig()
       return
     }
-    setMessage('请前往运营 - 用户新加坡账户配置页面维护客户实际账户信息。')
+    setMessage('请前往 KYC审核 - 用户管理页面维护客户实际账户信息。')
   }
 
   return (
@@ -472,7 +472,7 @@ function SingaporeAccountOpeningReviewDetailPage({
         </div>
       ) : null}
       <div className="mb-[16px] flex items-center justify-between">
-        <PageTitle title="新加坡账户开户审核" subtitle="运营查看客户申请信息并完成开户审核；客户实际账户信息在用户账户配置页面维护。" />
+        <PageTitle title="新加坡账户开户审核" subtitle="运营查看客户申请信息并完成开户审核；客户实际账户信息在用户管理页面维护。" />
         <div className="flex items-center gap-[10px]">
           <StatusBadge tone={viewOnly ? 'blue' : opened ? 'green' : 'blue'}>{viewOnly ? '查看详情' : applicationStatus}</StatusBadge>
         </div>
@@ -601,7 +601,7 @@ function SingaporeAccountOpeningReviewDetailPage({
                   新加坡账户申请信息
                 </div>
                 <div className="flex items-center gap-[8px]">
-                  {accountConfigStatus === '待配置' ? <ActionButton icon={Edit3} onClick={openUserAccountConfig}>配置账户</ActionButton> : null}
+                  {accountConfigStatus === '待处理' ? <ActionButton icon={Edit3} onClick={openUserAccountConfig}>配置账户</ActionButton> : null}
                 </div>
               </div>
             </div>
@@ -613,7 +613,7 @@ function SingaporeAccountOpeningReviewDetailPage({
                 <ReadOnlyField label="支持币种" value={supportedCurrencies.join(' / ')} subdued />
               </div>
               <div className="mt-[12px] rounded-[5px] bg-[#f6f7fb] px-[12px] py-[10px] text-[12px] font-semibold leading-[20px] text-[#66677f]">
-                系统默认收款银行配置仅在账户类型配置页面维护；客户实际账户信息仅在用户账户配置页面维护。
+                系统默认收款银行配置仅在账户类型配置页面维护；客户实际账户信息仅在用户管理页面维护。
               </div>
             </div>
           </Panel>

@@ -11,18 +11,12 @@ export const accountTypeCurrencyOptions = [
 ]
 
 export const bankFieldLabels = [
-  ['beneficiaryName', '收款人名称'],
+  ['beneficiaryName', '银行账户名称'],
   ['bankName', '银行名称'],
+  ['accountNumber', '银行账号'],
   ['bankAddress', '银行地址'],
-  ['accountNumber', '账户号码'],
-  ['iban', 'IBAN'],
-  ['swiftBic', 'SWIFT/BIC'],
-  ['routingNumber', 'Routing Number/ABA'],
-  ['bankCode', 'Bank Code'],
-  ['branchCode', 'Branch Code'],
-  ['sortCode', 'Sort Code'],
-  ['cnaps', 'CNAPS'],
-  ['remark', '备注'],
+  ['receivingBank', '收款银行'],
+  ['swiftBic', 'SWIFT Code'],
 ]
 
 export const receivingAccountFieldLabels = [
@@ -36,8 +30,8 @@ export const receivingAccountFieldLabels = [
 
 export const intermediaryBankFieldLabels = [
   ['intermediaryBankName', '中转银行'],
-  ['intermediaryBankRegion', '中转银行地区/分行'],
-  ['intermediarySwiftCode', '中转银行 SWIFT Code'],
+  ['intermediaryBankRegion', '中转银行地区 / 分行'],
+  ['intermediarySwiftCode', 'SWIFT Code'],
   ['remark', '备注'],
 ]
 
@@ -47,6 +41,7 @@ export const createBankRecord = (overrides = {}) => ({
   bankName: '',
   bankAddress: '',
   accountNumber: '',
+  receivingBank: '',
   iban: '',
   swiftBic: '',
   routingNumber: '',
@@ -104,7 +99,7 @@ const sgReceivingAccount = receivingAccount({
   beneficiaryName: 'FIDERE TRUST LIMITED',
   bankName: 'Green Link Digital Bank Pte. Ltd.',
   accountNumber: '11020160454',
-  bankAddress: '20 PASIR PANJANG ROAD #07-25-28 MAPLETREE BUSINESS CITY SINGAPORE',
+  bankAddress: '20 PASIR PANJANG ROAD #07-25-28 MAPLETREE BUSINESS CITY SINGAPORE 117439',
   receivingBank: 'Green Link Digital Bank',
   swiftCode: 'GLDTSGSG',
 })
@@ -324,6 +319,7 @@ export const initialAccountTypeConfigs = [
             bankName: sgReceivingAccount.bankName,
             bankAddress: sgReceivingAccount.bankAddress,
             accountNumber: sgReceivingAccount.accountNumber,
+            receivingBank: sgReceivingAccount.receivingBank,
             swiftBic: sgReceivingAccount.swiftCode,
             routingNumber: '',
             remark: '新加坡账户 USD 收款银行，前端可补充展示中转行规则。',
@@ -340,7 +336,10 @@ export const initialAccountTypeConfigs = [
         displayOrder: 2,
         showInDeposit: true,
         intermediaryBank: intermediaryBank({
-          remark: '待运营确认 CNY 中转银行信息。',
+          intermediaryBankName: 'BANK OF CHINA LIMITED',
+          intermediaryBankRegion: 'SINGAPORE',
+          intermediarySwiftCode: 'BKCHSGSG',
+          remark: '原图写 CHN (Offshore)，建议对外使用 CNH (Offshore)。',
         }),
         banks: [
           bank('SG-CNY-001', {
@@ -348,6 +347,7 @@ export const initialAccountTypeConfigs = [
             bankName: sgReceivingAccount.bankName,
             bankAddress: sgReceivingAccount.bankAddress,
             accountNumber: sgReceivingAccount.accountNumber,
+            receivingBank: sgReceivingAccount.receivingBank,
             swiftBic: sgReceivingAccount.swiftCode,
             remark: '新加坡账户 CNY 收款银行。',
           }),
@@ -363,7 +363,10 @@ export const initialAccountTypeConfigs = [
         displayOrder: 3,
         showInDeposit: true,
         intermediaryBank: intermediaryBank({
-          remark: '待运营确认 SGD 中转银行信息。',
+          intermediaryBankName: 'N/A',
+          intermediaryBankRegion: 'N/A',
+          intermediarySwiftCode: 'N/A',
+          remark: '新加坡本地转入可不填中转银行',
         }),
         banks: [
           bank('SG-SGD-001', {
@@ -371,6 +374,7 @@ export const initialAccountTypeConfigs = [
             bankName: sgReceivingAccount.bankName,
             bankAddress: sgReceivingAccount.bankAddress,
             accountNumber: sgReceivingAccount.accountNumber,
+            receivingBank: sgReceivingAccount.receivingBank,
             swiftBic: sgReceivingAccount.swiftCode,
             remark: '新加坡账户 SGD 收款银行。',
           }),
@@ -388,7 +392,7 @@ export const initialAccountTypeConfigs = [
         intermediaryBank: intermediaryBank({
           intermediaryBankName: 'JPMORGAN CHASE BANK, N.A.',
           intermediaryBankRegion: 'SINGAPORE',
-          intermediarySwiftCode: 'CHASSSSG',
+          intermediarySwiftCode: 'CHASSGSG',
         }),
         banks: [
           bank('SG-AED-001', {
@@ -396,6 +400,7 @@ export const initialAccountTypeConfigs = [
             bankName: sgReceivingAccount.bankName,
             bankAddress: sgReceivingAccount.bankAddress,
             accountNumber: sgReceivingAccount.accountNumber,
+            receivingBank: sgReceivingAccount.receivingBank,
             swiftBic: sgReceivingAccount.swiftCode,
             remark: '新加坡账户 AED 收款银行。',
           }),
@@ -413,7 +418,7 @@ export const initialAccountTypeConfigs = [
         intermediaryBank: intermediaryBank({
           intermediaryBankName: 'JPMORGAN CHASE BANK, N.A.',
           intermediaryBankRegion: 'SINGAPORE',
-          intermediarySwiftCode: 'CHASSSSG',
+          intermediarySwiftCode: 'CHASSGSG',
         }),
         banks: [
           bank('SG-JPY-001', {
@@ -421,6 +426,7 @@ export const initialAccountTypeConfigs = [
             bankName: sgReceivingAccount.bankName,
             bankAddress: sgReceivingAccount.bankAddress,
             accountNumber: sgReceivingAccount.accountNumber,
+            receivingBank: sgReceivingAccount.receivingBank,
             swiftBic: sgReceivingAccount.swiftCode,
             remark: '新加坡账户 JPY 收款银行。',
           }),

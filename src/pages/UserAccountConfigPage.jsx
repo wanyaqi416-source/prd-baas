@@ -136,8 +136,16 @@ function formatStamp() {
 
 function singaporeStatusTone(status) {
   if (status === '已开户') return 'green'
-  if (status === '开通中') return 'orange'
+  if (status === '审核中') return 'blue'
+  if (status === '待处理') return 'orange'
+  if (status === '已拒绝') return 'red'
   return 'gray'
+}
+
+function singaporeAccountActionLabel(status) {
+  if (status === '未开通') return '开通账户'
+  if (status === '已开户') return '编辑新加坡账户'
+  return '查看申请'
 }
 
 function findSingaporeAccountType(accountTypes) {
@@ -190,7 +198,7 @@ function SingaporeAccountEditModal({ user, singaporeType, onClose, onSave }) {
 
   return (
     <CenterModal
-      title="编辑账户信息"
+      title="编辑新加坡账户"
       subtitle={`${user?.userName || '-'} / ${user?.userId || '-'}`}
       width="w-[760px]"
       onClose={onClose}
@@ -236,6 +244,7 @@ function SingaporeAccountDetail({ user, singaporeType, onBack, onEdit }) {
   const userAccount = user?.singaporeAccount || createSingaporeAccountRecord()
   const receivingAccount = getEffectiveReceivingAccount(singaporeType, userAccount)
   const isConfigured = Boolean(userAccount.beneficiaryName && userAccount.accountNumber)
+  const canMaintainAccount = ['未开通', '已开户'].includes(userAccount.status)
   const userInitials = (user.userName || user.userId || 'U').slice(0, 2).toUpperCase()
   const accountOverviewRows = [
     ['账户类型', '新加坡账户'],
@@ -269,7 +278,7 @@ function SingaporeAccountDetail({ user, singaporeType, onBack, onEdit }) {
             />
           </div>
           <div className="flex items-center gap-[8px]">
-            <ActionButton icon={Pencil} onClick={onEdit} disabled={userAccount.status !== '已开户'}>编辑账户信息</ActionButton>
+            <ActionButton icon={Pencil} onClick={onEdit} disabled={!canMaintainAccount}>{singaporeAccountActionLabel(userAccount.status)}</ActionButton>
           </div>
         </div>
       </Panel>
@@ -360,13 +369,14 @@ export function UserAccountConfigPage({
   users = initialUserAccountConfigs,
   onChangeUsers,
   accountTypes = initialAccountTypeConfigs,
+  initialSelectedUserId = null,
 }) {
   const [localUsers, setLocalUsers] = useState(initialUserAccountConfigs)
   const sourceUsers = onChangeUsers ? users : localUsers
   const commitUsers = onChangeUsers || setLocalUsers
   const singaporeType = useMemo(() => findSingaporeAccountType(accountTypes), [accountTypes])
   const [filters, setFilters] = useState({ keyword: '', status: '' })
-  const [selectedUserId, setSelectedUserId] = useState(null)
+  const [selectedUserId, setSelectedUserId] = useState(initialSelectedUserId)
   const [editingUserId, setEditingUserId] = useState('')
   const selectedUser = sourceUsers.find((user) => user.id === selectedUserId) || null
   const editingUser = sourceUsers.find((user) => user.id === editingUserId) || null
@@ -488,7 +498,7 @@ export function UserAccountConfigPage({
                     <td className="px-[14px]" onClick={(event) => event.stopPropagation()}>
                       <div className="flex flex-wrap gap-[8px]">
                         <ActionButton icon={Eye} onClick={() => setSelectedUserId(user.id)}>查看</ActionButton>
-                        <ActionButton icon={Pencil} disabled={sgAccount.status !== '已开户'} onClick={() => setEditingUserId(user.id)}>编辑</ActionButton>
+                        <ActionButton icon={Pencil} disabled={!['未开通', '已开户'].includes(sgAccount.status)} onClick={() => setEditingUserId(user.id)}>编辑</ActionButton>
                       </div>
                     </td>
                   </tr>

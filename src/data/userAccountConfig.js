@@ -1,4 +1,4 @@
-export const singaporeAccountStatusOptions = ['未开通', '开通中', '已开户']
+export const singaporeAccountStatusOptions = ['未开通', '待处理', '审核中', '已开户', '已拒绝']
 
 export const userAccountStatusOptions = ['未开通', '已开通', '已关闭']
 
@@ -18,6 +18,7 @@ export const createSingaporeAccountRecord = (overrides = {}) => ({
   status: '未开通',
   beneficiaryName: '',
   accountNumber: '',
+  openingSource: '',
   appliedAt: '',
   approvedAt: '',
   updatedAt: '',
@@ -31,6 +32,8 @@ export const initialUserAccountConfigs = [
     id: 'user-a',
     userName: '用户A',
     userId: 'UID-10001',
+    email: 'user-a@example.com',
+    customerType: '个人',
     registeredAt: '2026-06-18 10:24',
     userStatus: '正常',
     updatedAt: '2026-07-14 11:20',
@@ -55,6 +58,7 @@ export const initialUserAccountConfigs = [
       status: '已开户',
       beneficiaryName: '客户名称（运营手动输入）',
       accountNumber: '0950',
+      openingSource: '客户申请',
       appliedAt: '2026-07-12 10:30',
       approvedAt: '2026-07-14 11:20',
       updatedAt: '2026-07-14 11:20',
@@ -65,6 +69,8 @@ export const initialUserAccountConfigs = [
     id: 'user-b',
     userName: '用户B',
     userId: 'UID-10002',
+    email: 'user-b@example.com',
+    customerType: '个人',
     registeredAt: '2026-05-30 16:42',
     userStatus: '正常',
     createdAt: '2026-05-30 16:43',
@@ -82,7 +88,7 @@ export const initialUserAccountConfigs = [
       }),
     ],
     singaporeAccount: createSingaporeAccountRecord({
-      status: '开通中',
+      status: '审核中',
       appliedAt: '2026-07-13 15:10',
       updatedAt: '2026-07-13 15:10',
       updatedBy: '系统',
@@ -92,6 +98,8 @@ export const initialUserAccountConfigs = [
     id: 'user-c',
     userName: '用户C',
     userId: 'UID-10003',
+    email: 'user-c@example.com',
+    customerType: '个人',
     registeredAt: '2026-07-01 09:12',
     userStatus: '冻结',
     createdAt: '2026-07-01 09:13',
@@ -112,8 +120,56 @@ export const initialUserAccountConfigs = [
       }),
     ],
     singaporeAccount: createSingaporeAccountRecord({
-      status: '未开通',
+      status: '已拒绝',
       updatedAt: '2026-07-12 15:06',
+      updatedBy: '系统',
+      remark: '客户资料不符合新加坡账户开户要求。',
+    }),
+  },
+  {
+    id: 'user-d',
+    userName: '用户D',
+    userId: 'UID-10004',
+    email: 'user-d@example.com',
+    customerType: '企业',
+    registeredAt: '2026-07-10 13:26',
+    userStatus: '正常',
+    createdAt: '2026-07-10 13:27',
+    updatedAt: '2026-07-14 09:40',
+    accounts: [
+      createUserAccountRecord('HK_ACCOUNT', {
+        id: 'ua-d-hk',
+        accountNo: 'HK-10004',
+        openedAt: '2026-07-10 13:27',
+      }),
+    ],
+    singaporeAccount: createSingaporeAccountRecord({
+      status: '待处理',
+      appliedAt: '2026-07-13 10:18',
+      updatedAt: '2026-07-14 09:40',
+      updatedBy: '系统',
+    }),
+  },
+  {
+    id: 'user-e',
+    userName: '用户E',
+    userId: 'UID-10005',
+    email: 'user-e@example.com',
+    customerType: '个人',
+    registeredAt: '2026-07-11 10:08',
+    userStatus: '正常',
+    createdAt: '2026-07-11 10:09',
+    updatedAt: '2026-07-11 10:09',
+    accounts: [
+      createUserAccountRecord('HK_ACCOUNT', {
+        id: 'ua-e-hk',
+        accountNo: 'HK-10005',
+        openedAt: '2026-07-11 10:09',
+      }),
+    ],
+    singaporeAccount: createSingaporeAccountRecord({
+      status: '未开通',
+      updatedAt: '2026-07-11 10:09',
       updatedBy: '系统',
     }),
   },

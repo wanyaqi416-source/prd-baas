@@ -19,8 +19,10 @@ import {
   accountTypeStatusOptions,
   bankFieldLabels,
   createBankRecord,
+  createIntermediaryBank,
   createReceivingAccount,
   initialAccountTypeConfigs,
+  intermediaryBankFieldLabels,
 } from '../data/accountTypeConfig'
 
 function AdminShell({ children }) {
@@ -88,7 +90,7 @@ function PrimaryButton({ icon: Icon, children, onClick }) {
   )
 }
 
-function FormInput({ label, value, onChange, placeholder = '', type = 'text' }) {
+function FormInput({ label, value, onChange, placeholder = '', type = 'text', readOnly = false }) {
   return (
     <label className="block">
       <span className="mb-[-8px] ml-[10px] inline-block bg-white px-[4px] text-[12px] text-[#66677f]">{label}</span>
@@ -97,7 +99,12 @@ function FormInput({ label, value, onChange, placeholder = '', type = 'text' }) 
         value={value ?? ''}
         onChange={(event) => onChange?.(event.target.value)}
         placeholder={placeholder}
-        className="h-[50px] w-full rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] text-[14px] text-[#24243d] outline-none focus:border-[#8b4fff]"
+        readOnly={readOnly}
+        className={`h-[50px] w-full rounded-[5px] border px-[12px] text-[14px] outline-none ${
+          readOnly
+            ? 'border-[#d8dae4] bg-[#eef0f4] font-semibold text-[#66677f]'
+            : 'border-[#cfd1dc] bg-white text-[#24243d] focus:border-[#8b4fff]'
+        }`}
       />
     </label>
   )
@@ -388,15 +395,23 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
 
 function BankEditModal({ account, currency, onClose, onSave }) {
   const initialBank = currency?.banks?.[0] || createBankRecord()
+  const initialIntermediaryBank = currency?.intermediaryBank || createIntermediaryBank()
   const [form, setForm] = useState({
     ...createBankRecord(),
     ...initialBank,
     isDefault: initialBank.isDefault !== false,
     enabled: initialBank.enabled !== false,
   })
+  const [intermediaryForm, setIntermediaryForm] = useState({
+    ...createIntermediaryBank(),
+    ...initialIntermediaryBank,
+  })
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }))
+  }
+  const updateIntermediaryField = (field, value) => {
+    setIntermediaryForm((current) => ({ ...current, [field]: value }))
   }
 
   return (
@@ -408,7 +423,7 @@ function BankEditModal({ account, currency, onClose, onSave }) {
       footer={(
         <div className="grid grid-cols-2 gap-[10px]">
           <button type="button" onClick={onClose} className="h-[40px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">取消</button>
-          <button type="button" onClick={() => onSave(form)} className="h-[40px] rounded-[5px] bg-[#8b4fff] text-[13px] font-semibold text-white hover:bg-[#7f42f2]">保存收款银行</button>
+          <button type="button" onClick={() => onSave({ bank: form, intermediaryBank: intermediaryForm })} className="h-[40px] rounded-[5px] bg-[#8b4fff] text-[13px] font-semibold text-white hover:bg-[#7f42f2]">保存收款银行</button>
         </div>
       )}
     >
@@ -420,13 +435,17 @@ function BankEditModal({ account, currency, onClose, onSave }) {
                 ? <FormTextarea key={field} label={label} value={form[field]} onChange={(value) => updateField(field, value)} />
                 : <FormInput key={field} label={label} value={form[field]} onChange={(value) => updateField(field, value)} />
             ))}
-            <ToggleField label="是否默认收款银行" checked={form.isDefault} onChange={(value) => updateField('isDefault', value)} />
-            <ToggleField label="是否启用收款银行" checked={form.enabled} onChange={(value) => updateField('enabled', value)} />
           </div>
         </ModalSection>
-        <div className="rounded-[5px] bg-[#fff1d6] px-[12px] py-[10px] text-[12px] font-semibold leading-[20px] text-[#9a6500]">
-          禁用银行配置后，不影响历史交易；前端不展示新的入金收款信息。
-        </div>
+        <ModalSection title="中转银行信息">
+          <div className="grid grid-cols-3 gap-[14px]">
+            {intermediaryBankFieldLabels.map(([field, label]) => (
+              field === 'remark'
+                ? <FormTextarea key={field} label={label} value={intermediaryForm[field]} onChange={(value) => updateIntermediaryField(field, value)} />
+                : <FormInput key={field} label={label} value={intermediaryForm[field]} onChange={(value) => updateIntermediaryField(field, value)} />
+            ))}
+          </div>
+        </ModalSection>
       </div>
     </CenterModal>
   )
@@ -503,30 +522,23 @@ export function AccountTypeConfigPage({
     })
   }
 
-  const toggleBank = (currencyCode) => {
+  const saveBankConfig = (currencyCode, bankConfigPayload) => {
     if (!bankConfigAccount) return
-    updateAccountById(bankConfigAccount.id, (account) => ({
-      ...account,
-      currencies: account.currencies.map((currency) => {
-        if (currency.code !== currencyCode) return currency
-        const bank = currency.banks?.[0] || createBankRecord()
-
-        return {
-          ...currency,
-          banks: [{ ...bank, enabled: !bank.enabled }],
-        }
-      }),
-    }))
-  }
-
-  const saveBankConfig = (currencyCode, bankConfig) => {
-    if (!bankConfigAccount) return
+    const bankConfig = bankConfigPayload.bank || bankConfigPayload
+    const nextIntermediaryBank = bankConfigPayload.intermediaryBank
     updateAccountById(bankConfigAccount.id, (account) => ({
       ...account,
       currencies: account.currencies.map((currency) => (
         currency.code === currencyCode
           ? {
               ...currency,
+              intermediaryBank: nextIntermediaryBank
+                ? {
+                    ...createIntermediaryBank(),
+                    ...currency.intermediaryBank,
+                    ...nextIntermediaryBank,
+                  }
+                : currency.intermediaryBank,
               banks: [{
                 ...createBankRecord(),
                 ...bankConfig,
@@ -581,31 +593,46 @@ export function AccountTypeConfigPage({
         <div className="mt-[21px] space-y-[12px]">
           {sortedCurrencies.map((currency) => {
             const bank = currency.banks?.[0] || createBankRecord({ enabled: false, isDefault: false })
+            const intermediaryBank = currency.intermediaryBank || createIntermediaryBank()
+            const open = expandedCurrency === currency.code
 
             return (
-              <Panel key={currency.code} className="p-[18px]">
-                <div className="mb-[14px] flex items-center justify-between gap-[12px]">
-                  <div className="flex items-center gap-[10px]">
-                    <span className="inline-flex h-[30px] items-center rounded-full bg-[#e7f5ff] px-[11px] font-mono text-[13px] font-bold text-[#237be8]">{currency.code}</span>
-                    <span className="text-[15px] font-semibold text-[#20213a]">{currency.name}</span>
-                    <StatusBadge tone={currency.enabled ? 'green' : 'gray'}>{currency.enabled ? '币种启用' : '币种禁用'}</StatusBadge>
-                    <StatusBadge tone={bank.enabled ? 'blue' : 'gray'}>{bank.enabled ? '银行启用' : '银行禁用'}</StatusBadge>
-                  </div>
-                  <div className="flex items-center gap-[8px]">
+              <Panel key={currency.code} className="overflow-hidden">
+                <div className="flex min-h-[64px] items-center justify-between gap-[12px] bg-white px-[18px]">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedCurrency(open ? '' : currency.code)}
+                    className="flex min-w-0 flex-1 items-center justify-between gap-[16px] py-[15px] pr-[12px] text-left"
+                  >
+                    <span className="flex min-w-0 items-center gap-[10px]">
+                      <span className="inline-flex h-[30px] items-center rounded-full bg-[#e7f5ff] px-[11px] font-mono text-[13px] font-bold text-[#237be8]">{currency.code}</span>
+                      <span className="text-[15px] font-semibold text-[#20213a]">{currency.name}</span>
+                      <StatusBadge tone={currency.enabled ? 'green' : 'gray'}>{currency.enabled ? '币种启用' : '币种禁用'}</StatusBadge>
+                    </span>
+                    <span className="flex shrink-0 items-center text-[#66677f]">
+                      <ChevronDown className={`h-[17px] w-[17px] shrink-0 transition ${open ? 'rotate-180' : ''}`} />
+                    </span>
+                  </button>
+                  <div className="shrink-0">
                     <ActionButton icon={Pencil} onClick={() => setBankEditModal({ currency })}>编辑收款银行</ActionButton>
-                    <ActionButton icon={bank.enabled ? XCircle : CheckCircle2} onClick={() => toggleBank(currency.code)} danger={bank.enabled}>{bank.enabled ? '禁用银行' : '启用银行'}</ActionButton>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-[12px]">
-                  {bankFieldLabels.slice(0, 6).map(([field, label]) => (
-                    <InfoItem key={field} label={label} value={bank[field]} wide={field === 'bankAddress'} />
-                  ))}
-                </div>
-                <div className="mt-[10px] grid grid-cols-3 gap-[12px]">
-                  {bankFieldLabels.slice(6).map(([field, label]) => (
-                    <InfoItem key={field} label={label} value={bank[field]} wide={field === 'remark'} />
-                  ))}
-                </div>
+                {open ? (
+                  <div className="border-t border-[#e5e6ef] bg-white p-[18px]">
+                    <div className="mb-[12px] text-[13px] font-semibold text-[#20213a]">收款银行信息</div>
+                    <div className="grid grid-cols-3 gap-[12px]">
+                      {bankFieldLabels.map(([field, label]) => (
+                        <InfoItem key={field} label={label} value={bank[field]} wide={field === 'bankAddress'} />
+                      ))}
+                    </div>
+                    <div className="mb-[10px] mt-[16px] text-[13px] font-semibold text-[#20213a]">中转银行信息</div>
+                    <div className="mt-[10px] grid grid-cols-3 gap-[12px]">
+                      {intermediaryBankFieldLabels.map(([field, label]) => (
+                        <InfoItem key={field} label={label} value={intermediaryBank[field]} wide={field === 'remark'} />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </Panel>
             )
           })}
@@ -676,6 +703,7 @@ export function AccountTypeConfigPage({
             {sortedCurrencies.map((currency) => {
               const open = expandedCurrency === currency.code
               const bank = currency.banks?.[0] || createBankRecord({ enabled: false, isDefault: false })
+              const intermediaryBank = currency.intermediaryBank || createIntermediaryBank()
 
               return (
                 <div key={currency.code} className="overflow-hidden rounded-[6px] border border-[#e2e4ec] bg-white">
@@ -690,8 +718,7 @@ export function AccountTypeConfigPage({
                         <span className="text-[14px] font-semibold text-[#20213a]">{currency.name}</span>
                         <StatusBadge tone={currency.enabled ? 'green' : 'gray'}>{currency.enabled ? '币种启用' : '币种禁用'}</StatusBadge>
                       </span>
-                      <span className="flex min-w-0 items-center gap-[14px] text-[12px] text-[#66677f]">
-                        <span className="truncate">{bank.bankName || '未配置收款银行'}</span>
+                      <span className="flex shrink-0 items-center text-[#66677f]">
                         <ChevronDown className={`h-[17px] w-[17px] shrink-0 transition ${open ? 'rotate-180' : ''}`} />
                       </span>
                     </button>
@@ -708,6 +735,12 @@ export function AccountTypeConfigPage({
                       <div className="grid grid-cols-3 gap-[12px]">
                         {bankFieldLabels.map(([field, label]) => (
                           <InfoItem key={field} label={label} value={bank[field]} wide={field === 'bankAddress' || field === 'remark'} />
+                        ))}
+                      </div>
+                      <div className="mb-[12px] mt-[16px] text-[13px] font-semibold text-[#20213a]">中转银行信息</div>
+                      <div className="grid grid-cols-3 gap-[12px]">
+                        {intermediaryBankFieldLabels.map(([field, label]) => (
+                          <InfoItem key={field} label={label} value={intermediaryBank[field]} wide={field === 'remark'} />
                         ))}
                       </div>
                     </div>
