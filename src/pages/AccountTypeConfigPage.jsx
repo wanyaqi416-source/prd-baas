@@ -140,21 +140,6 @@ function FormSelect({ label, value, onChange, children }) {
   )
 }
 
-function ToggleField({ label, checked, onChange }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange?.(!checked)}
-      className="flex h-[50px] items-center justify-between rounded-[5px] border border-[#cfd1dc] bg-white px-[13px] text-[13px] font-semibold text-[#24243d]"
-    >
-      <span>{label}</span>
-      <span className={`inline-flex h-[18px] w-[32px] items-center rounded-full px-[2px] transition ${checked ? 'justify-end bg-[#8b4fff]' : 'justify-start bg-[#d7d9e4]'}`}>
-        <span className="h-[14px] w-[14px] rounded-full bg-white shadow-sm" />
-      </span>
-    </button>
-  )
-}
-
 function ModalSection({ title, children }) {
   return (
     <section className="rounded-[5px] border border-[#e2e4ec] bg-white p-[13px]">
@@ -304,7 +289,7 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
   return (
     <CenterModal
       title={form.id ? '编辑账户类型' : '新增账户类型'}
-      subtitle="维护账户类型基础信息、状态、账户能力与支持币种"
+      subtitle="维护账户类型基础信息、状态与支持币种"
       width="w-[980px]"
       onClose={onClose}
       footer={(
@@ -325,14 +310,6 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
             <FormSelect label="状态 *" value={form.status} onChange={(value) => updateField('status', value)}>
               {accountTypeStatusOptions.map((status) => <option key={status} value={status}>{status}</option>)}
             </FormSelect>
-            <ToggleField label="是否默认账户" checked={form.isDefault} onChange={(value) => updateField('isDefault', value)} />
-          </div>
-        </ModalSection>
-        <ModalSection title="功能开关">
-          <div className="grid grid-cols-3 gap-[12px]">
-            <ToggleField label="支持入金" checked={form.allowDeposit} onChange={(value) => updateField('allowDeposit', value)} />
-            <ToggleField label="支持出金" checked={form.allowWithdraw} onChange={(value) => updateField('allowWithdraw', value)} />
-            <ToggleField label="支持资金互转" checked={form.allowInternalTransfer} onChange={(value) => updateField('allowInternalTransfer', value)} />
           </div>
         </ModalSection>
         <ModalSection title="支持币种">
@@ -798,10 +775,10 @@ export function AccountTypeConfigPage({
 
       <Panel className="mt-[21px] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-[1420px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+          <table className="min-w-[1040px] w-full border-collapse text-left text-[13px] text-[#55556e]">
             <thead>
               <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
-                {['账户类型名称', '账户类型英文名称', '账户类型代码', '支持币种', '状态', '是否默认账户', '是否支持入金', '是否支持出金', '是否支持资金互转', '展示排序', '操作'].map((item) => (
+                {['账户类型名称', '账户类型英文名称', '账户类型代码', '支持币种', '状态', '展示排序', '操作'].map((item) => (
                   <th key={item} className="whitespace-nowrap px-[14px]">{item}</th>
                 ))}
               </tr>
@@ -814,10 +791,6 @@ export function AccountTypeConfigPage({
                   <td className="whitespace-nowrap px-[14px] font-mono font-semibold text-[#237be8]">{account.code}</td>
                   <td className="px-[14px]"><CurrencyTags currencies={account.currencies} /></td>
                   <td className="whitespace-nowrap px-[14px]"><StatusBadge tone={account.status === '启用' ? 'green' : 'gray'}>{account.status}</StatusBadge></td>
-                  <td className="whitespace-nowrap px-[14px]">{account.isDefault ? <StatusBadge tone="violet">是</StatusBadge> : '否'}</td>
-                  <td className="whitespace-nowrap px-[14px]">{account.allowDeposit ? <StatusBadge tone="blue">支持</StatusBadge> : <StatusBadge tone="gray">不支持</StatusBadge>}</td>
-                  <td className="whitespace-nowrap px-[14px]">{account.allowWithdraw ? <StatusBadge tone="blue">支持</StatusBadge> : <StatusBadge tone="gray">不支持</StatusBadge>}</td>
-                  <td className="whitespace-nowrap px-[14px]">{account.allowInternalTransfer ? <StatusBadge tone="blue">支持</StatusBadge> : <StatusBadge tone="gray">不支持</StatusBadge>}</td>
                   <td className="whitespace-nowrap px-[14px]">{account.displayOrder}</td>
                   <td className="px-[14px]" onClick={(event) => event.stopPropagation()}>
                     <div className="flex flex-wrap gap-[8px]">
@@ -834,7 +807,7 @@ export function AccountTypeConfigPage({
               ))}
               {!filteredConfigs.length ? (
                 <tr>
-                  <td colSpan={11} className="px-[18px] py-[36px] text-center text-[13px] text-[#8a8ca0]">暂无符合条件的账户类型配置</td>
+                  <td colSpan={7} className="px-[18px] py-[36px] text-center text-[13px] text-[#8a8ca0]">暂无符合条件的账户类型配置</td>
                 </tr>
               ) : null}
             </tbody>
