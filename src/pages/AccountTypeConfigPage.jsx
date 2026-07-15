@@ -294,7 +294,7 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
       return currency.enabled && (!String(currency.brokerageTransferFee).trim() || !Number.isFinite(fee) || fee < 0)
     })
     if (invalidFeeCurrency) {
-      setError(`请填写${invalidFeeCurrency.code}有效的转入券商手续费，金额不能小于 0。`)
+      setError(`请填写${invalidFeeCurrency.code}有效的券商互转手续费，金额不能小于 0。`)
       return
     }
 
@@ -318,7 +318,7 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
   return (
     <CenterModal
       title={form.id ? '编辑账户类型' : '新增账户类型'}
-      subtitle="维护账户类型基础信息、状态、支持币种及转入券商手续费"
+      subtitle="维护账户类型基础信息、状态、支持币种及券商互转手续费"
       width="w-[980px]"
       onClose={onClose}
       footer={(
@@ -349,7 +349,7 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
             <div className="grid grid-cols-[120px_140px_1fr] items-center gap-[12px] bg-[#f6f7fb] px-[14px] py-[10px] text-[12px] font-semibold text-[#66677f]">
               <span>币种</span>
               <span>是否支持</span>
-              <span>转入券商手续费</span>
+              <span>券商互转手续费</span>
             </div>
             {form.currencies.map((currency) => (
               <div key={currency.code} className="grid min-h-[62px] grid-cols-[120px_140px_1fr] items-center gap-[12px] border-t border-[#e7e8ef] bg-white px-[14px] py-[8px]">
@@ -384,7 +384,7 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
                       ...current,
                       brokerageTransferFee: event.target.value,
                     }))}
-                    aria-label={`${currency.code}转入券商手续费`}
+                    aria-label={`${currency.code}券商互转手续费`}
                     className="h-[40px] min-w-0 flex-1 rounded-[4px] border border-[#cfd1dc] bg-white px-[11px] text-[13px] font-semibold text-[#24243d] outline-none focus:border-[#8b4fff] disabled:border-[#d8dae4] disabled:bg-[#eef0f4] disabled:text-[#9a9cab]"
                   />
                   <span className={`w-[36px] font-mono text-[12px] font-bold ${currency.enabled ? 'text-[#24243d]' : 'text-[#a4a6b7]'}`}>{currency.code}</span>
