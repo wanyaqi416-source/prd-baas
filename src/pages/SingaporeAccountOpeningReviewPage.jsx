@@ -403,7 +403,9 @@ function SingaporeAccountOpeningReviewDetailPage({
   }
   const initialReviewResult = record.status === '已拒绝' ? 'reject' : 'approve'
   const singaporeAccountType = accountTypes.find((item) => item.code === 'SG_ACCOUNT')
-  const supportedCurrencies = singaporeAccountType?.currencies?.map((currency) => currency.code) || ['USD', 'CNY', 'SGD', 'AED', 'JPY']
+  const supportedCurrencies = singaporeAccountType?.currencies
+    ?.filter((currency) => currency.enabled !== false)
+    .map((currency) => currency.code) || ['USD', 'CNY', 'SGD', 'AED', 'JPY']
   const [reviewResult, setReviewResult] = useState(initialReviewResult)
   const [rejectReason, setRejectReason] = useState(record.rejectReason || '')
   const [opened, setOpened] = useState(record.status === '已开户')

@@ -199,7 +199,7 @@ function createEmptyAccountType() {
   }
 }
 
-function createCurrencyConfig(account, currencyCode) {
+function createCurrencyConfig(account, currencyCode, overrides = {}) {
   return {
     code: currencyCode,
     name: currencyName(currencyCode),
@@ -209,18 +209,23 @@ function createCurrencyConfig(account, currencyCode) {
     allowInternalTransfer: true,
     displayOrder: (account?.currencies?.length || 0) + 1,
     showInDeposit: true,
+    brokerageTransferFee: 0,
     banks: [createBankRecord({ enabled: false })],
+    ...overrides,
   }
 }
 
 function CurrencyTags({ currencies = [] }) {
+  const supportedCurrencies = currencies.filter((currency) => currency.enabled !== false)
+
   return (
     <div className="flex flex-wrap gap-[6px]">
-      {currencies.map((currency) => (
-        <span key={currency.code} className={`inline-flex h-[26px] items-center rounded-full px-[9px] text-[12px] font-semibold ${currency.enabled ? 'bg-[#e7f5ff] text-[#237be8]' : 'bg-[#f0f1f6] text-[#8a8ca0]'}`}>
+      {supportedCurrencies.map((currency) => (
+        <span key={currency.code} className="inline-flex h-[26px] items-center rounded-full bg-[#e7f5ff] px-[9px] text-[12px] font-semibold text-[#237be8]">
           {currency.code}
         </span>
       ))}
+      {!supportedCurrencies.length ? <span className="text-[12px] font-semibold text-[#8a8ca0]">-</span> : null}
     </div>
   )
 }
@@ -235,31 +240,40 @@ function InfoItem({ label, value, wide = false }) {
 }
 
 function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
-  const [form, setForm] = useState(initialValue || createEmptyAccountType())
+  const [form, setForm] = useState(() => {
+    const source = initialValue || createEmptyAccountType()
+    const currencies = accountTypeCurrencyOptions.map((currencyOption, index) => {
+      const existing = source.currencies?.find((currency) => currency.code === currencyOption.code)
+
+      return existing
+        ? {
+            ...existing,
+            enabled: existing.enabled !== false,
+            brokerageTransferFee: Number(existing.brokerageTransferFee || 0).toFixed(2),
+            displayOrder: index + 1,
+          }
+        : createCurrencyConfig(source, currencyOption.code, {
+            enabled: false,
+            showInDeposit: false,
+            brokerageTransferFee: '0.00',
+            displayOrder: index + 1,
+          })
+    })
+
+    return { ...source, currencies }
+  })
   const [error, setError] = useState('')
-  const [currencyDropdownOpen, setCurrencyDropdownOpen] = useState(false)
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }))
     setError('')
   }
-  const toggleCurrencySelection = (currencyOption) => {
-    setForm((current) => {
-      const exists = current.currencies.some((currency) => currency.code === currencyOption.code)
-      const nextCurrencies = exists
-        ? current.currencies.filter((currency) => currency.code !== currencyOption.code)
-        : [
-            ...current.currencies,
-            createCurrencyConfig(current, currencyOption.code),
-          ]
-
-      return {
-        ...current,
-        currencies: nextCurrencies.map((currency, index) => ({
-          ...currency,
-          displayOrder: index + 1,
-        })),
-      }
-    })
+  const updateCurrency = (currencyCode, updater) => {
+    setForm((current) => ({
+      ...current,
+      currencies: current.currencies.map((currency) => (
+        currency.code === currencyCode ? updater(currency) : currency
+      )),
+    }))
     setError('')
   }
 
@@ -275,12 +289,27 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
       return
     }
 
+    const invalidFeeCurrency = form.currencies.find((currency) => {
+      const fee = Number(currency.brokerageTransferFee)
+      return currency.enabled && (!String(currency.brokerageTransferFee).trim() || !Number.isFinite(fee) || fee < 0)
+    })
+    if (invalidFeeCurrency) {
+      setError(`请填写${invalidFeeCurrency.code}有效的转入券商手续费，金额不能小于 0。`)
+      return
+    }
+
     onSave?.({
       ...form,
       id: form.id || `acct-${normalizedCode.toLowerCase()}-${Date.now()}`,
       code: normalizedCode,
       displayOrder: Number(form.displayOrder || 0),
-      currencies: [...form.currencies].sort((left, right) => Number(left.displayOrder || 0) - Number(right.displayOrder || 0)),
+      currencies: form.currencies
+        .map((currency) => ({
+          ...currency,
+          brokerageTransferFee: Number(currency.brokerageTransferFee || 0),
+          showInDeposit: currency.enabled ? currency.showInDeposit !== false : false,
+        }))
+        .sort((left, right) => Number(left.displayOrder || 0) - Number(right.displayOrder || 0)),
       updatedAt: formatStamp(),
       updatedBy: '运营管理员',
     })
@@ -289,7 +318,7 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
   return (
     <CenterModal
       title={form.id ? '编辑账户类型' : '新增账户类型'}
-      subtitle="维护账户类型基础信息、状态与支持币种"
+      subtitle="维护账户类型基础信息、状态、支持币种及转入券商手续费"
       width="w-[980px]"
       onClose={onClose}
       footer={(
@@ -312,57 +341,59 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
             </FormSelect>
           </div>
         </ModalSection>
-        <ModalSection title="支持币种">
-          <div className="mb-[12px] flex flex-wrap gap-[8px]">
-            {form.currencies.length ? form.currencies.map((currency) => (
-              <span key={currency.code} className="inline-flex h-[28px] items-center rounded-full bg-[#e7f5ff] px-[10px] font-mono text-[12px] font-bold text-[#237be8]">
-                {currency.code}
-              </span>
-            )) : <span className="text-[12px] font-semibold text-[#8a8ca0]">暂未选择支持币种</span>}
+        <ModalSection title="支持币种及互转手续费">
+          <div className="mb-[12px] text-[12px] leading-[20px] text-[#66677f]">
+            配置该账户支持的币种，以及各币种转入券商账户时收取的固定手续费。手续费为 0 时表示免手续费。
           </div>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setCurrencyDropdownOpen((current) => !current)}
-              className="flex h-[50px] w-full items-center justify-between rounded-[5px] border border-[#cfd1dc] bg-white px-[13px] text-left text-[13px] font-semibold text-[#24243d]"
-            >
-              <span>{form.currencies.length ? form.currencies.map((currency) => currency.code).join(' / ') : '请选择后台启用的法币'}</span>
-              <ChevronDown className={`h-[17px] w-[17px] text-[#66677f] transition ${currencyDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {currencyDropdownOpen ? (
-              <div className="absolute left-0 right-0 top-[56px] z-10 rounded-[5px] border border-[#d9dbe6] bg-white p-[8px] shadow-[0_12px_24px_rgba(28,29,42,0.14)]">
-                <div className="mb-[8px] px-[4px] text-[12px] font-semibold text-[#8a8ca0]">下拉内容展示后台启用的法币</div>
-                <div className="grid grid-cols-2 gap-[8px]">
-                  {accountTypeCurrencyOptions.map((currency) => {
-                    const selected = form.currencies.some((item) => item.code === currency.code)
-
-                    return (
-                      <button
-                        key={currency.code}
-                        type="button"
-                        onClick={() => toggleCurrencySelection(currency)}
-                        className={`flex h-[38px] items-center justify-between rounded-[4px] px-[10px] text-left text-[13px] font-semibold ${
-                          selected
-                            ? 'bg-[#f6f0ff] text-[#8b4fff]'
-                            : 'bg-[#fbfbfd] text-[#24243d] hover:bg-[#f6f0ff]'
-                        }`}
-                      >
-                        <span>
-                          <span className="font-mono">{currency.code}</span>
-                          <span className="ml-[6px] text-[12px] font-medium text-[#66677f]">{currency.name}</span>
-                        </span>
-                        <span className={`flex h-[16px] w-[16px] items-center justify-center rounded-[3px] border ${selected ? 'border-[#8b4fff] bg-[#8b4fff]' : 'border-[#b8bbc9]'}`}>
-                          {selected ? <CheckCircle2 className="h-[12px] w-[12px] text-white" strokeWidth={3} /> : null}
-                        </span>
-                      </button>
-                    )
-                  })}
+          <div className="overflow-hidden rounded-[5px] border border-[#e2e4ec]">
+            <div className="grid grid-cols-[120px_140px_1fr] items-center gap-[12px] bg-[#f6f7fb] px-[14px] py-[10px] text-[12px] font-semibold text-[#66677f]">
+              <span>币种</span>
+              <span>是否支持</span>
+              <span>转入券商手续费</span>
+            </div>
+            {form.currencies.map((currency) => (
+              <div key={currency.code} className="grid min-h-[62px] grid-cols-[120px_140px_1fr] items-center gap-[12px] border-t border-[#e7e8ef] bg-white px-[14px] py-[8px]">
+                <div>
+                  <div className="font-mono text-[14px] font-bold text-[#237be8]">{currency.code}</div>
+                  <div className="mt-[2px] text-[12px] text-[#8a8ca0]">{currency.name}</div>
                 </div>
+                <button
+                  type="button"
+                  aria-pressed={currency.enabled}
+                  onClick={() => updateCurrency(currency.code, (current) => ({
+                    ...current,
+                    enabled: !current.enabled,
+                    showInDeposit: !current.enabled,
+                  }))}
+                  className="inline-flex w-fit items-center gap-[8px] text-[12px] font-semibold text-[#24243d]"
+                >
+                  <span className={`inline-flex h-[20px] w-[36px] items-center rounded-full px-[2px] transition ${currency.enabled ? 'justify-end bg-[#8b4fff]' : 'justify-start bg-[#d7d9e4]'}`}>
+                    <span className="h-[16px] w-[16px] rounded-full bg-white shadow-sm" />
+                  </span>
+                  {currency.enabled ? '开启' : '关闭'}
+                </button>
+                <label className="flex max-w-[360px] items-center gap-[10px]">
+                  <span className="whitespace-nowrap text-[12px] text-[#66677f]">固定手续费</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    disabled={!currency.enabled}
+                    value={currency.brokerageTransferFee}
+                    onChange={(event) => updateCurrency(currency.code, (current) => ({
+                      ...current,
+                      brokerageTransferFee: event.target.value,
+                    }))}
+                    aria-label={`${currency.code}转入券商手续费`}
+                    className="h-[40px] min-w-0 flex-1 rounded-[4px] border border-[#cfd1dc] bg-white px-[11px] text-[13px] font-semibold text-[#24243d] outline-none focus:border-[#8b4fff] disabled:border-[#d8dae4] disabled:bg-[#eef0f4] disabled:text-[#9a9cab]"
+                  />
+                  <span className={`w-[36px] font-mono text-[12px] font-bold ${currency.enabled ? 'text-[#24243d]' : 'text-[#a4a6b7]'}`}>{currency.code}</span>
+                </label>
               </div>
-            ) : null}
+            ))}
           </div>
           <div className="mt-[12px] rounded-[5px] bg-[#f6f7fb] px-[12px] py-[10px] text-[12px] font-semibold leading-[20px] text-[#66677f]">
-            此处只选择账户类型支持哪些币种；每个币种的入金、出金、资金互转能力仍在账户详情页单独配置。
+            此处手续费仅适用于该账户向 IBKR、Webull 等券商账户进行资金划转，其他账户之间的资金互转不受影响。
           </div>
         </ModalSection>
       </div>
@@ -458,7 +489,9 @@ export function AccountTypeConfigPage({
       || item.name.toLowerCase().includes(keyword)
       || item.englishName.toLowerCase().includes(keyword)
       || item.code.toLowerCase().includes(keyword)
-    const currencyMatched = !filters.currency || item.currencies.some((currency) => currency.code === filters.currency)
+    const currencyMatched = !filters.currency || item.currencies.some((currency) => (
+      currency.enabled !== false && currency.code === filters.currency
+    ))
     const statusMatched = !filters.status || item.status === filters.status
 
     return keywordMatched && currencyMatched && statusMatched

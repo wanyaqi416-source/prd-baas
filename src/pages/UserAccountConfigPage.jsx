@@ -173,7 +173,10 @@ function getEffectiveReceivingAccount(singaporeType, userAccount) {
 function SingaporeAccountEditModal({ user, singaporeType, onClose, onSave }) {
   const userAccount = user?.singaporeAccount || createSingaporeAccountRecord()
   const defaultAccount = singaporeType?.receivingAccount || {}
-  const supportedCurrencies = singaporeType?.currencies?.map((currency) => currency.code).join(' / ') || 'USD / CNY / SGD / AED / JPY'
+  const supportedCurrencies = singaporeType?.currencies
+    ?.filter((currency) => currency.enabled !== false)
+    .map((currency) => currency.code)
+    .join(' / ') || 'USD / CNY / SGD / AED / JPY'
   const [form, setForm] = useState({
     beneficiaryName: userAccount.beneficiaryName || '',
     accountNumber: userAccount.accountNumber || '',

@@ -1217,7 +1217,10 @@ function getSingaporeAccountDefaults(accountTypes = initialAccountTypeConfigs) {
     bankAddress: receivingAccount.bankAddress || '20 PASIR PANJANG ROAD #07-25-28 MAPLETREE BUSINESS CITY SINGAPORE 117439',
     receivingBank: receivingAccount.receivingBank || 'Green Link Digital Bank',
     swiftCode: receivingAccount.swiftCode || 'GLDTSGSG',
-    currencies: singaporeType.currencies?.map((currency) => currency.code).join(' / ') || 'USD / CNY / SGD / AED / JPY',
+    currencies: singaporeType.currencies
+      ?.filter((currency) => currency.enabled !== false)
+      .map((currency) => currency.code)
+      .join(' / ') || 'USD / CNY / SGD / AED / JPY',
   }
 }
 

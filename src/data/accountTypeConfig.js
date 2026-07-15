@@ -104,6 +104,12 @@ const sgReceivingAccount = receivingAccount({
   swiftCode: 'GLDTSGSG',
 })
 
+const brokerageTransferFeeDefaults = {
+  HK_ACCOUNT: { USD: 50, HKD: 80, CNY: 0, EUR: 0, SGD: 20 },
+  US_ACCOUNT: { USD: 0 },
+  SG_ACCOUNT: { USD: 40, CNY: 0, SGD: 20, AED: 0, JPY: 0 },
+}
+
 export const initialAccountTypeConfigs = [
   {
     id: 'acct-hk',
@@ -434,4 +440,10 @@ export const initialAccountTypeConfigs = [
       },
     ],
   },
-]
+].map((account) => ({
+  ...account,
+  currencies: account.currencies.map((currency) => ({
+    ...currency,
+    brokerageTransferFee: brokerageTransferFeeDefaults[account.code]?.[currency.code] ?? 0,
+  })),
+}))
