@@ -5097,6 +5097,14 @@ function ManualFiatDrawer({
           <div className={`rounded-[5px] px-[14px] py-[13px] text-[13px] font-semibold leading-[22px] ${toneClass}`}>
             {message}
           </div>
+          {isFeeDeduction || isBalanceAdjustment ? (
+            <div className="flex items-start gap-[9px] rounded-[5px] border border-[#cfe1f8] bg-[#f3f8ff] px-[13px] py-[10px] text-[12px] leading-[19px] text-[#3571b8]">
+              <ListChecks className="mt-[1px] h-[15px] w-[15px] shrink-0" />
+              <span>
+                开发说明：本操作成功后将生成独立记录，并统一在「流水查询」Tab 中展示。
+              </span>
+            </div>
+          ) : null}
           <DrawerSelectField
             label="选择客户 *"
             value={selectedCustomerValue}
