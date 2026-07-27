@@ -109,6 +109,11 @@ function App() {
     us: 'not_opened',
     singapore: 'not_opened',
   })
+  const [otcJurisdictionStatuses, setOtcJurisdictionStatuses] = useState({
+    us: 'opened',
+    singapore: 'opened',
+    bahrain: 'not_opened',
+  })
   const [brokerageApplications, setBrokerageApplications] = useState(initialBrokerageApplications)
   const [brokerageConfigs, setBrokerageConfigs] = useState(initialBrokerageConfigs)
   const [accountCurrencyConfigs, setAccountCurrencyConfigs] = useState(initialAccountCurrencyConfigs)
@@ -334,7 +339,62 @@ function App() {
   }
 
   if (path === '/admin/product-manual/otc-bank-account-prototype') {
-    return <OtcBankAccountPrototype onBack={() => navigate('/')} />
+    return (
+      <AccountManagementPrototypeHome
+        onBack={() => navigate('/')}
+        onNavigate={navigate}
+        title="不同的银行账户体系下做OTC与转账给其他用户原型"
+        description="分别进入客户端资产兑换与用户转账原型，以及配套的管理端后台审核页面。"
+        baseRoute="/admin/product-manual/otc-bank-account-prototype"
+        featureBadge="OTC 与用户转账"
+        clientEntry={{
+          title: '客户端',
+          description: '进入仪表板、账户和交易页面，体验多账户 OTC 兑换、转账给其他用户及交易记录联动。',
+          buttonLabel: '进入客户端',
+          route: '/admin/product-manual/otc-bank-account-prototype/client',
+        }}
+        adminEntry={{
+          title: '管理端',
+          description: '完整复用批量加账户中的后台审核功能，查看开户审核、用户管理及账户类型配置。',
+          buttonLabel: '进入管理端',
+          route: '/admin/product-manual/otc-bank-account-prototype/admin-review',
+        }}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/otc-bank-account-prototype/client') {
+    return (
+      <OtcBankAccountPrototype
+        onBack={() => navigate('/admin/product-manual/otc-bank-account-prototype')}
+        accountTypeConfigs={accountTypeConfigs}
+        initialJurisdictionStatuses={otcJurisdictionStatuses}
+        onJurisdictionStatusesChange={setOtcJurisdictionStatuses}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/otc-bank-account-prototype/admin-review') {
+    return (
+      <SecuritiesBrokerageAdminPrototype
+        onBack={() => navigate('/admin/product-manual/otc-bank-account-prototype')}
+        brokerageApplications={brokerageApplications}
+        onUpdateBrokerageApplication={updateBrokerageApplication}
+        accountCurrencyConfigs={accountCurrencyConfigs}
+        onChangeAccountCurrencyConfigs={setAccountCurrencyConfigs}
+        brokerageConfigs={brokerageConfigs}
+        onChangeBrokerageConfigs={setBrokerageConfigs}
+        accountTypeConfigs={accountTypeConfigs}
+        onChangeAccountTypeConfigs={setAccountTypeConfigs}
+        userAccountConfigs={userAccountConfigs}
+        onChangeUserAccountConfigs={setUserAccountConfigs}
+        showAccountTypeConfig
+        defaultActivePage="fiat-assets"
+        defaultFiatTab="资金互转"
+        jurisdictionStatuses={otcJurisdictionStatuses}
+        onJurisdictionStatusesChange={setOtcJurisdictionStatuses}
+      />
+    )
   }
 
   if (path === '/admin/product-manual/baas-system-reform') {

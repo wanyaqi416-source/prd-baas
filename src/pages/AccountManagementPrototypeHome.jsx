@@ -12,21 +12,23 @@ export function AccountManagementPrototypeHome({
   description = '将客户端开户流程和后台审核拆成两个入口：开户流程进入客户侧页面，后台审核进入当前运营审核页面。',
   baseRoute = '/admin/product-manual/account-management-prototype',
   featureBadge = '新加坡账户',
+  clientEntry = {},
+  adminEntry = {},
 }) {
   const accountManagementEntries = [
     {
-      title: '开户流程',
-      description: '复用 BaaS 原型的完整客户端开户流程，客户从账户入口发起开户、确认开户费并进入待审核状态。',
-      buttonLabel: '进入客户端',
+      title: clientEntry.title || '开户流程',
+      description: clientEntry.description || '复用 BaaS 原型的完整客户端开户流程，客户从账户入口发起开户、确认开户费并进入待审核状态。',
+      buttonLabel: clientEntry.buttonLabel || '进入客户端',
       icon: MonitorSmartphone,
-      route: `${baseRoute}/opening`,
+      route: clientEntry.route || `${baseRoute}/opening`,
     },
     {
-      title: '后台审核',
-      description: '进入当前新加坡账户后台审核页面，由运营查看申请列表并完成开户审核处理。',
-      buttonLabel: '进入后台页面',
+      title: adminEntry.title || '后台审核',
+      description: adminEntry.description || '进入当前新加坡账户后台审核页面，由运营查看申请列表并完成开户审核处理。',
+      buttonLabel: adminEntry.buttonLabel || '进入后台页面',
       icon: ClipboardCheck,
-      route: `${baseRoute}/admin-review`,
+      route: adminEntry.route || `${baseRoute}/admin-review`,
     },
   ]
 

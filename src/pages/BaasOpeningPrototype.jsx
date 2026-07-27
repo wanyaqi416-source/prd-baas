@@ -202,6 +202,17 @@ const internalTransferFiatAccounts = [
       JPY: 'JPY 4,280,000',
     },
   },
+  {
+    id: 'bh',
+    kind: 'fiat',
+    name: '巴林账户',
+    helper: '巴林账户支持 USD / BHD 互转。',
+    currencies: ['USD', 'BHD'],
+    balance: {
+      USD: 'USD 12,500.00',
+      BHD: 'BHD 18,500.000',
+    },
+  },
 ]
 
 const defaultInternalTransferBrokerageAccounts = [
@@ -251,6 +262,7 @@ const userTransferCurrencyNames = {
   SGD: '新加坡元',
   AED: '阿联酋迪拉姆',
   JPY: '日元',
+  BHD: '巴林第纳尔',
 }
 
 const userTransferAccountOptions = [
@@ -287,6 +299,16 @@ const userTransferAccountOptions = [
       SGD: 'SGD 74,920.50',
       AED: 'AED 91,400.00',
       JPY: 'JPY 4,280,000',
+    },
+  },
+  {
+    id: 'bh',
+    label: '巴林账户',
+    helper: '巴林账户当前支持 USD 与 BHD 转账。',
+    currencies: ['USD', 'BHD'],
+    balance: {
+      USD: 'USD 12,500.00',
+      BHD: 'BHD 18,500.000',
     },
   },
 ]
@@ -772,10 +794,13 @@ function JurisdictionPicker({
   onClose,
   onSelectUs,
   onSelectSingapore,
+  onSelectBahrain,
   onReapplySingapore,
   accountStatuses,
   onAccountStatusChange,
   enableSingaporeOpening = false,
+  enableBahrainOpening = false,
+  jurisdictionAccountConfigs = {},
   embedded = false,
 }) {
   const accounts = [
@@ -803,7 +828,47 @@ function JurisdictionPicker({
       disabled: !enableSingaporeOpening,
       disabledLabel: '待开放',
     },
-  ]
+    {
+      id: 'bahrain',
+      title: '巴林账户',
+      Icon: Landmark,
+      tone: 'amber',
+      fee: '按配置',
+      description: '无需上传开户资料，确认开户费用后进入后台审核流程。',
+      status: accountStatuses.bahrain || 'not_opened',
+      onApply: onSelectBahrain,
+      onReapply: onSelectBahrain,
+      disabled: !enableBahrainOpening,
+      disabledLabel: '待开放',
+    },
+  ].map((account) => {
+    const config = jurisdictionAccountConfigs[account.id] || {}
+    const hasExistingAccountOrApplication = account.status !== 'not_opened'
+    const hidden = config.clientVisible === false && !hasExistingAccountOrApplication
+    const configurationDisabled = config.configurationEnabled === false
+    const applicationDisabled = config.allowClientApplication === false
+    const disabledByConfiguration = !hasExistingAccountOrApplication && (configurationDisabled || applicationDisabled)
+    const configuredFee = Number.isFinite(Number(config.openingFeeAmount))
+      ? formatCurrencyAmount(config.openingFeeCurrency || 'USD', Number(config.openingFeeAmount))
+      : account.fee
+
+    return {
+      ...account,
+      title: config.name || account.title,
+      englishName: config.englishName || '',
+      description: config.description || account.description,
+      fee: configuredFee,
+      currencies: config.currencies || [],
+      requiresDocuments: config.requiresDocuments === true,
+      hidden,
+      disabled: account.disabled || disabledByConfiguration,
+      disabledLabel: configurationDisabled
+        ? '配置已禁用'
+        : applicationDisabled
+          ? '不支持客户端申请'
+          : account.disabledLabel,
+    }
+  }).filter((account) => !account.hidden)
 
   const getAction = (account) => {
     if (account.disabled) return null
@@ -842,7 +907,9 @@ function JurisdictionPicker({
             const action = getAction(account)
             const toneClass = account.tone === 'emerald'
               ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
-              : 'border-blue-200 bg-blue-50 text-blue-600'
+              : account.tone === 'amber'
+                ? 'border-amber-200 bg-amber-50 text-amber-600'
+                : 'border-blue-200 bg-blue-50 text-blue-600'
             const Icon = account.Icon
 
             return (
@@ -857,15 +924,18 @@ function JurisdictionPicker({
                         <h4 className="font-bold text-slate-950">{account.title}</h4>
                         <Badge variant={account.disabled ? 'secondary' : meta.badge}>{account.disabled ? account.disabledLabel : meta.label}</Badge>
                       </div>
+                      {account.englishName ? <div className="mt-1 text-xs font-semibold text-slate-400">{account.englishName}</div> : null}
                       <p className="mt-1 text-sm leading-6 text-slate-500">{account.description}</p>
                       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
                         <span className="rounded-full bg-slate-100 px-3 py-1">开户费 {account.fee}</span>
+                        {account.currencies.length ? <span className="rounded-full bg-slate-100 px-3 py-1">支持币种 {account.currencies.join(' / ')}</span> : null}
+                        <span className="rounded-full bg-slate-100 px-3 py-1">{account.requiresDocuments ? '需要开户资料' : '无需上传资料'}</span>
                         <span className="rounded-full bg-slate-100 px-3 py-1">{account.disabled ? '当前不可申请' : meta.description}</span>
                       </div>
                       {account.status === 'failed' && !account.disabled ? (
                         <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800">
                           <span className="font-semibold">申请未通过：</span>
-                          身份证明文件不完整，请补充后重新提交。
+                          {account.id === 'bahrain' ? '当前开户资格审核未通过，请确认申请信息后重新提交。' : '身份证明文件不完整，请补充后重新提交。'}
                         </div>
                       ) : null}
                     </div>
@@ -927,8 +997,257 @@ function JurisdictionAccountsPage({
   )
 }
 
+function BahrainFeeConfirmationModal({
+  config,
+  balanceMode,
+  submissionMode,
+  onClose,
+  onSuccess,
+}) {
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const submitGuard = useRef(false)
+  const feeAmount = Math.max(Number(config.openingFeeAmount || 0), 0)
+  const feeCurrency = config.openingFeeCurrency || 'USD'
+  const sufficientBalance = Math.max(5000, feeAmount + 1250)
+  const insufficientBalance = Math.max(0, feeAmount - Math.max(50, Math.min(250, feeAmount / 2)))
+  const availableBalance = balanceMode === 'insufficient' ? insufficientBalance : sufficientBalance
+  const insufficient = availableBalance < feeAmount
+  const remainingBalance = Math.max(availableBalance - feeAmount, 0)
+  const accountName = config.name || '当前账户'
+
+  const submit = () => {
+    if (insufficient || submitting || submitGuard.current) return
+
+    submitGuard.current = true
+    setSubmitting(true)
+    setSubmitError('')
+    window.setTimeout(() => {
+      if (submissionMode === 'failure') {
+        submitGuard.current = false
+        setSubmitting(false)
+        setSubmitError('申请提交失败：开户费用扣除未完成，请稍后重试。本次未生成申请记录，账户余额未发生变化。')
+        return
+      }
+
+      onSuccess()
+    }, 700)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-[600px] overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="border-b border-slate-200 px-6 py-5">
+          <ModalHeader eyebrow="Opening application" title={`确认申请${accountName}`} onClose={() => {
+            if (!submitting) onClose()
+          }} />
+        </div>
+        <div className="max-h-[72vh] overflow-y-auto px-6 py-5">
+          <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
+            {[
+              ['申请账户', accountName],
+              ['开户费用', formatCurrencyAmount(feeCurrency, feeAmount)],
+              ['扣费账户', '香港账户'],
+              ['扣费币种', feeCurrency],
+              ['当前可用余额', formatCurrencyAmount(feeCurrency, availableBalance)],
+              ['扣费后预计剩余', formatCurrencyAmount(feeCurrency, remainingBalance)],
+            ].map(([label, value]) => (
+              <div key={label} className="min-w-0 rounded-lg bg-white px-4 py-3">
+                <div className="text-xs text-slate-500">{label}</div>
+                <div className="mt-1 break-words text-sm font-bold text-slate-950">{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {insufficient ? (
+            <div className="mt-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800">
+              <CircleAlert className="mt-0.5 h-5 w-5 shrink-0" />
+              <span>当前账户可用余额不足，无法支付开户费用，请先完成入金或兑换。</span>
+            </div>
+          ) : (
+            <div className="mt-4 flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-800">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" />
+              <span>提交申请后将从指定账户扣除开户费用。申请提交后将进入审核流程，请确认相关信息无误。</span>
+            </div>
+          )}
+
+          {submitError ? (
+            <div role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
+              {submitError}
+            </div>
+          ) : null}
+        </div>
+        <div className="flex justify-end gap-3 border-t border-slate-200 bg-white px-6 py-4">
+          <Button type="button" variant="outline" onClick={onClose} disabled={submitting} className="rounded-lg">
+            取消
+          </Button>
+          <Button
+            type="button"
+            onClick={submit}
+            disabled={insufficient || submitting}
+            className="min-w-[128px] rounded-lg bg-blue-600 hover:bg-blue-700"
+          >
+            {submitting ? (
+              <span className="inline-flex items-center gap-2">
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+                提交中
+              </span>
+            ) : '确认并提交'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function BahrainAccountApplicationPage({
+  config,
+  status,
+  balanceMode,
+  onBalanceModeChange,
+  onBack,
+  onSubmit,
+  topNavProps,
+}) {
+  const [feeConfirmOpen, setFeeConfirmOpen] = useState(false)
+  const [submissionMode, setSubmissionMode] = useState('success')
+  const accountName = config.name || '当前账户'
+  const englishName = config.englishName || ''
+  const description = config.description || '确认开户费用后提交账户申请。'
+  const feeAmount = Math.max(Number(config.openingFeeAmount || 0), 0)
+  const feeCurrency = config.openingFeeCurrency || 'USD'
+  const currencies = config.currencies || []
+  const statusMeta = jurisdictionStatusMeta[status] || jurisdictionStatusMeta.not_opened
+  const canApply = status === 'not_opened' || status === 'failed'
+
+  return (
+    <div className="min-h-screen bg-[#f4f7fb] pb-10 text-slate-950">
+      <ClientTopNav onBack={onBack} {...topNavProps} />
+      <main className="mx-auto max-w-[980px] px-5 py-8">
+        <Button type="button" variant="outline" onClick={onBack} className="mb-5 rounded-lg">
+          返回其他法域账户
+        </Button>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-5 border-b border-slate-200 px-6 py-6">
+            <div className="flex min-w-0 items-start gap-4">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-700">
+                <Landmark className="h-6 w-6" />
+              </span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-2xl font-bold text-slate-950">{accountName}</h1>
+                  <Badge variant={statusMeta.badge}>{statusMeta.label}</Badge>
+                </div>
+                {englishName ? <div className="mt-1 text-sm font-semibold text-slate-400">{englishName}</div> : null}
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">{description}</p>
+              </div>
+            </div>
+            {canApply ? (
+              <Button type="button" onClick={() => setFeeConfirmOpen(true)} className="rounded-lg bg-blue-600 hover:bg-blue-700">
+                {status === 'failed' ? '重新申请' : '立即申请'}
+              </Button>
+            ) : null}
+          </div>
+
+          <div className="grid gap-5 p-6 md:grid-cols-[1fr_0.9fr]">
+            <section>
+              <h2 className="text-base font-bold text-slate-950">账户申请信息</h2>
+              <dl className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200">
+                {[
+                  ['账户名称', accountName],
+                  ['英文名称', englishName || '-'],
+                  ['开户费用', formatCurrencyAmount(feeCurrency, feeAmount)],
+                  ['资料要求', config.requiresDocuments ? '需要上传开户资料' : '无需上传开户资料'],
+                  ['提交后状态', '审核中'],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex items-center justify-between gap-5 px-4 py-3">
+                    <dt className="text-sm text-slate-500">{label}</dt>
+                    <dd className="text-right text-sm font-bold text-slate-950">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+
+            <section>
+              <h2 className="text-base font-bold text-slate-950">支持币种</h2>
+              <div className="mt-4 flex min-h-[60px] flex-wrap content-start gap-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                {currencies.length
+                  ? currencies.map((currency) => (
+                      <span key={currency} className="inline-flex h-8 items-center rounded-full bg-white px-3 text-xs font-bold text-blue-700 shadow-sm">
+                        {currency}
+                      </span>
+                    ))
+                  : <span className="text-sm text-slate-500">暂未配置支持币种</span>}
+              </div>
+            </section>
+          </div>
+        </section>
+
+        {status === 'failed' ? (
+          <section className="mt-5 rounded-xl border border-red-200 bg-red-50 px-5 py-4">
+            <div className="text-sm font-bold text-red-800">审核拒绝</div>
+            <p className="mt-1 text-sm leading-6 text-red-700">当前开户资格审核未通过，请确认申请信息后重新提交。</p>
+          </section>
+        ) : null}
+
+        <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-sm font-bold text-slate-950">原型状态模拟</h2>
+              <p className="mt-1 text-xs leading-5 text-slate-500">用于检查余额不足与提交失败时的页面反馈。</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                ['sufficient', '余额充足'],
+                ['insufficient', '余额不足'],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => onBalanceModeChange(value)}
+                  className={balanceMode === value ? 'h-9 rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white' : 'h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600'}
+                >
+                  {label}
+                </button>
+              ))}
+              {[
+                ['success', '正常提交'],
+                ['failure', '模拟失败'],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setSubmissionMode(value)}
+                  className={submissionMode === value ? 'h-9 rounded-lg bg-slate-800 px-3 text-sm font-semibold text-white' : 'h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600'}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {feeConfirmOpen ? (
+        <BahrainFeeConfirmationModal
+          config={config}
+          balanceMode={balanceMode}
+          submissionMode={submissionMode}
+          onClose={() => setFeeConfirmOpen(false)}
+          onSuccess={onSubmit}
+        />
+      ) : null}
+    </div>
+  )
+}
+
 function InsufficientBalanceModal({ onClose, openingAccountVariant = 'us' }) {
-  const feeAmount = openingAccountVariant === 'singapore' ? 'USD 1,000' : 'USD 500'
+  const feeAmount = openingAccountVariant === 'singapore'
+    ? 'USD 1,000'
+    : openingAccountVariant === 'bahrain'
+      ? '按账户类型配置'
+      : 'USD 500'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
@@ -997,7 +1316,7 @@ function ModalHeader({ eyebrow, title, onClose }) {
         <div className="text-sm font-semibold uppercase tracking-wide text-blue-500">{eyebrow}</div>
         <h3 className="mt-1 text-2xl font-bold text-slate-950">{title}</h3>
       </div>
-      <button type="button" onClick={onClose} className="rounded-full p-2 text-slate-400 hover:bg-slate-100">
+      <button type="button" aria-label="关闭" onClick={onClose} className="rounded-full p-2 text-slate-400 hover:bg-slate-100">
         <X className="h-5 w-5" />
       </button>
     </div>
@@ -1012,6 +1331,8 @@ function MainContent({
   onOpenBrokerageDetail,
   onOpenBrokerageService,
   showSingaporeAccount = false,
+  showBahrainAccount = false,
+  bahrainAccountConfig = {},
 }) {
   if (activeAccount === 'brokerage') {
     return (
@@ -1029,7 +1350,14 @@ function MainContent({
     return <DigitalAssetDistribution />
   }
 
-  return <AssetDistribution status={status} showSingaporeAccount={showSingaporeAccount} />
+  return (
+    <AssetDistribution
+      status={status}
+      showSingaporeAccount={showSingaporeAccount}
+      showBahrainAccount={showBahrainAccount}
+      bahrainAccountConfig={bahrainAccountConfig}
+    />
+  )
 }
 
 function UsAccountStatusPanel({ status }) {
@@ -1142,6 +1470,25 @@ const sgAssetRows = [
   },
 ]
 
+const bhAssetRows = [
+  {
+    currency: 'USD 美元',
+    balance: '12,600.00 USD',
+    available: '12,600.00 USD',
+    frozen: '0.00 USD',
+    usdValue: '12,600.00',
+    rate: '1 USD = 1.00 USD',
+  },
+  {
+    currency: 'BHD 巴林第纳尔',
+    balance: '18,500.000 BHD',
+    available: '18,500.000 BHD',
+    frozen: '0.000 BHD',
+    usdValue: '49,025.00',
+    rate: '1 BHD = 2.65 USD',
+  },
+]
+
 function AssetAccountCard({ title, subtitle, total, badge, badgeVariant, rows, statusInfo, showQuickColumn = true }) {
   const headers = showQuickColumn ? ['币种', '余额', '可用余额', '冻结金额', '美元价值', '24H汇率', '快捷操作'] : ['币种', '余额', '可用余额', '冻结金额', '美元价值', '24H汇率']
 
@@ -1203,11 +1550,23 @@ function AssetAccountCard({ title, subtitle, total, badge, badgeVariant, rows, s
   )
 }
 
-function AssetDistribution({ status, showSingaporeAccount = false }) {
+function AssetDistribution({
+  status,
+  showSingaporeAccount = false,
+  showBahrainAccount = false,
+  bahrainAccountConfig = {},
+}) {
   const usMeta = usStatusMeta[status]
   const showUsCard = status !== 'not_opened'
   const usOpened = status === 'opened'
-  const sgOpened = showSingaporeAccount && status === 'opened'
+  const sgOpened = showSingaporeAccount
+  const bhOpened = showBahrainAccount
+  const bahrainName = bahrainAccountConfig.name || '巴林账户'
+  const bahrainCurrencies = bahrainAccountConfig.currencies?.length ? bahrainAccountConfig.currencies : ['USD', 'BHD']
+  const bahrainRows = bhAssetRows.filter((row) => bahrainCurrencies.includes(row.currency.split(' ')[0]))
+  const accountNames = ['香港账户', '美国账户']
+  if (showSingaporeAccount) accountNames.push('新加坡账户')
+  if (showBahrainAccount) accountNames.push(bahrainName)
   const usStatusInfo = [
     ...(status === 'failed' ? [['拒绝原因', usMeta.reason, 'danger']] : []),
   ]
@@ -1217,8 +1576,8 @@ function AssetDistribution({ status, showSingaporeAccount = false }) {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-slate-950">资产分布</h3>
-          <p className="mt-1 text-sm text-slate-500">信托账户下的香港账户 / 美国账户{showSingaporeAccount ? ' / 新加坡账户' : ''}分类</p>
-          <p className="mt-1 text-xs font-semibold text-amber-700">说明：用户未开通新加坡账户时，不展示新加坡账户资产卡片。</p>
+          <p className="mt-1 text-sm text-slate-500">信托账户下的{accountNames.join(' / ')}分类</p>
+          <p className="mt-1 text-xs font-semibold text-amber-700">说明：其他法域账户仅在已开户时展示资产卡片，关闭客户端入口不影响已开户资产。</p>
         </div>
       </div>
 
@@ -1246,6 +1605,14 @@ function AssetDistribution({ status, showSingaporeAccount = false }) {
             subtitle="信托账户下的新加坡法币资产分类，支持 USD / CNY / SGD / AED / JPY。"
             total="$161235.91"
             rows={sgAssetRows}
+          />
+        ) : null}
+        {bhOpened ? (
+          <AssetAccountCard
+            title={bahrainName}
+            subtitle={`信托账户下的巴林法币资产分类，支持 ${bahrainCurrencies.join(' / ')}。`}
+            total="$61,625.00"
+            rows={bahrainRows}
           />
         ) : null}
       </div>
@@ -1480,6 +1847,16 @@ const fiatTransferOutAccounts = {
       JPY: 'JPY 4,280,000',
     },
   },
+  bh: {
+    label: '巴林账户',
+    holderName: 'WANYARA OP WAN',
+    accountName: '巴林账户',
+    accountNumber: 'BH-AC-202607-0950',
+    balance: {
+      USD: 'USD 12,500.00',
+      BHD: 'BHD 18,500.000',
+    },
+  },
 }
 
 const fiatTransferOutBanks = [
@@ -1570,6 +1947,28 @@ const fiatTransferOutBanks = [
     swift: 'GLDTSGSG',
     country: '新加坡',
     currency: 'JPY',
+  },
+  {
+    id: 'bh-usd-main',
+    accountTypes: ['bh'],
+    currencies: ['USD'],
+    name: 'WANYARA OP WAN',
+    bank: 'Bahrain Receiving Bank',
+    accountNumber: 'BH-0950',
+    swift: 'BHRNBHBM',
+    country: '巴林',
+    currency: 'USD',
+  },
+  {
+    id: 'bh-bhd-main',
+    accountTypes: ['bh'],
+    currencies: ['BHD'],
+    name: 'WANYARA OP WAN',
+    bank: 'Bahrain Receiving Bank',
+    accountNumber: 'BH-0950',
+    swift: 'BHRNBHBM',
+    country: '巴林',
+    currency: 'BHD',
   },
 ]
 
@@ -1681,7 +2080,15 @@ function ExternalFiatTransferOutDetailPage({ record, onBack, onClose }) {
   )
 }
 
-function ExternalFiatTransferOutPage({ onBack, records, onSubmit, topNavProps, showGuidanceMarks = true, includeSingaporeAccount = false }) {
+function ExternalFiatTransferOutPage({
+  onBack,
+  records,
+  onSubmit,
+  topNavProps,
+  showGuidanceMarks = true,
+  includeSingaporeAccount = false,
+  includeBahrainAccount = false,
+}) {
   const [view, setView] = useState('form')
   const [selectedRecord, setSelectedRecord] = useState(null)
   const [accountType, setAccountType] = useState('hk')
@@ -1691,7 +2098,12 @@ function ExternalFiatTransferOutPage({ onBack, records, onSubmit, topNavProps, s
   const [purpose, setPurpose] = useState('')
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
-  const accountOptions = includeSingaporeAccount ? ['hk', 'us', 'sg'] : ['hk', 'us']
+  const accountOptions = [
+    'hk',
+    'us',
+    ...(includeSingaporeAccount ? ['sg'] : []),
+    ...(includeBahrainAccount ? ['bh'] : []),
+  ]
   const account = fiatTransferOutAccounts[accountType]
   const currencyOptions = Object.keys(account.balance)
   const filteredBanks = fiatTransferOutBanks.filter((bank) => (
@@ -2165,12 +2577,17 @@ function UserTransferConfirmModal({
   )
 }
 
-function UserTransferPage({ onBack, topNavProps, onTransferSubmitted }) {
+function UserTransferPage({
+  onBack,
+  topNavProps,
+  onTransferSubmitted,
+  accountOptions = userTransferAccountOptions,
+}) {
   const [email, setEmail] = useState('')
   const [recipientState, setRecipientState] = useState('idle')
   const [recipient, setRecipient] = useState(null)
-  const [accountId, setAccountId] = useState(userTransferAccountOptions[0].id)
-  const [currency, setCurrency] = useState(userTransferAccountOptions[0].currencies[0])
+  const [accountId, setAccountId] = useState(accountOptions[0].id)
+  const [currency, setCurrency] = useState(accountOptions[0].currencies[0])
   const [amount, setAmount] = useState('')
   const [amountTouched, setAmountTouched] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -2178,7 +2595,7 @@ function UserTransferPage({ onBack, topNavProps, onTransferSubmitted }) {
   const [submitError, setSubmitError] = useState('')
   const [submittedRecord, setSubmittedRecord] = useState(null)
   const verificationRequestRef = useRef(0)
-  const selectedAccount = userTransferAccountOptions.find((account) => account.id === accountId) || userTransferAccountOptions[0]
+  const selectedAccount = accountOptions.find((account) => account.id === accountId) || accountOptions[0]
   const currencyOptions = selectedAccount?.currencies || []
   const effectiveCurrency = currencyOptions.includes(currency) ? currency : currencyOptions[0] || ''
   const selectedBalance = selectedAccount?.balance?.[effectiveCurrency] || `${effectiveCurrency || '--'} --`
@@ -2257,7 +2674,7 @@ function UserTransferPage({ onBack, topNavProps, onTransferSubmitted }) {
   }
 
   const changeAccount = (nextAccountId) => {
-    const nextAccount = userTransferAccountOptions.find((account) => account.id === nextAccountId) || userTransferAccountOptions[0]
+    const nextAccount = accountOptions.find((account) => account.id === nextAccountId) || accountOptions[0]
     setAccountId(nextAccount.id)
     setCurrency(nextAccount.currencies[0] || '')
     setAmount('')
@@ -2323,8 +2740,8 @@ function UserTransferPage({ onBack, topNavProps, onTransferSubmitted }) {
     setEmail('')
     setRecipientState('idle')
     setRecipient(null)
-    setAccountId(userTransferAccountOptions[0].id)
-    setCurrency(userTransferAccountOptions[0].currencies[0])
+    setAccountId(accountOptions[0].id)
+    setCurrency(accountOptions[0].currencies[0])
     setAmount('')
     setAmountTouched(false)
     setSubmitError('')
@@ -2521,7 +2938,7 @@ function UserTransferPage({ onBack, topNavProps, onTransferSubmitted }) {
                         onChange={(event) => changeAccount(event.target.value)}
                         className="mt-2 h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500 disabled:bg-slate-50"
                       >
-                        {userTransferAccountOptions.map((account) => (
+                        {accountOptions.map((account) => (
                           <option key={account.id} value={account.id}>{account.label}</option>
                         ))}
                       </select>
@@ -2713,6 +3130,7 @@ function InternalTransferPage({
   brokerageAccounts = [],
   accountCurrencyConfigs = initialAccountCurrencyConfigs,
   includeSingaporeAccount = false,
+  includeBahrainAccount = false,
 }) {
   const [transferMode, setTransferMode] = useState(initialTransferMode)
   const [currency, setCurrency] = useState('USD')
@@ -2723,12 +3141,16 @@ function InternalTransferPage({
   const [error, setError] = useState('')
   const [confirmDraft, setConfirmDraft] = useState(null)
   const configuredFiatAccounts = useMemo(() => internalTransferFiatAccounts
-    .filter((account) => includeSingaporeAccount || account.id !== 'sg')
+    .filter((account) => {
+      if (account.id === 'sg') return includeSingaporeAccount
+      if (account.id === 'bh') return includeBahrainAccount
+      return true
+    })
     .map((account) => ({
       ...account,
       currencies: getConfiguredTransferCurrencies(accountCurrencyConfigs, account.name, account.currencies),
-    })), [accountCurrencyConfigs, includeSingaporeAccount])
-  const transferBrokerageAccounts = includeSingaporeAccount && brokerageAccounts.length === 0
+    })), [accountCurrencyConfigs, includeBahrainAccount, includeSingaporeAccount])
+  const transferBrokerageAccounts = (includeSingaporeAccount || includeBahrainAccount) && brokerageAccounts.length === 0
     ? defaultInternalTransferBrokerageAccounts
     : brokerageAccounts
   const normalizedBrokerageAccounts = useMemo(() => transferBrokerageAccounts.map((account) => ({
@@ -3266,6 +3688,8 @@ export function BaasOpeningPrototype({
   accountCurrencyConfigs = initialAccountCurrencyConfigs,
   onOpenBrokerageService,
   enableSingaporeOpening = false,
+  enableBahrainOpening = false,
+  jurisdictionAccountConfigs = {},
   initialJurisdictionStatuses,
   onJurisdictionStatusesChange,
   demoStatusAccount,
@@ -3279,6 +3703,7 @@ export function BaasOpeningPrototype({
   const [jurisdictionStatuses, setJurisdictionStatuses] = useState(() => ({
     us: initialStatus,
     singapore: enableSingaporeOpening ? (initialStatus === 'failed' ? 'reviewing' : initialStatus) : 'not_opened',
+    bahrain: 'not_opened',
     ...initialJurisdictionStatuses,
   }))
   const [activeAccount, setActiveAccount] = useState('trust')
@@ -3299,11 +3724,13 @@ export function BaasOpeningPrototype({
     () => normalizeBrokerageAccountCards(brokerageAccountCards),
     [brokerageAccountCards]
   )
+  const bahrainAccountConfig = jurisdictionAccountConfigs.bahrain || {}
   const brokerageSummary = getBrokerageSummary(normalizedBrokerageCards)
   const showBrokerageTab = !hideBrokerageAccountEntry
     && status === 'opened'
     && (Boolean(onOpenBrokerageService) || brokerageSummary.hasAnyActivity)
   const showSingaporeAccount = enableSingaporeOpening && jurisdictionStatuses.singapore === 'opened'
+  const showBahrainAccount = enableBahrainOpening && jurisdictionStatuses.bahrain === 'opened'
   const demoStatusTargets = demoStatusAccounts?.length
     ? demoStatusAccounts
     : demoStatusAccount
@@ -3343,14 +3770,19 @@ export function BaasOpeningPrototype({
   }
 
   const selectOpeningAccount = (variant) => {
+    const jurisdictionId = variant === 'singapore' || variant === 'bahrain' ? variant : 'us'
     setPendingOpeningVariant(variant)
     setPickerOpen(false)
+    if (jurisdictionId === 'bahrain') {
+      setActiveOpenedPage('bahrain-application')
+      return
+    }
     setActiveOpenedPage('account')
     if (feeBalanceMode === 'insufficient') {
       setBalanceWarningOpen(true)
       return
     }
-    updateJurisdictionStatuses((current) => ({ ...current, [variant === 'singapore' ? 'singapore' : 'us']: 'reviewing' }))
+    updateJurisdictionStatuses((current) => ({ ...current, [jurisdictionId]: 'reviewing' }))
     if (onOpenApplication) {
       onOpenApplication(variant)
       return
@@ -3366,9 +3798,18 @@ export function BaasOpeningPrototype({
     selectOpeningAccount('singapore')
   }
 
+  const selectBahrainAccount = () => {
+    selectOpeningAccount('bahrain')
+  }
+
   const confirmSingaporeReapply = () => {
     setSingaporeReapplyOpen(false)
     selectSingaporeAccount()
+  }
+
+  const confirmBahrainApplication = () => {
+    updateJurisdictionStatuses((current) => ({ ...current, bahrain: 'reviewing' }))
+    setActiveOpenedPage('jurisdiction-list')
   }
 
   const changeJurisdictionStatus = (accountId, nextStatus) => {
@@ -3417,7 +3858,13 @@ export function BaasOpeningPrototype({
   }
 
   if (status === 'opened' && activeOpenedPage === 'external-fiat-transfer-in') {
-    return <IncomingFiatDepositComponent onBack={() => setActiveOpenedPage('account')} includeSingaporeAccount={showSingaporeAccount} />
+    return (
+      <IncomingFiatDepositComponent
+        onBack={() => setActiveOpenedPage('account')}
+        includeSingaporeAccount={showSingaporeAccount}
+        includeBahrainAccount={showBahrainAccount}
+      />
+    )
   }
 
   if (status === 'opened' && activeOpenedPage === 'external-fiat-transfer-out') {
@@ -3429,6 +3876,7 @@ export function BaasOpeningPrototype({
         topNavProps={topNavProps}
         showGuidanceMarks={showGuidanceMarks}
         includeSingaporeAccount={showSingaporeAccount}
+        includeBahrainAccount={showBahrainAccount}
       />
     )
   }
@@ -3445,6 +3893,7 @@ export function BaasOpeningPrototype({
         brokerageAccounts={brokerageAccounts}
         accountCurrencyConfigs={accountCurrencyConfigs}
         includeSingaporeAccount={showSingaporeAccount}
+        includeBahrainAccount={showBahrainAccount}
       />
     )
   }
@@ -3465,6 +3914,27 @@ export function BaasOpeningPrototype({
         onBack={() => setActiveOpenedPage('account')}
         topNavProps={topNavProps}
         onTransferSubmitted={onUserTransferSubmitted}
+        accountOptions={userTransferAccountOptions.filter((account) => {
+          if (account.id === 'hk') return true
+          if (account.id === 'us') return status === 'opened'
+          if (account.id === 'sg') return showSingaporeAccount
+          if (account.id === 'bh') return showBahrainAccount
+          return false
+        })}
+      />
+    )
+  }
+
+  if (activeOpenedPage === 'bahrain-application') {
+    return (
+      <BahrainAccountApplicationPage
+        config={bahrainAccountConfig}
+        status={jurisdictionStatuses.bahrain || 'not_opened'}
+        balanceMode={feeBalanceMode}
+        onBalanceModeChange={setFeeBalanceMode}
+        onBack={() => setActiveOpenedPage('jurisdiction-list')}
+        onSubmit={confirmBahrainApplication}
+        topNavProps={topNavProps}
       />
     )
   }
@@ -3478,6 +3948,7 @@ export function BaasOpeningPrototype({
         onBalanceModeChange={setFeeBalanceMode}
         onSelectUs={selectUsAccount}
         onSelectSingapore={selectSingaporeAccount}
+        onSelectBahrain={selectBahrainAccount}
         onReapplySingapore={() => {
           setActiveOpenedPage('account')
           setSingaporeReapplyOpen(true)
@@ -3485,6 +3956,8 @@ export function BaasOpeningPrototype({
         accountStatuses={jurisdictionStatuses}
         onAccountStatusChange={changeJurisdictionStatus}
         enableSingaporeOpening={enableSingaporeOpening}
+        enableBahrainOpening={enableBahrainOpening}
+        jurisdictionAccountConfigs={jurisdictionAccountConfigs}
       />
     )
   }
@@ -3533,6 +4006,8 @@ export function BaasOpeningPrototype({
           onOpenBrokerageDetail={openBrokerageDetail}
           onOpenBrokerageService={onOpenBrokerageService}
           showSingaporeAccount={showSingaporeAccount}
+          showBahrainAccount={showBahrainAccount}
+          bahrainAccountConfig={bahrainAccountConfig}
         />
       </main>
       {pickerOpen ? (
@@ -3542,6 +4017,7 @@ export function BaasOpeningPrototype({
           onClose={() => setPickerOpen(false)}
           onSelectUs={selectUsAccount}
           onSelectSingapore={selectSingaporeAccount}
+          onSelectBahrain={selectBahrainAccount}
           onReapplySingapore={() => {
             setPickerOpen(false)
             setSingaporeReapplyOpen(true)
@@ -3549,6 +4025,8 @@ export function BaasOpeningPrototype({
           accountStatuses={jurisdictionStatuses}
           onAccountStatusChange={changeJurisdictionStatus}
           enableSingaporeOpening={enableSingaporeOpening}
+          enableBahrainOpening={enableBahrainOpening}
+          jurisdictionAccountConfigs={jurisdictionAccountConfigs}
         />
       ) : null}
       {balanceWarningOpen ? <InsufficientBalanceModal onClose={() => setBalanceWarningOpen(false)} openingAccountVariant={pendingOpeningVariant} /> : null}

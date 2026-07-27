@@ -27,8 +27,8 @@ import {
 } from 'antd'
 import { useMemo, useState } from 'react'
 
-type Currency = 'USD' | 'HKD' | 'CNY' | 'SGD' | 'AED' | 'JPY'
-type AccountType = 'hk' | 'us' | 'sg'
+type Currency = 'USD' | 'HKD' | 'CNY' | 'SGD' | 'AED' | 'JPY' | 'BHD'
+type AccountType = 'hk' | 'us' | 'sg' | 'bh'
 type DepositStatus = 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED'
 
 type BankAccount = {
@@ -59,12 +59,14 @@ const accountLabels: Record<AccountType, string> = {
   hk: '香港账户',
   us: '美国账户',
   sg: '新加坡账户',
+  bh: '巴林账户',
 }
 
 const accountCurrencyOptions: Record<AccountType, Currency[]> = {
   hk: ['USD', 'HKD', 'CNY', 'SGD'],
   us: ['USD'],
   sg: ['USD', 'CNY', 'SGD', 'AED', 'JPY'],
+  bh: ['USD', 'BHD'],
 }
 
 const currencyLabels: Record<Currency, string> = {
@@ -74,6 +76,7 @@ const currencyLabels: Record<Currency, string> = {
   SGD: 'SGD 新加坡元',
   AED: 'AED 阿联酋迪拉姆',
   JPY: 'JPY 日元',
+  BHD: 'BHD 巴林第纳尔',
 }
 
 const receivingBankAccounts: Record<AccountType, Partial<Record<Currency, BankAccount>>> = {
@@ -183,6 +186,28 @@ const receivingBankAccounts: Record<AccountType, Partial<Record<Currency, BankAc
       city: 'Singapore',
     },
   },
+  bh: {
+    USD: {
+      bank_name: 'Bahrain Receiving Bank',
+      swift_code: 'BHRNBHBM',
+      routing_number: 'BH-USD-001',
+      bank_address: 'Manama, Kingdom of Bahrain',
+      account_name: 'FIDERE TRUST LIMITED',
+      account_number: 'BH-0950',
+      country: 'Bahrain',
+      city: 'Manama',
+    },
+    BHD: {
+      bank_name: 'Bahrain Receiving Bank',
+      swift_code: 'BHRNBHBM',
+      routing_number: 'BH-BHD-001',
+      bank_address: 'Manama, Kingdom of Bahrain',
+      account_name: 'FIDERE TRUST LIMITED',
+      account_number: 'BH-0950',
+      country: 'Bahrain',
+      city: 'Manama',
+    },
+  },
 }
 
 const whitelistBanks: Record<string, BankAccount & { id: string; label: string }> = {
@@ -237,6 +262,10 @@ const initialRecords: Record<AccountType, Partial<Record<Currency, IncomingRecor
     SGD: [],
     AED: [],
     JPY: [],
+  },
+  bh: {
+    USD: [],
+    BHD: [],
   },
 }
 
@@ -321,7 +350,15 @@ function TopNav() {
   )
 }
 
-export function IncomingFiatDepositPrototype({ onBack, includeSingaporeAccount = false }: { onBack: () => void; includeSingaporeAccount?: boolean }) {
+export function IncomingFiatDepositPrototype({
+  onBack,
+  includeSingaporeAccount = false,
+  includeBahrainAccount = false,
+}: {
+  onBack: () => void
+  includeSingaporeAccount?: boolean
+  includeBahrainAccount?: boolean
+}) {
   const [view, setView] = useState<'form' | 'detail'>('form')
   const [selectedRecord, setSelectedRecord] = useState<IncomingRecord | null>(null)
   const [accountType, setAccountType] = useState<AccountType>('hk')
@@ -329,9 +366,12 @@ export function IncomingFiatDepositPrototype({ onBack, includeSingaporeAccount =
   const [selectedRemittingBankId, setSelectedRemittingBankId] = useState('hsbc')
   const [records, setRecords] = useState<Record<AccountType, Partial<Record<Currency, IncomingRecord[]>>>>(initialRecords)
   const [form] = Form.useForm()
-  const accountOptions = includeSingaporeAccount
-    ? (['hk', 'us', 'sg'] as AccountType[])
-    : (['hk', 'us'] as AccountType[])
+  const accountOptions = [
+    'hk',
+    'us',
+    ...(includeSingaporeAccount ? ['sg'] : []),
+    ...(includeBahrainAccount ? ['bh'] : []),
+  ] as AccountType[]
   const currencyOptions = accountCurrencyOptions[accountType]
   const activeReceivingBank = receivingBankAccounts[accountType][currency] || receivingBankAccounts[accountType][currencyOptions[0]]!
   const activeRemittingBank = whitelistBanks[selectedRemittingBankId]

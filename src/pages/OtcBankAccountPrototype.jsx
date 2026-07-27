@@ -22,6 +22,7 @@ import { BaasOpeningPrototype, ClientTopNav } from './BaasOpeningPrototype'
 const assetPrices = {
   BTC: 65255.38,
   USDT: 1,
+  ETH: 1947.35,
   USD: 1,
   HKD: 0.128,
   CNY: 0.139,
@@ -29,6 +30,7 @@ const assetPrices = {
   SGD: 0.77,
   JPY: 0.0067,
   AED: 0.2723,
+  BHD: 2.65,
 }
 
 const accountOptions = [
@@ -40,7 +42,9 @@ const accountOptions = [
     statusTone: 'success',
     assets: [
       { code: 'BTC', name: 'Bitcoin', network: 'Bitcoin', balance: 0.32 },
-      { code: 'USDT', name: 'Tether', network: 'ERC20', balance: 10001.2499 },
+      { code: 'USDT', displayCode: 'USDT-Tron', name: 'Tether', network: 'Tron', balance: 2450 },
+      { code: 'USDT', displayCode: 'USDT-ERC20', name: 'Tether', network: 'ERC20', balance: 10001.2499 },
+      { code: 'ETH', name: 'Ethereum', network: 'Ethereum', balance: 1.25 },
       { code: 'USD', name: '美元', balance: 928 },
       { code: 'HKD', name: '港币', balance: 197 },
       { code: 'CNY', name: '人民币', balance: 1589.44 },
@@ -57,7 +61,9 @@ const accountOptions = [
     statusTone: 'warning',
     assets: [
       { code: 'BTC', name: 'Bitcoin', network: 'Bitcoin', balance: 0.08 },
-      { code: 'USDT', name: 'Tether', network: 'TRC20', balance: 3200 },
+      { code: 'USDT', displayCode: 'USDT-Tron', name: 'Tether', network: 'Tron', balance: 3200 },
+      { code: 'USDT', displayCode: 'USDT-ERC20', name: 'Tether', network: 'ERC20', balance: 1680 },
+      { code: 'ETH', name: 'Ethereum', network: 'Ethereum', balance: 0.86 },
       { code: 'USD', name: '美元', balance: 600 },
       { code: 'CNY', name: '人民币', balance: 2489.44 },
       { code: 'SGD', name: '新加坡元', balance: 300.84 },
@@ -73,8 +79,21 @@ const accountOptions = [
     statusTone: 'warning',
     assets: [
       { code: 'BTC', name: 'Bitcoin', network: 'Bitcoin', balance: 0.05 },
-      { code: 'USDT', name: 'Tether', network: 'ERC20', balance: 1800 },
+      { code: 'USDT', displayCode: 'USDT-Tron', name: 'Tether', network: 'Tron', balance: 900 },
+      { code: 'USDT', displayCode: 'USDT-ERC20', name: 'Tether', network: 'ERC20', balance: 1800 },
+      { code: 'ETH', name: 'Ethereum', network: 'Ethereum', balance: 0.42 },
       { code: 'USD', name: '美元', balance: 1385.8 },
+    ],
+  },
+  {
+    id: 'bahrain',
+    name: '巴林账户',
+    accountNumber: 'BH-0950',
+    status: '已开放',
+    statusTone: 'success',
+    assets: [
+      { code: 'USD', name: '美元', balance: 12500 },
+      { code: 'BHD', name: '巴林第纳尔', balance: 18500 },
     ],
   },
 ]
@@ -201,8 +220,24 @@ function PrototypeBar({ onBack }) {
 function formatAssetAmount(value, code) {
   if (!Number.isFinite(Number(value))) return '—'
   if (code === 'BTC') return Number(value).toFixed(8)
+  if (code === 'ETH') return Number(value).toFixed(6)
   if (code === 'JPY') return Number(value).toFixed(0)
   return Number(value).toFixed(2)
+}
+
+function getAssetKey(asset) {
+  if (!asset) return ''
+  return `${asset.code}-${asset.network || 'FIAT'}`
+}
+
+function getAssetDisplayCode(asset) {
+  return asset?.displayCode || asset?.code || '—'
+}
+
+function formatSignedTransactionAmount(record) {
+  const prefix = record.amount > 0 ? '+' : record.amount < 0 ? '-' : ''
+  const code = record.currencyCode || record.currency
+  return `${prefix}${formatAssetAmount(Math.abs(record.amount), code)} ${record.currency}`
 }
 
 function AssetTrendChart() {
@@ -287,11 +322,11 @@ function AssetTrendChart() {
   )
 }
 
-function CurrencyPicker({ assets, selectedCode, excludedCode, onSelect, onClose }) {
+function CurrencyPicker({ assets, selectedKey, excludedKey, onSelect, onClose }) {
   const [query, setQuery] = useState('')
   const filteredAssets = assets.filter((asset) => (
-    asset.code !== excludedCode
-    && `${asset.code} ${asset.name} ${asset.network || ''}`.toLowerCase().includes(query.trim().toLowerCase())
+    getAssetKey(asset) !== excludedKey
+    && `${getAssetDisplayCode(asset)} ${asset.code} ${asset.name} ${asset.network || ''}`.toLowerCase().includes(query.trim().toLowerCase())
   ))
 
   return (
@@ -314,18 +349,19 @@ function CurrencyPicker({ assets, selectedCode, excludedCode, onSelect, onClose 
       </label>
       <div className="max-h-[310px] overflow-y-auto">
         {filteredAssets.map((asset) => {
-          const selected = selectedCode === asset.code
+          const assetKey = getAssetKey(asset)
+          const selected = selectedKey === assetKey
           return (
             <button
-              key={`${asset.code}-${asset.network || ''}`}
+              key={assetKey}
               type="button"
-              onClick={() => onSelect(asset.code)}
+              onClick={() => onSelect(assetKey)}
               className={`flex w-full items-center gap-3 border-t border-slate-100 px-4 py-3 text-left hover:bg-slate-50 ${selected ? 'bg-blue-50' : ''}`}
             >
               <CurrencyIcon currency={asset.code} className="h-8 w-8 text-[10px]" />
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-slate-800">{asset.code}</span>
-                <span className="block truncate text-xs text-slate-500">{asset.network || asset.name}</span>
+                <span className="block text-sm font-semibold text-slate-800">{getAssetDisplayCode(asset)}</span>
+                <span className="block truncate text-xs text-slate-500">{asset.network ? `${asset.name} · ${asset.network}` : asset.name}</span>
               </span>
               <span className={`text-sm font-semibold ${selected ? 'text-blue-600' : 'text-slate-600'}`}>
                 {formatAssetAmount(asset.balance, asset.code)}
@@ -340,45 +376,47 @@ function CurrencyPicker({ assets, selectedCode, excludedCode, onSelect, onClose 
   )
 }
 
-function AssetExchangeModal({ onClose }) {
-  const [accountId, setAccountId] = useState('hk')
-  const [sellCode, setSellCode] = useState('BTC')
-  const [buyCode, setBuyCode] = useState('CNY')
+function AssetExchangeModal({ accounts = accountOptions, onClose, onComplete }) {
+  const initialAccount = accounts[0] || accountOptions[0]
+  const [accountId, setAccountId] = useState(initialAccount.id)
+  const [sellAssetKey, setSellAssetKey] = useState(() => getAssetKey(initialAccount.assets[0]))
+  const [buyAssetKey, setBuyAssetKey] = useState(() => getAssetKey(initialAccount.assets.find((asset) => asset.code === 'CNY') || initialAccount.assets[1]))
   const [sellAmount, setSellAmount] = useState('')
   const [picker, setPicker] = useState('')
   const [quote, setQuote] = useState(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const account = accountOptions.find((item) => item.id === accountId) || accountOptions[0]
-  const sellAsset = account.assets.find((asset) => asset.code === sellCode)
-  const buyAsset = account.assets.find((asset) => asset.code === buyCode)
+  const account = accounts.find((item) => item.id === accountId) || initialAccount
+  const sellAsset = account.assets.find((asset) => getAssetKey(asset) === sellAssetKey)
+  const buyAsset = account.assets.find((asset) => getAssetKey(asset) === buyAssetKey)
   const numericAmount = Number(sellAmount)
   const amountError = sellAmount && (!Number.isFinite(numericAmount) || numericAmount <= 0)
     ? '卖出金额必须大于 0'
     : sellAsset && numericAmount > sellAsset.balance
       ? '卖出金额不能超过可用余额'
       : ''
-  const canQuote = Boolean(sellAsset && buyAsset && sellCode !== buyCode && sellAmount && !amountError)
+  const canQuote = Boolean(sellAsset && buyAsset && sellAssetKey !== buyAssetKey && sellAmount && !amountError)
 
   const changeAccount = (nextAccountId) => {
     setAccountId(nextAccountId)
-    setSellCode('')
-    setBuyCode('')
+    setSellAssetKey('')
+    setBuyAssetKey('')
     setSellAmount('')
     setQuote(null)
     setPicker('')
   }
 
-  const changeCurrency = (type, currencyCode) => {
-    if (type === 'sell') setSellCode(currencyCode)
-    if (type === 'buy') setBuyCode(currencyCode)
+  const changeCurrency = (type, assetKey) => {
+    if (type === 'sell') setSellAssetKey(assetKey)
+    if (type === 'buy') setBuyAssetKey(assetKey)
     setPicker('')
     setQuote(null)
   }
 
   const swapCurrencies = () => {
-    if (!sellCode || !buyCode) return
-    setSellCode(buyCode)
-    setBuyCode(sellCode)
+    if (!sellAssetKey || !buyAssetKey) return
+    setSellAssetKey(buyAssetKey)
+    setBuyAssetKey(sellAssetKey)
     setSellAmount('')
     setQuote(null)
     setPicker('')
@@ -386,7 +424,7 @@ function AssetExchangeModal({ onClose }) {
 
   const getQuote = () => {
     if (!canQuote) return
-    const marketRate = assetPrices[sellCode] / assetPrices[buyCode]
+    const marketRate = assetPrices[sellAsset.code] / assetPrices[buyAsset.code]
     const feeRate = 0.001
     const fee = numericAmount * feeRate
     const receiveAmount = numericAmount * (1 - feeRate) * marketRate
@@ -397,6 +435,32 @@ function AssetExchangeModal({ onClose }) {
       fee,
       expiresIn: '30 秒',
     })
+  }
+
+  const confirmExchange = () => {
+    if (!quote || isSubmitting) return
+    setIsSubmitting(true)
+    const now = new Date()
+    const pad = (value) => String(value).padStart(2, '0')
+
+    window.setTimeout(() => {
+      onComplete?.({
+        id: `TXN-FX-${Date.now()}`,
+        account: account.name,
+        sellAmount: numericAmount,
+        sellCurrency: getAssetDisplayCode(sellAsset),
+        sellCurrencyCode: sellAsset.code,
+        buyAmount: quote.receiveAmount,
+        buyCurrency: getAssetDisplayCode(buyAsset),
+        buyCurrencyCode: buyAsset.code,
+        marketRate: quote.marketRate,
+        fee: quote.fee,
+        date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+        time: `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`,
+      })
+      setIsSubmitting(false)
+      onClose()
+    }, 450)
   }
 
   return (
@@ -423,7 +487,7 @@ function AssetExchangeModal({ onClose }) {
                 onChange={(event) => changeAccount(event.target.value)}
                 className="h-12 w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-10 text-sm font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
-                {accountOptions.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.accountNumber}</option>)}
+                {accounts.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.accountNumber}</option>)}
               </select>
               <ChevronDown className="pointer-events-none absolute right-3 top-4 h-4 w-4 text-slate-400" />
             </div>
@@ -439,7 +503,7 @@ function AssetExchangeModal({ onClose }) {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-700">你卖出</span>
                 <span className="text-xs text-slate-500">
-                  可用余额：{sellAsset ? `${formatAssetAmount(sellAsset.balance, sellAsset.code)} ${sellAsset.code}` : '—'}
+                  可用余额：{sellAsset ? `${formatAssetAmount(sellAsset.balance, sellAsset.code)} ${getAssetDisplayCode(sellAsset)}` : '—'}
                 </span>
               </div>
               <div className="mt-3 flex items-center gap-3">
@@ -450,8 +514,8 @@ function AssetExchangeModal({ onClose }) {
                 >
                   {sellAsset ? <CurrencyIcon currency={sellAsset.code} className="h-9 w-9 text-[11px]" /> : <span className="h-9 w-9 rounded-full bg-slate-100" />}
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-slate-800">{sellAsset?.code || '选择币种'}</span>
-                    <span className="block text-xs text-slate-500">{sellAsset?.network || sellAsset?.name || '请选择卖出资产'}</span>
+                    <span className="block text-sm font-semibold text-slate-800">{sellAsset ? getAssetDisplayCode(sellAsset) : '选择币种'}</span>
+                    <span className="block text-xs text-slate-500">{sellAsset ? `${sellAsset.name}${sellAsset.network ? ` · ${sellAsset.network}` : ''}` : '请选择卖出资产'}</span>
                   </span>
                   <ChevronDown className="h-4 w-4 text-slate-400" />
                 </button>
@@ -469,9 +533,9 @@ function AssetExchangeModal({ onClose }) {
               {picker === 'sell' ? (
                 <CurrencyPicker
                   assets={account.assets}
-                  selectedCode={sellCode}
-                  excludedCode={buyCode}
-                  onSelect={(code) => changeCurrency('sell', code)}
+                  selectedKey={sellAssetKey}
+                  excludedKey={buyAssetKey}
+                  onSelect={(assetKey) => changeCurrency('sell', assetKey)}
                   onClose={() => setPicker('')}
                 />
               ) : null}
@@ -480,7 +544,7 @@ function AssetExchangeModal({ onClose }) {
             <button
               type="button"
               onClick={swapCurrencies}
-              disabled={!sellCode || !buyCode}
+              disabled={!sellAssetKey || !buyAssetKey}
               aria-label="交换卖出和获得币种"
               className="absolute left-1/2 top-1/2 z-20 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-blue-600 shadow-md hover:bg-blue-50 disabled:cursor-not-allowed disabled:text-slate-300"
             >
@@ -491,7 +555,7 @@ function AssetExchangeModal({ onClose }) {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-700">你获得</span>
                 <span className="text-xs text-slate-500">
-                  可用余额：{buyAsset ? `${formatAssetAmount(buyAsset.balance, buyAsset.code)} ${buyAsset.code}` : '—'}
+                  可用余额：{buyAsset ? `${formatAssetAmount(buyAsset.balance, buyAsset.code)} ${getAssetDisplayCode(buyAsset)}` : '—'}
                 </span>
               </div>
               <div className="mt-3 flex items-center gap-3">
@@ -502,21 +566,21 @@ function AssetExchangeModal({ onClose }) {
                 >
                   {buyAsset ? <CurrencyIcon currency={buyAsset.code} className="h-9 w-9 text-[11px]" /> : <span className="h-9 w-9 rounded-full bg-slate-100" />}
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-slate-800">{buyAsset?.code || '选择币种'}</span>
-                    <span className="block text-xs text-slate-500">{buyAsset?.network || buyAsset?.name || '请选择获得资产'}</span>
+                    <span className="block text-sm font-semibold text-slate-800">{buyAsset ? getAssetDisplayCode(buyAsset) : '选择币种'}</span>
+                    <span className="block text-xs text-slate-500">{buyAsset ? `${buyAsset.name}${buyAsset.network ? ` · ${buyAsset.network}` : ''}` : '请选择获得资产'}</span>
                   </span>
                   <ChevronDown className="h-4 w-4 text-slate-400" />
                 </button>
                 <div className="min-w-0 flex-1 text-right text-xl font-semibold text-slate-900">
-                  {quote ? formatAssetAmount(quote.receiveAmount, buyCode) : <span className="text-slate-300">0.00</span>}
+                  {quote ? formatAssetAmount(quote.receiveAmount, buyAsset.code) : <span className="text-slate-300">0.00</span>}
                 </div>
               </div>
               {picker === 'buy' ? (
                 <CurrencyPicker
                   assets={account.assets}
-                  selectedCode={buyCode}
-                  excludedCode={sellCode}
-                  onSelect={(code) => changeCurrency('buy', code)}
+                  selectedKey={buyAssetKey}
+                  excludedKey={sellAssetKey}
+                  onSelect={(assetKey) => changeCurrency('buy', assetKey)}
                   onClose={() => setPicker('')}
                 />
               ) : null}
@@ -528,23 +592,34 @@ function AssetExchangeModal({ onClose }) {
           <dl className="grid grid-cols-[110px_1fr] gap-y-3 text-sm">
             <dt className="text-slate-500">预计汇率</dt>
             <dd className="text-right font-semibold text-slate-700">
-              {quote ? `1 ${sellCode} ≈ ${quote.marketRate.toFixed(6)} ${buyCode}` : '—'}
+              {quote ? `1 ${getAssetDisplayCode(sellAsset)} ≈ ${quote.marketRate.toFixed(6)} ${getAssetDisplayCode(buyAsset)}` : '—'}
             </dd>
             <dt className="text-slate-500">预计到账</dt>
             <dd className="text-right font-semibold text-slate-700">
-              {quote ? `${formatAssetAmount(quote.receiveAmount, buyCode)} ${buyCode}` : '—'}
+              {quote ? `${formatAssetAmount(quote.receiveAmount, buyAsset.code)} ${getAssetDisplayCode(buyAsset)}` : '—'}
             </dd>
             <dt className="text-slate-500">手续费</dt>
             <dd className="text-right font-semibold text-slate-700">
-              {quote ? `${formatAssetAmount(quote.fee, sellCode)} ${sellCode}` : '—'}
+              {quote ? `${formatAssetAmount(quote.fee, sellAsset.code)} ${getAssetDisplayCode(sellAsset)}` : '—'}
             </dd>
             <dt className="text-slate-500">报价有效期</dt>
             <dd className="text-right font-semibold text-slate-700">{quote?.expiresIn || '—'}</dd>
           </dl>
 
-          <Button type="button" onClick={getQuote} disabled={!canQuote} className="h-11 w-full rounded-lg">
-            {quote ? '重新获取报价' : '获取报价'}
-          </Button>
+          {quote ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button type="button" onClick={getQuote} disabled={!canQuote || isSubmitting} variant="outline" className="h-11 rounded-lg">
+                重新获取报价
+              </Button>
+              <Button type="button" onClick={confirmExchange} disabled={isSubmitting} className="h-11 rounded-lg">
+                {isSubmitting ? '兑换处理中' : '确认兑换'}
+              </Button>
+            </div>
+          ) : (
+            <Button type="button" onClick={getQuote} disabled={!canQuote} className="h-11 w-full rounded-lg">
+              获取报价
+            </Button>
+          )}
           <p className="text-center text-xs text-slate-500">报价仅供参考，最终成交金额以确认页为准。</p>
         </div>
       </section>
@@ -552,10 +627,9 @@ function AssetExchangeModal({ onClose }) {
   )
 }
 
-function DashboardPage({ onBack, onNavSelect, onOpenExchange, transactionRecords }) {
-  const dashboardAssets = accountOptions.flatMap((account) => account.assets
-    .filter((asset) => !['BTC', 'USDT'].includes(asset.code))
-    .slice(0, 3)
+function DashboardPage({ accounts = accountOptions, onBack, onNavSelect, onOpenExchange, transactionRecords }) {
+  const dashboardAssets = accounts.flatMap((account) => account.assets
+    .slice(0, 5)
     .map((asset) => ({ ...asset, account: account.name })))
 
   return (
@@ -623,7 +697,7 @@ function DashboardPage({ onBack, onNavSelect, onOpenExchange, transactionRecords
                     <span className="block truncate text-xs text-slate-500">{record.account} · {record.time}</span>
                   </span>
                   <span className={`text-sm font-semibold ${record.amount > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                    {record.amount > 0 ? '+' : ''}{record.amount} {record.currency}
+                    {formatSignedTransactionAmount(record)}
                   </span>
                 </button>
               ))}
@@ -656,11 +730,14 @@ function DashboardPage({ onBack, onNavSelect, onOpenExchange, transactionRecords
               </thead>
               <tbody className="text-sm">
                 {dashboardAssets.map((asset) => (
-                  <tr key={`${asset.account}-${asset.code}`} className="border-t border-slate-100 hover:bg-slate-50">
+                  <tr key={`${asset.account}-${getAssetKey(asset)}`} className="border-t border-slate-100 hover:bg-slate-50">
                     <td className="px-5 py-4">
                       <span className="flex items-center gap-3 font-semibold text-slate-800">
                         <CurrencyIcon currency={asset.code} className="h-7 w-7 text-[10px]" />
-                        {asset.code}
+                        <span>
+                          <span className="block">{getAssetDisplayCode(asset)}</span>
+                          {asset.network ? <span className="mt-0.5 block text-xs font-normal text-slate-400">{asset.network}</span> : null}
+                        </span>
                       </span>
                     </td>
                     <td className="px-5 py-4 text-slate-600">{asset.account}</td>
@@ -685,6 +762,7 @@ function TransactionDetailDrawer({ record, onClose }) {
   if (!record) return null
   const pending = record.status === '待处理'
   const isUserTransfer = record.type === '转账给其他用户'
+  const isExchange = record.type === '资产兑换'
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/45" onMouseDown={(event) => {
@@ -710,7 +788,7 @@ function TransactionDetailDrawer({ record, onClose }) {
             </span>
             <div className="mt-3 text-sm text-slate-600">{record.status}</div>
             <div className={`mt-2 text-2xl font-semibold ${record.amount > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-              {record.amount > 0 ? '+' : ''}{record.amount.toFixed(2)} <span className="text-sm text-slate-600">{record.currency}</span>
+              {formatSignedTransactionAmount(record)}
             </div>
             <div className="mt-2 text-sm text-slate-500">手续费：{record.fee}</div>
           </section>
@@ -750,10 +828,17 @@ function TransactionDetailDrawer({ record, onClose }) {
 
           <section>
             <h3 className="mb-3 text-sm font-semibold text-slate-600">
-              {isUserTransfer ? '收款用户' : '收款银行账户'}
+              {isExchange ? '兑换信息' : isUserTransfer ? '收款用户' : '收款银行账户'}
             </h3>
             <dl className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 text-sm shadow-sm">
-              {(isUserTransfer
+              {(isExchange
+                ? [
+                    ['卖出', `${formatAssetAmount(record.sellAmount, record.sellCurrencyCode)} ${record.sellCurrency}`],
+                    ['获得', `${formatAssetAmount(record.buyAmount, record.buyCurrencyCode)} ${record.buyCurrency}`],
+                    ['成交汇率', `1 ${record.sellCurrency} ≈ ${record.marketRate.toFixed(6)} ${record.buyCurrency}`],
+                    ['手续费', record.fee],
+                  ]
+                : isUserTransfer
                 ? [
                     ['用户名称', record.recipientName],
                     ['用户邮箱', record.recipientEmail],
@@ -792,6 +877,8 @@ function TransactionsPage({ onBack, onNavSelect, transactionRecords }) {
       record.summary,
       record.recipientName,
       record.recipientEmail,
+      record.sellCurrency,
+      record.buyCurrency,
     ].filter(Boolean).join(' ').toLowerCase()
     const matchesQuery = !query.trim() || searchableText.includes(query.trim().toLowerCase())
     const matchesType = typeFilter === '全部' || record.type === typeFilter
@@ -838,6 +925,7 @@ function TransactionsPage({ onBack, onNavSelect, transactionRecords }) {
               <option value="法币转入">法币转入</option>
               <option value="法币转出">法币转出</option>
               <option value="转账给其他用户">转账给其他用户</option>
+              <option value="资产兑换">资产兑换</option>
             </select>
           </label>
           <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -898,7 +986,7 @@ function TransactionsPage({ onBack, onNavSelect, transactionRecords }) {
                               </td>
                               <td className="px-6 py-4 text-slate-600">{record.account}</td>
                               <td className={`px-6 py-4 font-semibold ${record.amount > 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
-                                {record.amount > 0 ? '+' : ''}{record.amount.toFixed(2)} {record.currency}
+                                {formatSignedTransactionAmount(record)}
                               </td>
                               <td className="px-6 py-4"><Badge variant={record.status === '已完成' ? 'success' : 'warning'}>{record.status}</Badge></td>
                               <td className="px-6 py-4 text-slate-600">
@@ -926,10 +1014,59 @@ function TransactionsPage({ onBack, onNavSelect, transactionRecords }) {
   )
 }
 
-export function OtcBankAccountPrototype({ onBack }) {
+export function OtcBankAccountPrototype({
+  onBack,
+  accountTypeConfigs = [],
+  initialJurisdictionStatuses = {},
+  onJurisdictionStatusesChange,
+}) {
   const [activePage, setActivePage] = useState('仪表板')
   const [exchangeOpen, setExchangeOpen] = useState(false)
   const [transactionRecords, setTransactionRecords] = useState(() => initialTransactions)
+  const [jurisdictionStatuses, setJurisdictionStatuses] = useState(() => ({
+    us: 'opened',
+    singapore: 'opened',
+    bahrain: 'not_opened',
+    ...initialJurisdictionStatuses,
+  }))
+  const jurisdictionAccountConfigs = useMemo(() => {
+    const normalizeConfig = (accountCode, fallbackVisible) => {
+      const config = accountTypeConfigs.find((accountType) => accountType.code === accountCode)
+
+      return {
+        name: config?.name || '',
+        englishName: config?.englishName || '',
+        description: config?.clientDescription || '',
+        openingFeeAmount: Number(config?.openingFeeAmount || 0),
+        openingFeeCurrency: config?.openingFeeCurrency || 'USD',
+        currencies: config?.currencies
+          ?.filter((currency) => currency.enabled !== false)
+          .map((currency) => currency.code) || [],
+        requiresDocuments: config?.requiresDocuments === true,
+        clientVisible: config ? config.clientVisible !== false : fallbackVisible,
+        configurationEnabled: config ? config.status === '启用' : true,
+        allowClientApplication: config?.allowClientApplication !== false,
+      }
+    }
+
+    return {
+      us: normalizeConfig('US_ACCOUNT', true),
+      singapore: normalizeConfig('SG_ACCOUNT', true),
+      bahrain: normalizeConfig('BH_ACCOUNT', false),
+    }
+  }, [accountTypeConfigs])
+  const clientAccountOptions = useMemo(() => accountOptions.filter((account) => {
+    if (account.id === 'hk') return true
+    const statusKey = account.id === 'sg' ? 'singapore' : account.id
+    return jurisdictionStatuses[statusKey] === 'opened'
+  }), [jurisdictionStatuses])
+
+  const syncJurisdictionStatuses = (nextStatuses) => {
+    window.setTimeout(() => {
+      setJurisdictionStatuses(nextStatuses)
+      onJurisdictionStatusesChange?.(nextStatuses)
+    }, 0)
+  }
 
   const selectNav = (label) => {
     if (label === '仪表板' || label === '账户' || label === '交易') {
@@ -964,14 +1101,51 @@ export function OtcBankAccountPrototype({ onBack }) {
     ))
   }
 
+  const addExchangeTransaction = (exchange) => {
+    const nextTransaction = {
+      id: exchange.id,
+      type: '资产兑换',
+      account: exchange.account,
+      amount: -Math.abs(exchange.sellAmount),
+      currency: exchange.sellCurrency,
+      currencyCode: exchange.sellCurrencyCode,
+      status: '已完成',
+      date: exchange.date,
+      time: exchange.time,
+      summary: `${exchange.sellCurrency} → ${exchange.buyCurrency} · +${formatAssetAmount(exchange.buyAmount, exchange.buyCurrencyCode)} ${exchange.buyCurrency}`,
+      customer: 'YAQI WAN',
+      customerId: 'AC-202607-05161f0a',
+      fee: `${formatAssetAmount(exchange.fee, exchange.sellCurrencyCode)} ${exchange.sellCurrency}`,
+      sellAmount: exchange.sellAmount,
+      sellCurrency: exchange.sellCurrency,
+      sellCurrencyCode: exchange.sellCurrencyCode,
+      buyAmount: exchange.buyAmount,
+      buyCurrency: exchange.buyCurrency,
+      buyCurrencyCode: exchange.buyCurrencyCode,
+      marketRate: exchange.marketRate,
+    }
+
+    setTransactionRecords((current) => (
+      current.some((record) => record.id === nextTransaction.id)
+        ? current
+        : [nextTransaction, ...current]
+    ))
+  }
+
   if (activePage === '账户') {
     return (
       <BaasOpeningPrototype
         onBack={onBack}
         onPrototypeHome={onBack}
-        initialStatus="opened"
+        initialStatus={jurisdictionStatuses.us}
+        initialJurisdictionStatuses={jurisdictionStatuses}
+        onJurisdictionStatusesChange={syncJurisdictionStatuses}
         prototypeLabel="不同的银行账户体系下做OTC与转账给其他用户原型"
         showGuidanceMarks={false}
+        enableSingaporeOpening
+        enableBahrainOpening
+        jurisdictionAccountConfigs={jurisdictionAccountConfigs}
+        demoStatusAccount="bahrain"
         enableUserTransfer
         forceUserTransferMark
         topNavActiveLabel="账户"
@@ -995,12 +1169,19 @@ export function OtcBankAccountPrototype({ onBack }) {
   return (
     <>
       <DashboardPage
+        accounts={clientAccountOptions}
         onBack={onBack}
         onNavSelect={selectNav}
         onOpenExchange={() => setExchangeOpen(true)}
         transactionRecords={transactionRecords}
       />
-      {exchangeOpen ? <AssetExchangeModal onClose={() => setExchangeOpen(false)} /> : null}
+      {exchangeOpen ? (
+        <AssetExchangeModal
+          accounts={clientAccountOptions}
+          onClose={() => setExchangeOpen(false)}
+          onComplete={addExchangeTransaction}
+        />
+      ) : null}
     </>
   )
 }

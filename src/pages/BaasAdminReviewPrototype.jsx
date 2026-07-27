@@ -181,6 +181,7 @@ const userRows = [
 const fiatAccountCurrencyCodes = {
   香港账户: ['USD', 'HKD', 'CNY', 'EUR', 'SGD'],
   新加坡账户: ['USD', 'CNY', 'SGD', 'AED', 'JPY'],
+  巴林账户: ['USD', 'BHD'],
   美国账户: ['USD'],
   'IBKR 盈透证券账户': ['USD', 'HKD', 'CNY'],
   'Webull 微牛证券账户': ['USD', 'HKD', 'CNY'],
@@ -188,6 +189,7 @@ const fiatAccountCurrencyCodes = {
 
 const fiatCurrencySelectLabels = {
   AED: 'AED - 阿联酋迪拉姆',
+  BHD: 'BHD - 巴林第纳尔',
   CNY: 'CNY - 人民币',
   EUR: 'EUR - 欧元',
   HKD: 'HKD - 港币',
@@ -222,8 +224,118 @@ const emptyFiatAccountBalancesByType = Object.fromEntries(
 
 const transferRows = [
   {
+    requestId: 'TXN-20260727-001',
+    transferType: '转账给其他用户',
+    fromUser: { name: 'YAQI WAN', id: '188', email: 'wanyaqi416@gmail.com' },
+    toUser: { name: 'YUE QI', id: '4', email: 'voigtus1@123mails.org' },
+    fromAccount: '新加坡账户',
+    toAccount: '新加坡账户',
+    currency: 'USD',
+    amount: 'USD 200.00',
+    transferAmount: 'USD 200.00',
+    fee: 'USD 0.00',
+    estimatedArrival: 'USD 200.00',
+    actualArrivalAmount: 'USD 200.00',
+    status: '已完成',
+    submittedAt: '2026-07-27 14:30',
+    completedAt: '2026-07-27 14:32',
+    note: '用户间转账',
+  },
+  {
+    requestId: 'TXN-20260727-002',
+    transferType: '转账给其他用户',
+    fromUser: { name: 'WANYARA WAN', id: '154', email: 'xr3kes66@123mails.org' },
+    toUser: { name: 'ALEX CHEN', id: '203', email: 'alex.chen@example.com' },
+    fromAccount: '香港账户',
+    toAccount: '香港账户',
+    currency: 'CNY',
+    amount: 'CNY 880.00',
+    transferAmount: 'CNY 880.00',
+    fee: 'CNY 0.00',
+    estimatedArrival: 'CNY 880.00',
+    actualArrivalAmount: '',
+    status: '处理中',
+    submittedAt: '2026-07-27 13:16',
+    completedAt: '',
+    note: '项目费用结算',
+  },
+  {
+    requestId: 'TXN-20260727-003',
+    transferType: '转账给其他用户',
+    fromUser: { name: 'QIXUE', id: '4', email: 'voigtus1@123mails.org' },
+    toUser: { name: 'LUZHOU LU', id: '86', email: 'luzhou.lu@example.com' },
+    fromAccount: '新加坡账户',
+    toAccount: '新加坡账户',
+    currency: 'SGD',
+    amount: 'SGD 120.00',
+    transferAmount: 'SGD 120.00',
+    fee: 'SGD 0.00',
+    estimatedArrival: 'SGD 120.00',
+    actualArrivalAmount: '',
+    status: '失败',
+    submittedAt: '2026-07-27 11:45',
+    completedAt: '2026-07-27 11:46',
+    note: '日常往来',
+    failureReason: '收款用户账户状态异常，系统未执行入账。',
+  },
+  {
+    requestId: 'TXN-20260727-004',
+    transferType: '转账给其他用户',
+    fromUser: { name: 'jin wu ye', id: '130', email: 'orvafrew@123mails.org' },
+    toUser: { name: 'YUE QI', id: '4', email: 'voigtus1@123mails.org' },
+    fromAccount: '香港账户',
+    toAccount: '香港账户',
+    currency: 'JPY',
+    amount: 'JPY 5,000',
+    transferAmount: 'JPY 5,000',
+    fee: 'JPY 0',
+    estimatedArrival: 'JPY 5,000',
+    actualArrivalAmount: '',
+    status: '已撤销',
+    submittedAt: '2026-07-27 10:08',
+    completedAt: '2026-07-27 10:12',
+    note: '用户主动撤销',
+  },
+  {
+    requestId: 'TXN-20260726-005',
+    transferType: '转账给其他用户',
+    fromUser: { name: 'YAQI WAN', id: '188', email: 'wanyaqi416@gmail.com' },
+    toUser: { name: 'SAD SDA ASD', id: '150', email: 'axedclon@rulersonline.com' },
+    fromAccount: '新加坡账户',
+    toAccount: '新加坡账户',
+    currency: 'AED',
+    amount: 'AED 300.00',
+    transferAmount: 'AED 300.00',
+    fee: 'AED 0.00',
+    estimatedArrival: 'AED 300.00',
+    actualArrivalAmount: '',
+    status: '待审核',
+    submittedAt: '2026-07-26 18:20',
+    completedAt: '',
+    note: '用户间转账申请',
+  },
+  {
+    requestId: 'TXN-20260726-006',
+    transferType: '转账给其他用户',
+    fromUser: { name: 'LUZHOU LU', id: '86', email: 'luzhou.lu@example.com' },
+    toUser: { name: 'WANYARA WAN', id: '154', email: 'xr3kes66@123mails.org' },
+    fromAccount: '美国账户',
+    toAccount: '美国账户',
+    currency: 'USD',
+    amount: 'USD 75.00',
+    transferAmount: 'USD 75.00',
+    fee: 'USD 0.00',
+    estimatedArrival: 'USD 75.00',
+    actualArrivalAmount: '',
+    status: '已拒绝',
+    submittedAt: '2026-07-26 16:05',
+    completedAt: '2026-07-26 16:20',
+    note: '用户间转账申请',
+    rejectReason: '收款用户邮箱与提交信息不一致。',
+  },
+  {
     requestId: 'IT-1780221843260',
-    transferType: '信托账户互转',
+    transferType: '本人账户互转',
     customer: { name: 'yejin', id: '130', email: 'orvafrew@123mails.org' },
     fromAccount: '香港账户',
     toAccount: '美国账户',
@@ -239,7 +351,7 @@ const transferRows = [
   },
   {
     requestId: 'IT-1780221843261',
-    transferType: '信托账户互转',
+    transferType: '本人账户互转',
     customer: { name: 'QIXUE', id: '4', email: 'voigtus1@123mails.org' },
     fromAccount: '美国账户',
     toAccount: '香港账户',
@@ -249,13 +361,13 @@ const transferRows = [
     fee: 'USD 15.00',
     estimatedArrival: 'USD 0.00',
     actualArrivalAmount: 'USD 8.00',
-    status: '已批准',
+    status: '已完成',
     submittedAt: '2026-05-31 18:16',
     completedAt: '2026-05-31 19:08',
   },
   {
     requestId: 'IT-1780221843262',
-    transferType: '信托账户互转',
+    transferType: '本人账户互转',
     customer: { name: 'LUZHOU LU', id: '86', email: 'luzhou.lu@example.com' },
     fromAccount: '香港账户',
     toAccount: '美国账户',
@@ -298,13 +410,13 @@ const transferRows = [
     fee: 'USD 0.00',
     estimatedArrival: 'USD 320.00',
     actualArrivalAmount: 'USD 320.00',
-    status: '已批准',
+    status: '已完成',
     submittedAt: '2026-06-22 11:36',
     completedAt: '2026-06-22 12:10',
   },
   {
     requestId: 'IT-1780221843265',
-    transferType: '信托账户互转',
+    transferType: '本人账户互转',
     customer: { name: 'jin wu ye', id: '130', email: 'orvafrew@123mails.org' },
     fromAccount: '香港账户',
     toAccount: '新加坡账户',
@@ -320,7 +432,7 @@ const transferRows = [
   },
   {
     requestId: 'IT-1780221843266',
-    transferType: '信托账户互转',
+    transferType: '本人账户互转',
     customer: { name: 'QIXUE', id: '4', email: 'voigtus1@123mails.org' },
     fromAccount: '新加坡账户',
     toAccount: '香港账户',
@@ -330,15 +442,32 @@ const transferRows = [
     fee: 'SGD 0.00',
     estimatedArrival: 'SGD 120.00',
     actualArrivalAmount: 'SGD 120.00',
-    status: '已批准',
+    status: '已完成',
     submittedAt: '2026-06-23 10:08',
     completedAt: '2026-06-23 10:26',
   },
+  {
+    requestId: 'IT-20260727-BH-001',
+    transferType: '本人账户互转',
+    customer: { name: 'jin wu ye', id: '130', email: 'orvafrew@123mails.org' },
+    fromAccount: '巴林账户',
+    toAccount: '香港账户',
+    currency: 'USD',
+    amount: 'USD 180.00',
+    transferAmount: 'USD 180.00',
+    fee: 'USD 0.00',
+    estimatedArrival: 'USD 180.00',
+    actualArrivalAmount: '',
+    status: '待审核',
+    submittedAt: '2026-07-27 16:10',
+    completedAt: '',
+    note: '巴林账户资金调拨',
+  },
 ]
 
-const manualAccountOptions = ['香港账户', '新加坡账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户']
+const manualAccountOptions = ['香港账户', '新加坡账户', '巴林账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户']
 
-const accountFilterOptions = ['香港账户', '新加坡账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户']
+const accountFilterOptions = ['香港账户', '新加坡账户', '巴林账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户']
 
 const incomingClaimRows = [
   {
@@ -423,6 +552,20 @@ const incomingClaimRows = [
     matchStatus: '已匹配',
     status: '待审核',
   },
+  {
+    id: 'IC-20260727-BH-001',
+    submittedAt: '2026-07-27 15:36:12',
+    accountType: '巴林账户',
+    currencyAmount: 'BHD 125.000',
+    claimableAmount: 'BHD 125.000',
+    payer: 'BAHRAIN ACCOUNT HOLDER',
+    channel: '电汇',
+    referenceNo: 'BH-IN-125',
+    voucher: '-',
+    matchedCustomer: 'jin wu ye',
+    matchStatus: '已匹配',
+    status: '待审核',
+  },
 ]
 
 const fiatLedgerRows = [
@@ -434,9 +577,10 @@ const fiatLedgerRows = [
   { id: 'LEDGER-20260520-001', time: '2026-05-20 11:05:44', customer: '2342', customerId: '98', accountType: '美国账户', currencyAmount: 'USD 20', type: '入金', channel: 'ACH', referenceNo: 'REF-US-020', status: '处理完成' },
   { id: 'LEDGER-20260623-001', time: '2026-06-23 09:18:20', customer: 'jin wu ye', customerId: '130', accountType: '新加坡账户', currencyAmount: 'SGD 120', type: '入金', channel: '电汇', referenceNo: 'SG-IN-120', status: '待处理' },
   { id: 'LEDGER-20260623-002', time: '2026-06-23 10:08:11', customer: 'QIXUE', customerId: '4', accountType: '新加坡账户', currencyAmount: 'AED 300', type: '出金', channel: '电汇', referenceNo: 'SG-WD-AED-300', status: '处理完成' },
+  { id: 'LEDGER-20260727-BH-001', time: '2026-07-27 15:36:12', customer: 'jin wu ye', customerId: '130', accountType: '巴林账户', currencyAmount: 'BHD 125.000', type: '入金', channel: '电汇', referenceNo: 'BH-IN-125', status: '待处理' },
 ]
 
-const fiatAssetAccountCardTypes = ['香港账户', '新加坡账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户']
+const fiatAssetAccountCardTypes = ['香港账户', '新加坡账户', '巴林账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户']
 
 const customerAssetRows = [
   {
@@ -445,7 +589,7 @@ const customerAssetRows = [
     name: 'jin wu ye',
     email: 'orvafrew@123mails.org',
     type: '个人',
-    accountTypes: ['香港账户', '新加坡账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户'],
+    accountTypes: ['香港账户', '新加坡账户', '巴林账户', '美国账户', 'IBKR 盈透证券账户', 'Webull 微牛证券账户'],
     totalUsd: '257.32',
     yesterdayChange: '0',
     lastActivity: '2026-05-25 07:36',
@@ -464,6 +608,10 @@ const customerAssetRows = [
         { currency: 'AED', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
         { currency: 'JPY', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
       ],
+      巴林账户: [
+        { currency: 'USD', available: '180.00', frozen: '0', inTransit: '0', total: '180.00', recentIn: '180.00', recentOut: '0' },
+        { currency: 'BHD', available: '125.000', frozen: '0', inTransit: '0', total: '125.000', recentIn: '125.000', recentOut: '0' },
+      ],
       'IBKR 盈透证券账户': [
         { currency: 'USD', available: '320.00', frozen: '0', inTransit: '0', total: '320.00', recentIn: '320', recentOut: '0' },
         { currency: 'HKD', available: '0', frozen: '0', inTransit: '0', total: '0', recentIn: '0', recentOut: '0' },
@@ -474,6 +622,7 @@ const customerAssetRows = [
       ],
     },
     recentFlows: [
+      { time: '2026-07-27 15:36:12', accountType: '巴林账户', currencyAmount: 'BHD 125.000', direction: '入金', channel: '电汇', status: '待处理' },
       { time: '2026-06-23 09:18:20', accountType: '新加坡账户', currencyAmount: 'SGD 120', direction: '入金', channel: '电汇', status: '待处理' },
       { time: '2026-05-25 08:01:10', accountType: '香港账户', currencyAmount: 'HKD 10', direction: '出金', channel: '其他', status: '待处理' },
       { time: '2026-05-25 03:29:03', accountType: '美国账户', currencyAmount: 'USD 1', direction: '出金', channel: '未知', status: '处理完成' },
@@ -653,6 +802,21 @@ const withdrawalApprovalRows = [
     status: '处理完成',
     channel: '电汇',
     bank: 'Green Link Digital Bank',
+  },
+  {
+    id: 'WO-20260727-BH-001',
+    appliedAt: '2026-07-27 16:02:45',
+    customer: { name: 'jin wu ye', id: '130', email: 'orvafrew@123mails.org' },
+    accountType: '巴林账户',
+    currencyAmount: 'BHD 40.000',
+    transferAmount: 'BHD 40.000',
+    fee: 'BHD 0.500',
+    actualArrivalAmount: 'BHD 39.500',
+    recipient: 'BAHRAIN BENEFICIARY',
+    purpose: '巴林账户出金',
+    status: '待处理',
+    channel: '电汇',
+    bank: 'Bahrain Partner Bank',
   },
 ]
 
@@ -869,8 +1033,14 @@ function openingStatusTone(status) {
 
 function transferStatusTone(status) {
   if (status === '已完成' || status === '已批准') return 'green'
-  if (status === '已拒绝') return 'red'
+  if (status === '已拒绝' || status === '失败') return 'red'
+  if (status === '处理中') return 'blue'
+  if (status === '已撤销') return 'gray'
   return 'orange'
+}
+
+function formatTransferAccountName(account) {
+  return String(account || '').replace(/证券账户$/, '证券')
 }
 
 function ActionButton({ icon: Icon, children, onClick }) {
@@ -1819,32 +1989,32 @@ function TransferAuditDrawer({ record, onClose }) {
   if (!record) return null
 
   const isPending = record.status === '待审核'
+  const fromUser = record.fromUser || record.customer
+  const toUser = record.toUser || record.customer
   const detailRows = [
-    ['申请编号', record.requestId],
-    ['记录类型', record.transferType || '信托账户互转'],
-    ['转出账户', record.fromAccount],
-    ['转入账户', record.toAccount],
+    ['转账编号', record.requestId],
+    ['记录类型', record.transferType || '本人账户互转'],
+    ['转出账户', formatTransferAccountName(record.fromAccount)],
+    ['转入账户', formatTransferAccountName(record.toAccount)],
     ['币种', record.currency],
     ['转账金额', record.transferAmount || record.amount],
-    ['实际到账金额', record.actualArrivalAmount || record.estimatedArrival],
+    ['手续费', record.fee || `${record.currency} 0.00`],
+    ['实际到账金额', record.actualArrivalAmount || '-'],
+    ['转账备注', record.note || '-'],
     ['提交时间', record.submittedAt],
+    ['完成时间', record.completedAt || '-'],
+    ['失败或拒绝原因', record.failureReason || record.rejectReason || '-'],
   ]
 
-  if (record.completedAt) {
-    detailRows.push(['完成时间', record.completedAt])
-  }
-
-  if (record.rejectReason) {
-    detailRows.push(['拒绝原因', record.rejectReason])
-  }
-
   return (
-    <div className="fixed inset-0 z-50 bg-[#252236]/55">
-      <aside className="fixed bottom-0 right-0 top-0 flex w-[390px] flex-col bg-white shadow-[0_18px_48px_rgba(28,29,42,0.28)]">
+    <div className="fixed inset-0 z-50 bg-[#252236]/55" onMouseDown={(event) => {
+      if (event.currentTarget === event.target) onClose()
+    }}>
+      <aside className="fixed bottom-0 right-0 top-0 flex w-full max-w-[480px] flex-col bg-white shadow-[0_18px_48px_rgba(28,29,42,0.28)]">
         <div className="flex h-[58px] items-center justify-between border-b border-[#e5e6ef] px-[18px]">
           <div>
             <h2 className="text-[15px] font-semibold text-[#20213a]">{isPending ? '资金互转审核' : '资金互转详情'}</h2>
-            <div className="mt-[3px] text-[11px] font-semibold uppercase text-[#8a8ca0]">{isPending ? 'INTERNAL TRANSFER REVIEW' : 'INTERNAL TRANSFER DETAIL'}</div>
+            <div className="mt-[3px] text-[11px] font-semibold uppercase text-[#8a8ca0]">{record.requestId}</div>
           </div>
           <button type="button" onClick={onClose} className="rounded-[4px] p-[7px] text-[#66677f] hover:bg-[#f6f7fb]">
             <X className="h-[16px] w-[16px]" />
@@ -1867,11 +2037,18 @@ function TransferAuditDrawer({ record, onClose }) {
               <span className="text-[12px] text-[#66677f]">当前状态</span>
               <StatusBadge tone={transferStatusTone(record.status)}>{record.status}</StatusBadge>
             </div>
-            <div className="border-t border-[#e5e6ef] py-[11px]">
-              <div className="text-[12px] text-[#66677f]">客户</div>
-              <div className="mt-[5px] text-[13px] font-semibold text-[#20213a]">{record.customer.name}</div>
-              <div className="mt-[3px] text-[12px] text-[#66677f]">ID: {record.customer.id}</div>
-              <div className="mt-[3px] break-all text-[12px] text-[#66677f]">{record.customer.email}</div>
+            <div className="grid gap-[10px] border-t border-[#e5e6ef] py-[12px] sm:grid-cols-2">
+              {[
+                ['转出用户信息', fromUser],
+                ['收款用户信息', toUser],
+              ].map(([label, user]) => (
+                <div key={label} className="rounded-[5px] border border-[#e5e6ef] bg-[#f8f9fc] p-[10px]">
+                  <div className="text-[11px] font-semibold text-[#8a8ca0]">{label}</div>
+                  <div className="mt-[6px] text-[13px] font-semibold text-[#20213a]">{user.name}</div>
+                  <div className="mt-[3px] text-[12px] text-[#66677f]">ID: {user.id}</div>
+                  <div className="mt-[3px] break-all text-[12px] text-[#66677f]">{user.email}</div>
+                </div>
+              ))}
             </div>
             {detailRows.map(([label, value]) => (
               <div key={label} className="border-t border-[#e5e6ef] py-[11px]">
@@ -4318,9 +4495,15 @@ function ManualFiatDrawer({ type, accountType, onAccountTypeChange, onClose }) {
   const toneClass = isDeposit ? 'bg-[#d8f0ff] text-[#1295d8]' : 'bg-[#fff1d6] text-[#f39800]'
   const confirmClass = isDeposit ? 'bg-[#46c800] hover:bg-[#3bb000]' : 'bg-[#ff4c57] hover:bg-[#e53d48]'
   const currencyOptions = fiatAccountCurrencyOptions[accountType] || fiatAccountCurrencyOptions.香港账户
+  const [selectedCurrency, setSelectedCurrency] = useState(currencyOptions[0])
+  const selectedCurrencyCode = String(selectedCurrency || '').split(/\s+/)[0] || 'USD'
   const message = isDeposit
     ? '手动入金将直接增加客户账户余额，请谨慎操作并确保信息准确。'
     : '手动出金将直接扣减客户账户余额，请谨慎操作并确保客户有足够余额。'
+  const changeAccountType = (nextAccountType) => {
+    onAccountTypeChange?.(nextAccountType)
+    setSelectedCurrency((fiatAccountCurrencyOptions[nextAccountType] || fiatAccountCurrencyOptions.香港账户)[0])
+  }
 
   return (
     <DrawerShell
@@ -4338,11 +4521,11 @@ function ManualFiatDrawer({ type, accountType, onAccountTypeChange, onClose }) {
           {message}
         </div>
         <DrawerSelectField label="选择客户 *" value="" options={customers.map((customer) => `ID: ${customer.id} / ${customer.email}`)} placeholder="选择客户 *" />
-        <DrawerSelectField label="选择账户 *" value={accountType} onChange={onAccountTypeChange} options={manualAccountOptions} />
-        <DrawerSelectField label="币种 *" value={currencyOptions[0]} options={currencyOptions} />
+        <DrawerSelectField label="选择账户 *" value={accountType} onChange={changeAccountType} options={manualAccountOptions} />
+        <DrawerSelectField label="币种 *" value={selectedCurrency} onChange={setSelectedCurrency} options={currencyOptions} />
         <DrawerSelectField label="打款渠道" value="电汇" options={['电汇', 'FPS', 'ACH']} />
         {!isDeposit ? <DrawerSelectField label="银行账号 *" value="" options={['GLDB · Green Link Digital Bank · 0950', 'WO · 测试银行 · 232232', 'JW · Fidere Partner Bank · 026009593']} placeholder="银行账号 *" /> : null}
-        <DrawerInputField label={isDeposit ? '入金金额 *' : '出金金额 *'} prefix="USD" placeholder="请输入正确的金额" />
+        <DrawerInputField label={isDeposit ? '入金金额 *' : '出金金额 *'} prefix={selectedCurrencyCode} placeholder="请输入正确的金额" />
         <DrawerTextareaField label="备注说明 *" placeholder="必填项，用于审计追踪" />
         <button type="button" className="flex h-[40px] w-full items-center justify-center gap-[8px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">
           <FileText className="h-[15px] w-[15px]" />
@@ -4658,63 +4841,206 @@ function WithdrawalApprovalPanel({ onOpenRecord }) {
   )
 }
 
+function TransferPartyCell({ user }) {
+  return (
+    <div className="min-w-[190px] leading-[1.55]">
+      <div className="font-semibold text-[#20213a]">{user.name}</div>
+      <div>ID: {user.id}</div>
+      <div className="max-w-[220px] break-all">{user.email}</div>
+    </div>
+  )
+}
+
+function transferTypeTone(type) {
+  if (type === '转账给其他用户') return 'blue'
+  if (type === '信托转券商') return 'violet'
+  if (type === '券商转信托') return 'orange'
+  return 'gray'
+}
+
 function FiatTransferPanel({ onOpenRecord }) {
   const [accountType, setAccountType] = useState('')
-  const filteredRows = accountType ? transferRows.filter((row) => row.fromAccount === accountType || row.toAccount === accountType) : transferRows
+  const [recordType, setRecordType] = useState('全部')
+  const [status, setStatus] = useState('全部')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [keyword, setKeyword] = useState('')
+  const [page, setPage] = useState(1)
+  const pageSize = 5
+
+  const filteredRows = useMemo(() => {
+    const normalizedKeyword = keyword.trim().toLowerCase()
+    return transferRows.filter((row) => {
+      const fromUser = row.fromUser || row.customer
+      const toUser = row.toUser || row.customer
+      const submittedDate = row.submittedAt.slice(0, 10)
+      const searchableText = [
+        row.requestId,
+        fromUser.name,
+        fromUser.id,
+        fromUser.email,
+        toUser.name,
+        toUser.id,
+        toUser.email,
+      ].join(' ').toLowerCase()
+
+      return (!accountType || row.fromAccount === accountType || row.toAccount === accountType)
+        && (recordType === '全部' || row.transferType === recordType)
+        && (status === '全部' || row.status === status)
+        && (!startDate || submittedDate >= startDate)
+        && (!endDate || submittedDate <= endDate)
+        && (!normalizedKeyword || searchableText.includes(normalizedKeyword))
+    })
+  }, [accountType, endDate, keyword, recordType, startDate, status])
+
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize))
+  const currentPage = Math.min(page, pageCount)
+  const pageRows = filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  const updateFilter = (setter) => (value) => {
+    setter(value)
+    setPage(1)
+  }
+
+  const resetFilters = () => {
+    setAccountType('')
+    setRecordType('全部')
+    setStatus('全部')
+    setStartDate('')
+    setEndDate('')
+    setKeyword('')
+    setPage(1)
+  }
+
+  const selectClassName = 'h-full min-w-[150px] bg-transparent text-right font-semibold text-[#20213a] outline-none'
+  const filterClassName = 'flex h-[50px] items-center justify-between rounded-[4px] border border-[#cfd1dc] bg-white px-[14px] text-[13px] text-[#4c4c68]'
 
   return (
     <>
-      <FiatFilterPanel accountType={accountType} onAccountTypeChange={setAccountType} />
+      <Panel className="mt-[21px] px-[15px] py-[18px]">
+        <div className="flex flex-wrap items-center gap-[12px]">
+          <label className={`${filterClassName} w-[276px]`}>
+            <span>账户类型</span>
+            <select value={accountType} onChange={(event) => updateFilter(setAccountType)(event.target.value)} className={selectClassName}>
+              <option value="">全部账户</option>
+              {accountFilterOptions.map((option) => <option key={option} value={option}>{formatTransferAccountName(option)}</option>)}
+            </select>
+          </label>
+
+          <label className={`${filterClassName} w-[276px]`}>
+            <span>记录类型</span>
+            <select value={recordType} onChange={(event) => updateFilter(setRecordType)(event.target.value)} className={selectClassName}>
+              {['全部', '本人账户互转', '转账给其他用户', '信托转券商', '券商转信托'].map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className={`${filterClassName} w-[230px]`}>
+            <span>状态</span>
+            <select value={status} onChange={(event) => updateFilter(setStatus)(event.target.value)} className={selectClassName}>
+              {['全部', '处理中', '已完成', '失败', '已撤销', '待审核', '已拒绝'].map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className={`${filterClassName} w-[230px]`}>
+            <span>开始日期</span>
+            <input type="date" value={startDate} onChange={(event) => updateFilter(setStartDate)(event.target.value)} className="bg-transparent text-right font-semibold text-[#20213a] outline-none" />
+          </label>
+
+          <label className={`${filterClassName} w-[230px]`}>
+            <span>结束日期</span>
+            <input type="date" value={endDate} onChange={(event) => updateFilter(setEndDate)(event.target.value)} className="bg-transparent text-right font-semibold text-[#20213a] outline-none" />
+          </label>
+
+          <label className="flex h-[50px] min-w-[360px] flex-1 items-center gap-[11px] rounded-[4px] border border-[#cfd1dc] bg-white px-[15px] text-[13px] text-[#9a9cab]">
+            <Search className="h-[16px] w-[16px] text-[#20213a]" strokeWidth={1.8} />
+            <input
+              value={keyword}
+              onChange={(event) => updateFilter(setKeyword)(event.target.value)}
+              className="h-full min-w-0 flex-1 bg-transparent outline-none"
+              placeholder="搜索申请编号、转出用户、收款用户、邮箱"
+            />
+          </label>
+        </div>
+
+        <div className="mt-[18px] flex flex-wrap gap-[10px]">
+          <PrimaryButton icon={Search} onClick={() => setPage(1)}>查询</PrimaryButton>
+          <ActionButton icon={XCircle} onClick={resetFilters}>重置</ActionButton>
+        </div>
+      </Panel>
+
       <Panel className="mt-[21px] overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="min-w-[1720px] w-full border-collapse text-left text-[13px] text-[#55556e]">
-          <thead>
-            <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
-              <th className="px-[18px]">申请编号</th>
-              <th className="w-[132px] px-[18px]">记录类型</th>
-              <th className="px-[18px]">客户</th>
-              <th className="w-[200px] whitespace-nowrap px-[18px]">转出账户</th>
-              <th className="w-[200px] whitespace-nowrap px-[18px]">转入账户</th>
-              <th className="px-[18px]">币种</th>
-              <th className="px-[18px]">转账金额</th>
-              <th className="px-[18px]">实际到账金额</th>
-              <th className="w-[112px] px-[18px]">状态</th>
-              <th className="px-[18px]">提交时间</th>
-              <th className="px-[18px]">完成时间</th>
-              <th className="px-[18px]">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredRows.map((row) => (
-              <tr key={row.requestId} className="h-[74px] border-b border-[#e7e8ef] bg-white">
-                <td className="px-[18px] font-semibold text-[#20213a]">{row.requestId}</td>
-                <td className="w-[132px] px-[18px]"><StatusBadge tone={row.transferType === '信托转券商' ? 'blue' : row.transferType === '券商转信托' ? 'violet' : 'gray'}>{row.transferType || '信托账户互转'}</StatusBadge></td>
-                <td className="px-[18px]">
-                  <div className="leading-[1.55]">
-                    <div className="font-semibold text-[#20213a]">{row.customer.name}</div>
-                    <div>ID: {row.customer.id}</div>
-                    <div>{row.customer.email}</div>
-                  </div>
-                </td>
-                <td className="w-[200px] whitespace-nowrap px-[18px]">{row.fromAccount}</td>
-                <td className="w-[200px] whitespace-nowrap px-[18px]">{row.toAccount}</td>
-                <td className="px-[18px]">{row.currency}</td>
-                <td className="px-[18px]">{row.transferAmount || row.amount}</td>
-                <td className="px-[18px]">{row.actualArrivalAmount || row.estimatedArrival}</td>
-                <td className="w-[112px] px-[18px]"><StatusBadge tone={transferStatusTone(row.status)}>{row.status}</StatusBadge></td>
-                <td className="px-[18px]">{row.submittedAt}</td>
-                <td className="px-[18px]">{row.completedAt || ''}</td>
-                <td className="px-[18px]">
-                  {row.status === '待审核' ? (
-                    <ActionButton icon={FileCheck2} onClick={() => onOpenRecord(row)}>审核</ActionButton>
-                  ) : (
-                    <ActionButton icon={Eye} onClick={() => onOpenRecord(row)}>查看详情</ActionButton>
-                  )}
-                </td>
+          <table className="min-w-[2420px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+            <thead>
+              <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
+                <th className="sticky left-0 z-20 w-[190px] bg-[#f6f7fb] px-[18px]">转账编号</th>
+                <th className="w-[150px] px-[18px]">记录类型</th>
+                <th className="w-[240px] px-[18px]">转出方</th>
+                <th className="w-[170px] whitespace-nowrap px-[18px]">转出账户</th>
+                <th className="w-[240px] px-[18px]">转入方</th>
+                <th className="w-[170px] whitespace-nowrap px-[18px]">转入账户</th>
+                <th className="w-[90px] px-[18px]">币种</th>
+                <th className="w-[150px] px-[18px]">转账金额</th>
+                <th className="w-[140px] px-[18px]">手续费</th>
+                <th className="w-[170px] px-[18px]">实际到账金额</th>
+                <th className="w-[112px] px-[18px]">状态</th>
+                <th className="w-[170px] px-[18px]">提交时间</th>
+                <th className="sticky right-0 z-20 w-[120px] bg-[#f6f7fb] px-[18px]">操作</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {pageRows.length ? pageRows.map((row) => {
+                const fromUser = row.fromUser || row.customer
+                const toUser = row.toUser || row.customer
+                return (
+                  <tr key={row.requestId} onClick={() => onOpenRecord(row)} className="group min-h-[82px] cursor-pointer border-b border-[#e7e8ef] bg-white hover:bg-[#faf9ff]">
+                    <td className="sticky left-0 z-10 bg-white px-[18px] py-[12px] font-semibold text-[#20213a] group-hover:bg-[#faf9ff]">{row.requestId}</td>
+                    <td className="px-[18px] py-[12px]"><StatusBadge tone={transferTypeTone(row.transferType)}>{row.transferType}</StatusBadge></td>
+                    <td className="px-[18px] py-[12px]"><TransferPartyCell user={fromUser} /></td>
+                    <td className="whitespace-nowrap px-[18px] py-[12px]">{formatTransferAccountName(row.fromAccount)}</td>
+                    <td className="px-[18px] py-[12px]"><TransferPartyCell user={toUser} /></td>
+                    <td className="whitespace-nowrap px-[18px] py-[12px]">{formatTransferAccountName(row.toAccount)}</td>
+                    <td className="px-[18px] py-[12px]">{row.currency}</td>
+                    <td className="whitespace-nowrap px-[18px] py-[12px] font-semibold text-[#20213a]">{row.transferAmount || row.amount}</td>
+                    <td className="whitespace-nowrap px-[18px] py-[12px]">{row.fee || `${row.currency} 0.00`}</td>
+                    <td className="whitespace-nowrap px-[18px] py-[12px]">{row.actualArrivalAmount || '-'}</td>
+                    <td className="px-[18px] py-[12px]"><StatusBadge tone={transferStatusTone(row.status)}>{row.status}</StatusBadge></td>
+                    <td className="whitespace-nowrap px-[18px] py-[12px]">{row.submittedAt}</td>
+                    <td className="sticky right-0 z-10 bg-white px-[18px] py-[12px] group-hover:bg-[#faf9ff]">
+                      <ActionButton
+                        icon={row.status === '待审核' ? FileCheck2 : Eye}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onOpenRecord(row)
+                        }}
+                      >
+                        {row.status === '待审核' ? '审核' : '查看'}
+                      </ActionButton>
+                    </td>
+                  </tr>
+                )
+              }) : (
+                <tr>
+                  <td colSpan={13} className="px-[18px] py-[64px] text-center">
+                    <div className="text-[14px] font-semibold text-[#4c4c68]">暂无符合条件的资金互转记录</div>
+                    <button type="button" onClick={resetFilters} className="mt-[10px] text-[13px] font-semibold text-[#8b4fff] hover:underline">重置筛选条件</button>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-[12px] border-t border-[#e5e6ef] bg-white px-[18px] py-[14px] text-[12px] text-[#66677f]">
+          <span>共 {filteredRows.length} 条记录，第 {currentPage} / {pageCount} 页</span>
+          <div className="flex gap-[8px]">
+            <button type="button" disabled={currentPage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="h-[32px] rounded-[4px] border border-[#cfd1dc] px-[12px] font-semibold text-[#4c4c68] disabled:cursor-not-allowed disabled:opacity-50">上一页</button>
+            <button type="button" disabled={currentPage >= pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} className="h-[32px] rounded-[4px] border border-[#8b4fff] px-[12px] font-semibold text-[#8b4fff] disabled:cursor-not-allowed disabled:opacity-50">下一页</button>
+          </div>
         </div>
       </Panel>
     </>
@@ -4724,6 +5050,7 @@ function FiatTransferPanel({ onOpenRecord }) {
 function CurrencyPill({ currency }) {
   const toneClass = {
     AED: 'bg-[#f2f8ef] text-[#18864b]',
+    BHD: 'bg-[#fff0f1] text-[#b3192d]',
     CNY: 'bg-[#fff1f1] text-[#d62d2d]',
     EUR: 'bg-[#eef4ff] text-[#3267d6]',
     HKD: 'bg-[#fff1d6] text-[#f39800]',
@@ -4949,8 +5276,8 @@ function CustomerAssetsPanel() {
   )
 }
 
-export function FiatAssetManagementPage({ hideQuestionMarks = false }) {
-  const [activeTab, setActiveTab] = useState('总览')
+export function FiatAssetManagementPage({ hideQuestionMarks = false, initialTab = '总览' }) {
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [selectedTransfer, setSelectedTransfer] = useState(null)
   const [manualDrawerType, setManualDrawerType] = useState(null)
   const [manualAccountType, setManualAccountType] = useState('香港账户')

@@ -60,6 +60,8 @@ const openingReviewRows = [
     id: application.userId,
     email: application.email,
     accountName: application.accountName,
+    accountCode: 'SG_ACCOUNT',
+    accountKey: 'singapore',
     submittedAt: application.submittedAt,
     status: '审核中',
   },
@@ -69,6 +71,8 @@ const openingReviewRows = [
     id: 'UID-10002',
     email: 'voigtus1@123mails.org',
     accountName: '新加坡账户',
+    accountCode: 'SG_ACCOUNT',
+    accountKey: 'singapore',
     submittedAt: '2026-07-13 15:10',
     status: '待处理',
   },
@@ -78,6 +82,8 @@ const openingReviewRows = [
     id: 'UID-10003',
     email: 'luna.chen@example.com',
     accountName: '新加坡账户',
+    accountCode: 'SG_ACCOUNT',
+    accountKey: 'singapore',
     submittedAt: '2026-07-12 09:36',
     status: '已开户',
   },
@@ -87,11 +93,38 @@ const openingReviewRows = [
     id: 'UID-10004',
     email: 'ming.tang@example.com',
     accountName: '新加坡账户',
+    accountCode: 'SG_ACCOUNT',
+    accountKey: 'singapore',
     submittedAt: '2026-07-11 16:28',
     status: '已拒绝',
     rejectReason: '客户提交的身份证明文件已过期，请更新证件后重新提交申请。',
   },
 ]
+
+const bahrainOpeningReviewRow = {
+  initials: 'WW',
+  name: application.customerName,
+  id: 'UID-BH-10001',
+  email: application.email,
+  accountName: '巴林账户',
+  accountCode: 'BH_ACCOUNT',
+  accountKey: 'bahrain',
+  submittedAt: '2026-07-27 15:48',
+  status: '审核中',
+  clientLinked: true,
+}
+
+function clientStatusToReviewStatus(status) {
+  if (status === 'opened') return '已开户'
+  if (status === 'failed') return '已拒绝'
+  return '审核中'
+}
+
+function reviewStatusToClientStatus(status) {
+  if (status === '已开户') return 'opened'
+  if (status === '已拒绝') return 'failed'
+  return 'reviewing'
+}
 
 function AdminShell({ children }) {
   return (
@@ -222,7 +255,7 @@ function ConfirmModal({ customerName, accountName, onCancel, onConfirm }) {
         </div>
         <div className="space-y-[10px] px-[22px] py-[18px]">
           <div className="rounded-[5px] bg-[#fff1d6] px-[12px] py-[10px] text-[12px] font-semibold leading-[20px] text-[#9a6500]">
-            确认后系统将完成该客户的新加坡账户开户，并记录开户操作日志。
+            确认后系统将完成该客户的{accountName}开户，并记录开户操作日志。
           </div>
           <ReadOnlyField label="客户名称" value={customerName} subdued />
           <ReadOnlyField label="申请账户" value={accountName} subdued />
@@ -295,10 +328,10 @@ function SingaporeOpeningReviewTable({ rows = openingReviewRows, onOpenDetail, o
   )
 }
 
-function SingaporeOpeningReviewList({ onOpenDetail, onOpenProcess }) {
+function SingaporeOpeningReviewList({ rows = openingReviewRows, onOpenDetail, onOpenProcess }) {
   const [accountType, setAccountType] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const filteredRows = openingReviewRows.filter((row) => (
+  const filteredRows = rows.filter((row) => (
     (!accountType || row.accountName === accountType) && (!statusFilter || row.status === statusFilter)
   ))
 
@@ -311,7 +344,7 @@ function SingaporeOpeningReviewList({ onOpenDetail, onOpenProcess }) {
       </div>
 
       <Panel className="mt-[21px] px-[15px] pb-[18px] pt-[21px]">
-        <PageTitle title="开户审核" subtitle="新加坡账户申请由客户确认并扣费后生成，运营在此完成开户审核及账户配置。" />
+        <PageTitle title="开户审核" subtitle="客户确认并提交账户申请后，运营在此完成审核并更新账户开户状态。" />
         <div className="mt-[21px] flex flex-wrap items-center gap-[12px]">
           <SearchBox placeholder="搜索客户名称、用户 ID、审核类型..." width="w-[440px]" />
           <label className="flex h-[50px] w-[260px] items-center justify-between rounded-[4px] border border-[#cfd1dc] bg-white px-[14px] text-[13px] text-[#4c4c68]">
@@ -324,6 +357,7 @@ function SingaporeOpeningReviewList({ onOpenDetail, onOpenProcess }) {
               <option value="">全部账户</option>
               <option value="美国账户">美国账户</option>
               <option value="新加坡账户">新加坡账户</option>
+              <option value="巴林账户">巴林账户</option>
             </select>
           </label>
           <label className="flex h-[50px] w-[240px] items-center justify-between rounded-[4px] border border-[#cfd1dc] bg-white px-[14px] text-[13px] text-[#4c4c68]">
@@ -350,9 +384,51 @@ function SingaporeOpeningReviewList({ onOpenDetail, onOpenProcess }) {
 export function SingaporeAccountOpeningReviewPage({
   accountTypes = initialAccountTypeConfigs,
   onOpenUserAccountConfig,
+  jurisdictionStatuses = {},
+  onJurisdictionStatusesChange,
 }) {
   const [reviewMode, setReviewMode] = useState('list')
-  const [selectedApplication, setSelectedApplication] = useState(openingReviewRows[0])
+  const [reviewRows, setReviewRows] = useState(() => {
+    if (!jurisdictionStatuses.bahrain || jurisdictionStatuses.bahrain === 'not_opened') {
+      return openingReviewRows
+    }
+
+    return [
+      {
+        ...bahrainOpeningReviewRow,
+        status: clientStatusToReviewStatus(jurisdictionStatuses.bahrain),
+        ...(jurisdictionStatuses.bahrain === 'failed'
+          ? { rejectReason: '巴林账户开户申请未通过审核，请联系运营确认。' }
+          : {}),
+      },
+      ...openingReviewRows,
+    ]
+  })
+  const [selectedApplication, setSelectedApplication] = useState(reviewRows[0])
+
+  const updateApplicationStatus = (record, status, rejectReason = '') => {
+    const patch = {
+      status,
+      ...(rejectReason ? { rejectReason } : {}),
+    }
+    setReviewRows((current) => current.map((row) => (
+      row.id === record.id && row.accountCode === record.accountCode
+        ? { ...row, ...patch }
+        : row
+    )))
+    setSelectedApplication((current) => (
+      current.id === record.id && current.accountCode === record.accountCode
+        ? { ...current, ...patch }
+        : current
+    ))
+
+    if (record.clientLinked && onJurisdictionStatusesChange) {
+      onJurisdictionStatusesChange((current = {}) => ({
+        ...current,
+        [record.accountKey]: reviewStatusToClientStatus(status),
+      }))
+    }
+  }
 
   const openDetail = (row) => {
     setSelectedApplication(row)
@@ -360,7 +436,11 @@ export function SingaporeAccountOpeningReviewPage({
   }
 
   const openProcess = (row) => {
-    setSelectedApplication(row)
+    const processingRow = row.status === '待处理' ? { ...row, status: '审核中' } : row
+    if (processingRow !== row) {
+      updateApplicationStatus(row, '审核中')
+    }
+    setSelectedApplication(processingRow)
     setReviewMode('process')
   }
 
@@ -370,6 +450,7 @@ export function SingaporeAccountOpeningReviewPage({
         accountTypes={accountTypes}
         record={selectedApplication}
         onOpenUserAccountConfig={onOpenUserAccountConfig}
+        onApplicationStatusChange={updateApplicationStatus}
         onBack={() => setReviewMode('list')}
         mode={reviewMode}
       />
@@ -378,6 +459,7 @@ export function SingaporeAccountOpeningReviewPage({
 
   return (
     <SingaporeOpeningReviewList
+      rows={reviewRows}
       onOpenDetail={openDetail}
       onOpenProcess={openProcess}
     />
@@ -388,6 +470,7 @@ function SingaporeAccountOpeningReviewDetailPage({
   accountTypes = initialAccountTypeConfigs,
   record = openingReviewRows[0],
   onOpenUserAccountConfig,
+  onApplicationStatusChange,
   onBack,
   mode = 'process',
 }) {
@@ -402,26 +485,32 @@ function SingaporeAccountOpeningReviewDetailPage({
     submittedAt: record.submittedAt || application.submittedAt,
   }
   const initialReviewResult = record.status === '已拒绝' ? 'reject' : 'approve'
-  const singaporeAccountType = accountTypes.find((item) => item.code === 'SG_ACCOUNT')
-  const supportedCurrencies = singaporeAccountType?.currencies
+  const accountCode = record.accountCode || (record.accountName === '巴林账户' ? 'BH_ACCOUNT' : 'SG_ACCOUNT')
+  const accountType = accountTypes.find((item) => item.code === accountCode)
+  const fallbackCurrencies = accountCode === 'BH_ACCOUNT' ? ['USD', 'BHD'] : ['USD', 'CNY', 'SGD', 'AED', 'JPY']
+  const supportedCurrencies = accountType?.currencies
     ?.filter((currency) => currency.enabled !== false)
-    .map((currency) => currency.code) || ['USD', 'CNY', 'SGD', 'AED', 'JPY']
+    .map((currency) => currency.code) || fallbackCurrencies
+  const openingFeeCurrency = accountType?.openingFeeCurrency || 'USD'
+  const openingFeeAmount = Number(accountType?.openingFeeAmount ?? (accountCode === 'BH_ACCOUNT' ? 750 : 1000))
+  const openingFeeLabel = `${openingFeeCurrency} ${openingFeeAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
   const [reviewResult, setReviewResult] = useState(initialReviewResult)
   const [rejectReason, setRejectReason] = useState(record.rejectReason || '')
   const [opened, setOpened] = useState(record.status === '已开户')
+  const [rejected, setRejected] = useState(record.status === '已拒绝')
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [message, setMessage] = useState('')
   const [, setLogs] = useState([
-    { time: '2026-07-14 11:18', operator: '系统', action: '扣费成功', detail: '已扣除新加坡账户开户费 USD 1,000.00，并生成开户申请。' },
-    { time: '2026-07-14 11:20', operator: '运营 Jane', action: '进入审核', detail: '待完成新加坡账户开户审核。' },
+    { time: '2026-07-14 11:18', operator: '系统', action: '扣费成功', detail: `已扣除${detailApplication.accountName}开户费 ${openingFeeLabel}，并生成开户申请。` },
+    { time: '2026-07-14 11:20', operator: '运营 Jane', action: '进入审核', detail: `待完成${detailApplication.accountName}开户审核。` },
   ])
-  const readonly = viewOnly || opened || record.status === '已拒绝'
+  const readonly = viewOnly || opened || rejected
   const rejectedReadonly = readonly && reviewResult === 'reject'
   const feeFailed = application.fee.debitStatus !== '扣费成功'
   const canConfirm = reviewResult === 'reject'
     ? Boolean(rejectReason.trim())
     : !feeFailed
-  const applicationStatus = opened ? '已开户' : reviewResult === 'reject' ? '已拒绝' : record.status === '审核中' ? '审核中' : '待审核'
+  const applicationStatus = opened ? '已开户' : rejected ? '已拒绝' : record.status === '审核中' ? '审核中' : '待审核'
   const accountConfigStatus = '待处理'
 
   const addLog = (action, detail) => {
@@ -438,9 +527,10 @@ function SingaporeAccountOpeningReviewDetailPage({
         return
       }
       setOpened(false)
-      setEditingOpenedAccount(false)
+      setRejected(true)
       setMessage('申请已拒绝，操作日志已记录。')
       addLog('拒绝申请', rejectReason)
+      onApplicationStatusChange?.(record, '已拒绝', rejectReason)
       return
     }
 
@@ -453,9 +543,11 @@ function SingaporeAccountOpeningReviewDetailPage({
 
   const confirmAccountOpening = () => {
     setOpened(true)
+    setRejected(false)
     setConfirmOpen(false)
     setMessage('开户成功，页面已切换为只读状态。')
     addLog('确认开户', '已完成开户审核，客户实际账户信息需在用户管理页面维护。')
+    onApplicationStatusChange?.(record, '已开户')
   }
 
   const openUserAccountConfig = () => {
@@ -474,7 +566,7 @@ function SingaporeAccountOpeningReviewDetailPage({
         </div>
       ) : null}
       <div className="mb-[16px] flex items-center justify-between">
-        <PageTitle title="新加坡账户开户审核" subtitle="运营查看客户申请信息并完成开户审核；客户实际账户信息在用户管理页面维护。" />
+        <PageTitle title={`${detailApplication.accountName}开户审核`} subtitle="运营查看客户申请信息并完成开户审核；客户实际账户信息在用户管理页面维护。" />
         <div className="flex items-center gap-[10px]">
           <StatusBadge tone={viewOnly ? 'blue' : opened ? 'green' : 'blue'}>{viewOnly ? '查看详情' : applicationStatus}</StatusBadge>
         </div>
@@ -600,7 +692,7 @@ function SingaporeAccountOpeningReviewDetailPage({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-[8px] text-[14px] font-semibold text-[#20213a]">
                   <Banknote className="h-[17px] w-[17px] text-[#8b4fff]" />
-                  新加坡账户申请信息
+                  {detailApplication.accountName}申请信息
                 </div>
                 <div className="flex items-center gap-[8px]">
                   {accountConfigStatus === '待处理' ? <ActionButton icon={Edit3} onClick={openUserAccountConfig}>配置账户</ActionButton> : null}
@@ -609,7 +701,7 @@ function SingaporeAccountOpeningReviewDetailPage({
             </div>
             <div className="p-[18px]">
               <div className="grid grid-cols-2 gap-[12px]">
-                <ReadOnlyField label="账户类型" value="新加坡账户" subdued />
+                <ReadOnlyField label="账户类型" value={detailApplication.accountName} subdued />
                 <ReadOnlyField label="申请状态" value={applicationStatus} subdued />
                 <ReadOnlyField label="申请时间" value={detailApplication.submittedAt} subdued />
                 <ReadOnlyField label="支持币种" value={supportedCurrencies.join(' / ')} subdued />

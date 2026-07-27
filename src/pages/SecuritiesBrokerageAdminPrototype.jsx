@@ -21,8 +21,9 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 
-import { BrokerageApplicationManagementPage, BrokerageManagementPage, FiatAssetManagementPage, UserManagementPage } from './BaasAdminReviewPrototype'
+import { BrokerageApplicationManagementPage, BrokerageManagementPage, FiatAssetManagementPage } from './BaasAdminReviewPrototype'
 import { AccountTypeConfigPage } from './AccountTypeConfigPage'
+import { UserManagementPage } from './JurisdictionUserManagementPage'
 import { SingaporeAccountOpeningReviewPage } from './SingaporeAccountOpeningReviewPage'
 import { initialAccountTypeConfigs } from '../data/accountTypeConfig'
 import { initialAccountCurrencyConfigs } from '../data/accountCurrencyConfig'
@@ -138,6 +139,9 @@ export function SecuritiesBrokerageAdminPrototype({
   onChangeUserAccountConfigs,
   showAccountTypeConfig = false,
   defaultActivePage = 'brokerage-applications',
+  defaultFiatTab = '总览',
+  jurisdictionStatuses,
+  onJurisdictionStatusesChange,
 }) {
   const [activePage, setActivePage] = useState(defaultActivePage)
   const [selectedUserDetail, setSelectedUserDetail] = useState(null)
@@ -176,18 +180,20 @@ export function SecuritiesBrokerageAdminPrototype({
         <SingaporeAccountOpeningReviewPage
           accountTypes={effectiveAccountTypeConfigs}
           onOpenUserAccountConfig={() => setActivePage('user-management')}
+          jurisdictionStatuses={jurisdictionStatuses}
+          onJurisdictionStatusesChange={onJurisdictionStatusesChange}
         />
       ) : null}
       {activePage === 'user-management' ? (
         <UserManagementPage
           focusedCustomer={selectedUserDetail}
-          singaporeAccountUsers={effectiveUserAccountConfigs}
-          onChangeSingaporeAccountUsers={updateUserAccountConfigs}
+          users={effectiveUserAccountConfigs}
+          onChangeUsers={updateUserAccountConfigs}
           accountTypes={effectiveAccountTypeConfigs}
-          onOpenSingaporeApplication={() => setActivePage('account-opening-review')}
+          onOpenAccountApplication={() => setActivePage('account-opening-review')}
         />
       ) : null}
-      {activePage === 'fiat-assets' ? <FiatAssetManagementPage /> : null}
+      {activePage === 'fiat-assets' ? <FiatAssetManagementPage initialTab={defaultFiatTab} /> : null}
       {activePage === 'brokerage-management' ? (
         <BrokerageManagementPage
           brokers={effectiveBrokerageConfigs}

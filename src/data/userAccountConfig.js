@@ -2,6 +2,26 @@ export const singaporeAccountStatusOptions = ['未开通', '待处理', '审核�
 
 export const userAccountStatusOptions = ['未开通', '已开通', '已关闭']
 
+export const jurisdictionAccountStatusOptions = ['未开通', '审核中', '已开通', '已拒绝', '已暂停']
+
+export const createJurisdictionAccountRecord = (accountTypeCode, overrides = {}) => ({
+  id: `JURISDICTION-ACCOUNT-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+  accountTypeCode,
+  status: '未开通',
+  beneficiaryName: '',
+  accountNumber: '',
+  openingSource: '',
+  appliedAt: '',
+  approvedAt: '',
+  pausedAt: '',
+  feeStatus: '未扣费',
+  rejectReason: '',
+  updatedAt: '',
+  updatedBy: '',
+  remark: '',
+  ...overrides,
+})
+
 export const createUserAccountRecord = (accountTypeCode, overrides = {}) => ({
   id: `USER-ACCOUNT-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
   accountTypeCode,
@@ -64,6 +84,20 @@ export const initialUserAccountConfigs = [
       updatedAt: '2026-07-14 11:20',
       updatedBy: '运营管理员',
     }),
+    jurisdictionAccounts: [
+      createJurisdictionAccountRecord('BH_ACCOUNT', {
+        id: 'ja-a-bh',
+        status: '已开通',
+        beneficiaryName: 'WANYARA WAN',
+        accountNumber: 'BH-0950',
+        openingSource: '客户申请',
+        appliedAt: '2026-07-20 10:18',
+        approvedAt: '2026-07-22 14:36',
+        feeStatus: '扣费成功',
+        updatedAt: '2026-07-22 14:36',
+        updatedBy: '运营管理员',
+      }),
+    ],
   },
   {
     id: 'user-b',
@@ -93,6 +127,17 @@ export const initialUserAccountConfigs = [
       updatedAt: '2026-07-13 15:10',
       updatedBy: '系统',
     }),
+    jurisdictionAccounts: [
+      createJurisdictionAccountRecord('BH_ACCOUNT', {
+        id: 'ja-b-bh',
+        status: '审核中',
+        openingSource: '客户申请',
+        appliedAt: '2026-07-27 15:48',
+        feeStatus: '扣费成功',
+        updatedAt: '2026-07-27 15:48',
+        updatedBy: '系统',
+      }),
+    ],
   },
   {
     id: 'user-c',
@@ -125,6 +170,19 @@ export const initialUserAccountConfigs = [
       updatedBy: '系统',
       remark: '客户资料不符合新加坡账户开户要求。',
     }),
+    jurisdictionAccounts: [
+      createJurisdictionAccountRecord('BH_ACCOUNT', {
+        id: 'ja-c-bh',
+        status: '已开通',
+        beneficiaryName: 'LUNA CHEN',
+        accountNumber: 'BH-10003',
+        openingSource: '后台手动开通',
+        approvedAt: '2026-07-08 11:26',
+        feeStatus: '无需扣费',
+        updatedAt: '2026-07-12 15:06',
+        updatedBy: '运营管理员',
+      }),
+    ],
   },
   {
     id: 'user-d',
@@ -149,6 +207,18 @@ export const initialUserAccountConfigs = [
       updatedAt: '2026-07-14 09:40',
       updatedBy: '系统',
     }),
+    jurisdictionAccounts: [
+      createJurisdictionAccountRecord('BH_ACCOUNT', {
+        id: 'ja-d-bh',
+        status: '已拒绝',
+        openingSource: '客户申请',
+        appliedAt: '2026-07-13 09:42',
+        feeStatus: '已退回',
+        rejectReason: '开户信息与现有客户资料不一致，请核对后重新申请。',
+        updatedAt: '2026-07-14 09:40',
+        updatedBy: '运营管理员',
+      }),
+    ],
   },
   {
     id: 'user-e',
@@ -172,5 +242,13 @@ export const initialUserAccountConfigs = [
       updatedAt: '2026-07-11 10:09',
       updatedBy: '系统',
     }),
+    jurisdictionAccounts: [
+      createJurisdictionAccountRecord('BH_ACCOUNT', {
+        id: 'ja-e-bh',
+        status: '未开通',
+        updatedAt: '2026-07-11 10:09',
+        updatedBy: '系统',
+      }),
+    ],
   },
 ]

@@ -186,7 +186,11 @@ function createEmptyAccountType() {
     name: '',
     englishName: '',
     code: '',
+    clientDescription: '',
+    openingFeeAmount: 0,
+    openingFeeCurrency: 'USD',
     status: '启用',
+    clientVisible: false,
     requiresDocuments: true,
     isDefault: false,
     allowDeposit: true,
@@ -263,6 +267,10 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
 
     return {
       ...source,
+      clientDescription: source.clientDescription || '',
+      openingFeeAmount: source.openingFeeAmount ?? 0,
+      openingFeeCurrency: source.openingFeeCurrency || 'USD',
+      clientVisible: source.clientVisible === true,
       requiresDocuments: source.requiresDocuments === true,
       currencies,
     }
@@ -294,6 +302,12 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
       return
     }
 
+    const normalizedOpeningFee = Number(form.openingFeeAmount)
+    if (!Number.isFinite(normalizedOpeningFee) || normalizedOpeningFee < 0) {
+      setError('请填写有效的开户费用，金额不能小于 0。')
+      return
+    }
+
     const invalidFeeCurrency = form.currencies.find((currency) => {
       const fee = Number(currency.brokerageTransferFee)
       return currency.enabled && (!String(currency.brokerageTransferFee).trim() || !Number.isFinite(fee) || fee < 0)
@@ -307,6 +321,9 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
       ...form,
       id: form.id || `acct-${normalizedCode.toLowerCase()}-${Date.now()}`,
       code: normalizedCode,
+      clientDescription: form.clientDescription.trim(),
+      openingFeeAmount: normalizedOpeningFee,
+      openingFeeCurrency: form.openingFeeCurrency,
       displayOrder: Number(form.displayOrder || 0),
       currencies: form.currencies
         .map((currency) => ({
@@ -323,7 +340,7 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
   return (
     <CenterModal
       title={form.id ? '编辑账户类型' : '新增账户类型'}
-      subtitle="维护账户类型基础信息、状态、支持币种及券商互转手续费"
+      subtitle="维护账户类型基础信息、客户端申请展示、开户费用、支持币种及券商互转手续费"
       width="w-[980px]"
       onClose={onClose}
       footer={(
@@ -339,8 +356,20 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
           <div className="grid grid-cols-2 gap-[13px]">
             <FormInput label="账户类型名称 *" value={form.name} onChange={(value) => updateField('name', value)} placeholder="例如：香港账户" />
             <FormInput label="账户类型英文名称 *" value={form.englishName} onChange={(value) => updateField('englishName', value)} placeholder="例如：Hong Kong Account" />
+            <div className="col-span-2">
+              <FormTextarea
+                label="客户端账户简介"
+                value={form.clientDescription}
+                onChange={(value) => updateField('clientDescription', value)}
+                placeholder="用于客户端账户申请入口及介绍页展示"
+              />
+            </div>
             <FormInput label="账户类型代码 *" value={form.code} onChange={(value) => updateField('code', value)} placeholder="例如：HK_ACCOUNT" />
             <FormInput label="展示排序 *" type="number" value={form.displayOrder} onChange={(value) => updateField('displayOrder', value)} />
+            <FormInput label="开户费用 *" type="number" value={form.openingFeeAmount} onChange={(value) => updateField('openingFeeAmount', value)} />
+            <FormSelect label="开户费币种 *" value={form.openingFeeCurrency} onChange={(value) => updateField('openingFeeCurrency', value)}>
+              {accountTypeCurrencyOptions.map((currency) => <option key={currency.code} value={currency.code}>{currency.code} / {currency.name}</option>)}
+            </FormSelect>
             <FormSelect label="状态 *" value={form.status} onChange={(value) => updateField('status', value)}>
               {accountTypeStatusOptions.map((status) => <option key={status} value={status}>{status}</option>)}
             </FormSelect>
@@ -361,6 +390,32 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
             {form.requiresDocuments
               ? '选择“是”：该账户类型仅支持用户提交资料并通过开户审核后开通，不支持后台手动开通。'
               : '选择“否”：该账户类型支持运营在后台为用户手动开通，无需进入客户端申请和资料审核流程。'}
+          </div>
+          <div className="mt-[13px] flex items-center justify-between gap-[20px] rounded-[5px] border border-[#e2e4ec] bg-[#fbfbfd] px-[14px] py-[12px]">
+            <div>
+              <div className="text-[13px] font-semibold text-[#20213a]">客户端展示</div>
+              <div className="mt-[4px] text-[12px] leading-[20px] text-[#66677f]">
+                {form.clientVisible
+                  ? '开启后，未开户用户可在客户端看到该账户类型的开户入口。'
+                  : '关闭后，未开户用户不展示申请入口；已开户账户及资产仍正常展示。'}
+              </div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={form.clientVisible}
+              aria-label="客户端展示"
+              onClick={() => updateField('clientVisible', !form.clientVisible)}
+              className="inline-flex shrink-0 items-center gap-[9px] text-[12px] font-semibold text-[#24243d]"
+            >
+              <span className={`inline-flex h-[22px] w-[40px] items-center rounded-full px-[2px] transition ${form.clientVisible ? 'justify-end bg-[#8b4fff]' : 'justify-start bg-[#d7d9e4]'}`}>
+                <span className="h-[18px] w-[18px] rounded-full bg-white shadow-sm" />
+              </span>
+              {form.clientVisible ? '开启' : '关闭'}
+            </button>
+          </div>
+          <div className="mt-[8px] text-[11px] leading-[18px] text-[#8a8ca0]">
+            此开关仅控制客户端入口展示，与账户类型状态、客户端申请权限及后台手动开户规则分别保存、独立生效。
           </div>
         </ModalSection>
         <ModalSection title="支持币种及互转手续费">
@@ -714,8 +769,11 @@ export function AccountTypeConfigPage({
             <InfoItem label="账户类型名称" value={selectedAccount.name} />
             <InfoItem label="账户类型英文名称" value={selectedAccount.englishName} />
             <InfoItem label="账户类型代码" value={selectedAccount.code} />
+            <InfoItem label="客户端账户简介" value={selectedAccount.clientDescription} wide />
+            <InfoItem label="开户费用" value={`${selectedAccount.openingFeeCurrency || 'USD'} ${Number(selectedAccount.openingFeeAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
             <InfoItem label="展示排序" value={selectedAccount.displayOrder} />
             <InfoItem label="状态" value={selectedAccount.status} />
+            <InfoItem label="客户端展示" value={selectedAccount.clientVisible ? '开启' : '关闭'} />
             <InfoItem label="是否需要上传资料" value={selectedAccount.requiresDocuments ? '是' : '否'} />
             <InfoItem label="是否默认账户" value={selectedAccount.isDefault ? '是' : '否'} />
             <InfoItem label="支持入金" value={selectedAccount.allowDeposit ? '支持' : '不支持'} />

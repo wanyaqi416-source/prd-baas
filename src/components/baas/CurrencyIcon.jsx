@@ -5,11 +5,13 @@ const currencyFlagSources = {
 }
 
 const fallbackLabels = {
+  BHD: 'BH',
   EUR: 'EU',
   HKD: 'HK',
 }
 
 const fallbackToneClass = {
+  BHD: 'bg-red-700 text-white',
   CNY: 'bg-red-600 text-white',
   EUR: 'bg-blue-600 text-white',
   HKD: 'bg-red-500 text-white',
