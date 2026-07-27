@@ -569,6 +569,87 @@ const incomingClaimRows = [
 ]
 
 const fiatLedgerRows = [
+  {
+    id: 'FEE-20260727-001',
+    businessNo: 'FEE-20260727-001',
+    time: '2026-07-27 16:20:18',
+    customer: 'YAQI WAN',
+    customerId: '6',
+    customerEmail: 'wanyaqi416@gmail.com',
+    accountType: '香港账户',
+    currency: 'USD',
+    amount: 25,
+    currencyAmount: 'USD 25.00',
+    type: '费用扣除',
+    recordType: '费用扣除',
+    channel: '-',
+    referenceNo: 'OTC-20260726-018',
+    status: '处理完成',
+    feeReason: '第三方服务费',
+    customReason: '',
+    balanceBefore: 15000.5,
+    balanceAfter: 14975.5,
+    remark: '补扣 OTC 报价服务商产生的第三方服务费用。',
+    voucher: 'fee-proof-0727.pdf',
+    operator: '运营管理员',
+    operationTime: '2026-07-27 16:20:18',
+  },
+  {
+    id: 'ADJ-20260727-001',
+    businessNo: 'ADJ-20260727-001',
+    adjustmentNo: 'ADJ-20260727-001',
+    time: '2026-07-27 17:05:26',
+    customer: 'YAQI WAN',
+    customerId: '6',
+    customerEmail: 'wanyaqi416@gmail.com',
+    accountType: '香港账户',
+    currency: 'USD',
+    amount: 150,
+    currencyAmount: 'USD +150.00',
+    type: '余额调账',
+    recordType: '调账增加',
+    adjustmentDirection: '调账增加',
+    channel: '-',
+    referenceNo: 'BANK-SYNC-20260727-008',
+    status: '处理完成',
+    adjustmentReason: '第三方交易未同步',
+    customReason: '',
+    balanceBefore: 14825.5,
+    balanceAfter: 14975.5,
+    remark: '补录第三方银行已完成但系统未同步的入账。',
+    voucher: 'bank-sync-0727.pdf',
+    operator: '运营管理员',
+    operationTime: '2026-07-27 17:05:26',
+    clientSummary: '余额调账 · 调账增加',
+  },
+  {
+    id: 'ADJ-20260727-002',
+    businessNo: 'ADJ-20260727-002',
+    adjustmentNo: 'ADJ-20260727-002',
+    time: '2026-07-27 17:18:42',
+    customer: 'YAQI WAN',
+    customerId: '6',
+    customerEmail: 'wanyaqi416@gmail.com',
+    accountType: '香港账户',
+    currency: 'USD',
+    amount: 25,
+    currencyAmount: 'USD -25.00',
+    type: '余额调账',
+    recordType: '调账扣减',
+    adjustmentDirection: '调账扣减',
+    channel: '-',
+    referenceNo: 'DUPLICATE-20260727-003',
+    status: '处理完成',
+    adjustmentReason: '重复入账修正',
+    customReason: '',
+    balanceBefore: 15000.5,
+    balanceAfter: 14975.5,
+    remark: '冲减重复登记的同一笔银行入账。',
+    voucher: 'duplicate-credit-0727.png',
+    operator: '运营管理员',
+    operationTime: '2026-07-27 17:18:42',
+    clientSummary: '余额调账 · 调账扣减',
+  },
   { id: 'LEDGER-20260525-001', time: '2026-05-25 16:01:10', customer: 'yejin', customerId: '130', accountType: '香港账户', currencyAmount: 'HKD 10', type: '出金', channel: '其他', referenceNo: '-', status: '待处理' },
   { id: 'LEDGER-20260525-002', time: '2026-05-25 14:49:52', customer: 'QIXUE', customerId: '4', accountType: '美国账户', currencyAmount: 'USD 11', type: '出金', channel: '其他', referenceNo: '-', status: '待处理' },
   { id: 'LEDGER-20260525-003', time: '2026-05-25 14:23:43', customer: 'QIXUE', customerId: '4', accountType: '美国账户', currencyAmount: 'USD 11', type: '出金', channel: '其他', referenceNo: '-', status: '待处理' },
@@ -825,6 +906,75 @@ const customers = [
   { id: '34', email: 'perumily2@mediaholy.com' },
   { id: '6', email: 'wanyaqi416@gmail.com' },
   { id: '4', email: 'voigtus1@123mails.org' },
+]
+
+const manualFiatCustomerProfiles = [
+  {
+    id: '65',
+    name: 'VIGZE LI',
+    email: 'vigze5606@justdefinition.com',
+    accounts: {
+      香港账户: {
+        USD: { available: 12850.25, frozen: 500 },
+        HKD: { available: 82600, frozen: 1200 },
+      },
+      新加坡账户: {
+        USD: { available: 7200, frozen: 0 },
+        SGD: { available: 18450, frozen: 300 },
+      },
+      巴林账户: {
+        USD: { available: 3600, frozen: 0 },
+        BHD: { available: 1250.375, frozen: 20 },
+      },
+    },
+  },
+  {
+    id: '34',
+    name: 'PERUMILY HU',
+    email: 'perumily2@mediaholy.com',
+    accounts: {
+      香港账户: {
+        USD: { available: 8600, frozen: 120 },
+        CNY: { available: 42000, frozen: 0 },
+      },
+      美国账户: {
+        USD: { available: 21800, frozen: 650 },
+      },
+    },
+  },
+  {
+    id: '6',
+    name: 'YAQI WAN',
+    email: 'wanyaqi416@gmail.com',
+    accounts: {
+      香港账户: {
+        USD: { available: 15000.5, frozen: 500 },
+        HKD: { available: 68000, frozen: 0 },
+      },
+      新加坡账户: {
+        USD: { available: 9200, frozen: 0 },
+        JPY: { available: 800000, frozen: 25000 },
+      },
+      巴林账户: {
+        USD: { available: 5600, frozen: 0 },
+        BHD: { available: 1900.625, frozen: 50 },
+      },
+    },
+  },
+  {
+    id: '4',
+    name: 'YUE QI',
+    email: 'voigtus1@123mails.org',
+    accounts: {
+      美国账户: {
+        USD: { available: 11500, frozen: 200 },
+      },
+      新加坡账户: {
+        USD: { available: 4300, frozen: 0 },
+        AED: { available: 9200, frozen: 0 },
+      },
+    },
+  },
 ]
 
 const initialFeeConfigs = [
@@ -4489,50 +4639,674 @@ export function BrokerageManagementPage({
   )
 }
 
-function ManualFiatDrawer({ type, accountType, onAccountTypeChange, onClose }) {
+const manualWithdrawalOperationTypes = ['银行出款', '费用扣除', '余额调账']
+const balanceAdjustmentDirections = ['调账增加', '调账扣减']
+const manualOperator = {
+  name: '运营管理员',
+  permissions: ['BALANCE_ADJUSTMENT'],
+}
+const fiatCurrencyPrecision = { JPY: 0, BHD: 3 }
+
+function getCurrencyCode(value) {
+  return String(value || '').split(/\s+/)[0] || 'USD'
+}
+
+function formatFiatNumber(value, currency) {
+  const precision = fiatCurrencyPrecision[currency] ?? 2
+  return Number(value || 0).toLocaleString('en-US', {
+    minimumFractionDigits: precision,
+    maximumFractionDigits: precision,
+  })
+}
+
+function manualCustomerLabel(customer) {
+  return `${customer.name} · ID: ${customer.id} · ${customer.email}`
+}
+
+function FeeDeductionConfirmationModal({
+  customer,
+  accountType,
+  currency,
+  availableBalance,
+  amount,
+  reason,
+  balanceAfter,
+  submitting,
+  onClose,
+  onConfirm,
+}) {
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#252236]/55 px-[20px]">
+      <section className="w-[520px] overflow-hidden rounded-[7px] bg-white shadow-[0_18px_48px_rgba(28,29,42,0.3)]">
+        <header className="flex h-[60px] items-center justify-between border-b border-[#e5e6ef] px-[20px]">
+          <div>
+            <h3 className="text-[16px] font-semibold text-[#20213a]">确认费用扣除</h3>
+            <p className="mt-[3px] text-[11px] text-[#8a8ca0]">请再次核对扣费信息</p>
+          </div>
+          <button type="button" onClick={onClose} disabled={submitting} aria-label="关闭" className="rounded-[4px] p-[7px] text-[#66677f] hover:bg-[#f6f7fb] disabled:cursor-not-allowed">
+            <X className="h-[16px] w-[16px]" />
+          </button>
+        </header>
+        <div className="space-y-[14px] px-[20px] py-[18px]">
+          <div className="grid grid-cols-2 gap-x-[18px] gap-y-[13px] rounded-[5px] border border-[#e2e4ec] bg-[#f8f9fc] p-[14px]">
+            {[
+              ['客户名称', customer?.name || '-'],
+              ['账户类型', accountType],
+              ['币种', currency],
+              ['当前可用余额', `${currency} ${formatFiatNumber(availableBalance, currency)}`],
+              ['扣费金额', `${currency} ${formatFiatNumber(amount, currency)}`],
+              ['扣费原因', reason],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <div className="text-[11px] text-[#8a8ca0]">{label}</div>
+                <div className="mt-[5px] text-[13px] font-semibold text-[#20213a]">{value}</div>
+              </div>
+            ))}
+            <div className="col-span-2 flex items-center justify-between border-t border-[#e2e4ec] pt-[12px]">
+              <span className="text-[12px] text-[#66677f]">扣费后余额</span>
+              <span className="text-[16px] font-bold text-[#f04f5f]">{currency} {formatFiatNumber(balanceAfter, currency)}</span>
+            </div>
+          </div>
+          <div className="rounded-[5px] border border-[#ffd0d5] bg-[#fff4f5] px-[13px] py-[11px] text-[12px] font-semibold leading-[20px] text-[#d93646]">
+            确认后将直接从客户账户余额中扣除该笔费用，该操作不可撤销，请确认信息无误。
+          </div>
+        </div>
+        <footer className="grid grid-cols-2 gap-[8px] border-t border-[#e5e6ef] p-[12px]">
+          <button type="button" onClick={onClose} disabled={submitting} className="h-[40px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] disabled:cursor-not-allowed disabled:opacity-60">取消</button>
+          <button type="button" onClick={onConfirm} disabled={submitting} className="h-[40px] rounded-[5px] bg-[#f04f5f] text-[13px] font-semibold text-white hover:bg-[#db3e4e] disabled:cursor-not-allowed disabled:bg-[#f3a3ab]">
+            {submitting ? '扣费处理中...' : '确认扣费'}
+          </button>
+        </footer>
+      </section>
+    </div>
+  )
+}
+
+function BalanceAdjustmentConfirmationModal({
+  customer,
+  accountType,
+  currency,
+  direction,
+  balanceBefore,
+  amount,
+  balanceAfter,
+  reason,
+  relatedTransactionNo,
+  remark,
+  submitting,
+  onClose,
+  onConfirm,
+}) {
+  const isIncrease = direction === '调账增加'
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#252236]/55 px-[20px]">
+      <section className="w-[560px] overflow-hidden rounded-[7px] bg-white shadow-[0_18px_48px_rgba(28,29,42,0.3)]">
+        <header className="flex h-[60px] items-center justify-between border-b border-[#e5e6ef] px-[20px]">
+          <div>
+            <h3 className="text-[16px] font-semibold text-[#20213a]">确认余额调账</h3>
+            <p className="mt-[3px] text-[11px] text-[#8a8ca0]">高风险操作，请再次核对调账依据</p>
+          </div>
+          <button type="button" onClick={onClose} disabled={submitting} aria-label="关闭" className="rounded-[4px] p-[7px] text-[#66677f] hover:bg-[#f6f7fb] disabled:cursor-not-allowed">
+            <X className="h-[16px] w-[16px]" />
+          </button>
+        </header>
+        <div className="space-y-[14px] px-[20px] py-[18px]">
+          <div className="grid grid-cols-2 gap-x-[18px] gap-y-[13px] rounded-[5px] border border-[#e2e4ec] bg-[#f8f9fc] p-[14px]">
+            {[
+              ['客户名称', customer?.name || '-'],
+              ['用户ID', customer?.id || '-'],
+              ['账户类型', accountType],
+              ['币种', currency],
+              ['调账方向', direction],
+              ['调账前余额', `${currency} ${formatFiatNumber(balanceBefore, currency)}`],
+              ['调账金额', `${currency} ${formatFiatNumber(amount, currency)}`],
+              ['调账后余额', `${currency} ${formatFiatNumber(balanceAfter, currency)}`],
+              ['调账原因', reason],
+              ['关联交易单号', relatedTransactionNo || '-'],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <div className="text-[11px] text-[#8a8ca0]">{label}</div>
+                <div className="mt-[5px] break-words text-[13px] font-semibold text-[#20213a]">{value}</div>
+              </div>
+            ))}
+            <div className="col-span-2 border-t border-[#e2e4ec] pt-[12px]">
+              <div className="text-[11px] text-[#8a8ca0]">备注说明</div>
+              <div className="mt-[5px] text-[13px] font-semibold leading-[20px] text-[#20213a]">{remark}</div>
+            </div>
+          </div>
+          <div className={`rounded-[5px] border px-[13px] py-[11px] text-[12px] font-semibold leading-[20px] ${
+            isIncrease
+              ? 'border-[#bce9cc] bg-[#eefaf2] text-[#20894f]'
+              : 'border-[#ffd0d5] bg-[#fff4f5] text-[#d93646]'
+          }`}>
+            {isIncrease
+              ? '确认后将直接增加客户账户余额，请确认调账依据真实有效。'
+              : '确认后将直接减少客户账户余额，该操作不可撤销，请确认信息无误。'}
+          </div>
+        </div>
+        <footer className="grid grid-cols-2 gap-[8px] border-t border-[#e5e6ef] p-[12px]">
+          <button type="button" onClick={onClose} disabled={submitting} className="h-[40px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] disabled:cursor-not-allowed disabled:opacity-60">取消</button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={submitting}
+            className={`h-[40px] rounded-[5px] text-[13px] font-semibold text-white disabled:cursor-not-allowed ${
+              isIncrease
+                ? 'bg-[#46b91b] hover:bg-[#3ba113] disabled:bg-[#a9d99a]'
+                : 'bg-[#f04f5f] hover:bg-[#db3e4e] disabled:bg-[#f3a3ab]'
+            }`}
+          >
+            {submitting ? '调账处理中...' : isIncrease ? '确认调增' : '确认调减'}
+          </button>
+        </footer>
+      </section>
+    </div>
+  )
+}
+
+function ManualFiatDrawer({
+  type,
+  accountType,
+  onAccountTypeChange,
+  onClose,
+  onFeeDeducted,
+  onBalanceAdjusted,
+}) {
   const isDeposit = type === 'deposit'
-  const title = isDeposit ? '手动入金' : '手动出金'
-  const toneClass = isDeposit ? 'bg-[#d8f0ff] text-[#1295d8]' : 'bg-[#fff1d6] text-[#f39800]'
-  const confirmClass = isDeposit ? 'bg-[#46c800] hover:bg-[#3bb000]' : 'bg-[#ff4c57] hover:bg-[#e53d48]'
-  const currencyOptions = fiatAccountCurrencyOptions[accountType] || fiatAccountCurrencyOptions.香港账户
-  const [selectedCurrency, setSelectedCurrency] = useState(currencyOptions[0])
-  const selectedCurrencyCode = String(selectedCurrency || '').split(/\s+/)[0] || 'USD'
+  const [operationType, setOperationType] = useState('银行出款')
+  const [selectedCustomerValue, setSelectedCustomerValue] = useState('')
+  const [selectedCurrency, setSelectedCurrency] = useState(
+    (fiatAccountCurrencyOptions[accountType] || fiatAccountCurrencyOptions.香港账户)[0],
+  )
+  const [channel, setChannel] = useState('电汇')
+  const [bankAccount, setBankAccount] = useState('')
+  const [withdrawalFee, setWithdrawalFee] = useState('0')
+  const [amount, setAmount] = useState('')
+  const [feeReason, setFeeReason] = useState('')
+  const [adjustmentDirection, setAdjustmentDirection] = useState('')
+  const [adjustmentReason, setAdjustmentReason] = useState('')
+  const [relatedTransactionNo, setRelatedTransactionNo] = useState('')
+  const [remark, setRemark] = useState('')
+  const [voucherName, setVoucherName] = useState('')
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
+  const selectedCustomer = manualFiatCustomerProfiles.find(
+    (customer) => manualCustomerLabel(customer) === selectedCustomerValue,
+  )
+  const accountOptions = selectedCustomer ? Object.keys(selectedCustomer.accounts) : manualAccountOptions
+  const balanceOptions = selectedCustomer?.accounts?.[accountType] || {}
+  const currencyOptions = selectedCustomer
+    ? Object.keys(balanceOptions).map((currency) => fiatCurrencySelectLabels[currency] || currency)
+    : fiatAccountCurrencyOptions[accountType] || fiatAccountCurrencyOptions.香港账户
+  const selectedCurrencyCode = getCurrencyCode(selectedCurrency)
+  const selectedBalance = balanceOptions[selectedCurrencyCode] || { available: 0, frozen: 0 }
+  const availableBalance = Number(selectedBalance.available || 0)
+  const frozenBalance = Number(selectedBalance.frozen || 0)
+  const amountNumber = Number(amount)
+  const amountPatternValid = /^\d+(?:\.\d*)?$/.test(String(amount))
+  const amountDecimals = String(amount).includes('.') ? String(amount).split('.')[1].length : 0
+  const amountPrecision = fiatCurrencyPrecision[selectedCurrencyCode] ?? 2
+  const isFeeDeduction = !isDeposit && operationType === '费用扣除'
+  const isBalanceAdjustment = !isDeposit && operationType === '余额调账'
+  const isAdjustmentIncrease = adjustmentDirection === '调账增加'
+  const isAdjustmentDecrease = adjustmentDirection === '调账扣减'
+  const hasBalanceAdjustmentPermission = manualOperator.permissions.includes('BALANCE_ADJUSTMENT')
+  const title = isDeposit
+    ? '手动入金'
+    : isFeeDeduction
+      ? '费用扣除'
+      : isBalanceAdjustment
+        ? '余额调账'
+        : '手动出金'
   const message = isDeposit
     ? '手动入金将直接增加客户账户余额，请谨慎操作并确保信息准确。'
-    : '手动出金将直接扣减客户账户余额，请谨慎操作并确保客户有足够余额。'
-  const changeAccountType = (nextAccountType) => {
-    onAccountTypeChange?.(nextAccountType)
-    setSelectedCurrency((fiatAccountCurrencyOptions[nextAccountType] || fiatAccountCurrencyOptions.香港账户)[0])
+    : isFeeDeduction
+      ? '费用扣除将直接减少客户账户可用余额，不会产生银行出款，请确认扣费金额及原因无误。'
+      : isBalanceAdjustment
+        ? isAdjustmentIncrease
+          ? '调账增加将直接增加客户账户可用余额，请确认调账依据、金额及关联记录无误。'
+          : isAdjustmentDecrease
+            ? '调账扣减将直接减少客户账户可用余额，请确认客户余额充足，并核对调账原因及金额。'
+            : '余额调账属于高风险操作，请先选择调账方向并核对完整处理依据。'
+        : '手动出金将直接扣减客户账户余额，请谨慎操作并确保客户有足够余额。'
+  const toneClass = isDeposit
+    ? 'bg-[#d8f0ff] text-[#1295d8]'
+    : isFeeDeduction
+      ? 'bg-[#fff0f2] text-[#d93646]'
+      : isBalanceAdjustment
+        ? isAdjustmentDecrease
+          ? 'bg-[#fff0f2] text-[#d93646]'
+          : 'bg-[#eefaf2] text-[#20894f]'
+        : 'bg-[#fff1d6] text-[#f39800]'
+
+  let amountError = ''
+  if (amount) {
+    if (!amountPatternValid || !Number.isFinite(amountNumber) || amountNumber <= 0) {
+      amountError = `${isBalanceAdjustment ? '调账' : '扣费'}金额必须大于 0，且只能输入数字。`
+    }
+    else if (amountDecimals > amountPrecision) amountError = `${selectedCurrencyCode} 最多支持 ${amountPrecision} 位小数。`
+    else if (isFeeDeduction && amountNumber > availableBalance) amountError = '当前账户可用余额不足，无法完成费用扣除。'
+    else if (isAdjustmentDecrease && amountNumber > availableBalance) amountError = '当前账户可用余额不足，无法完成调账扣减。'
   }
 
+  const finalReason = feeReason.trim()
+  const feeBalanceAfter = Math.max(0, availableBalance - (Number.isFinite(amountNumber) ? amountNumber : 0))
+  const adjustmentFinalReason = adjustmentReason.trim()
+  const adjustmentBalanceAfter = !adjustmentDirection
+    ? availableBalance
+    : isAdjustmentIncrease
+      ? availableBalance + (Number.isFinite(amountNumber) ? amountNumber : 0)
+      : Math.max(0, availableBalance - (Number.isFinite(amountNumber) ? amountNumber : 0))
+  const feeFormComplete = Boolean(
+    selectedCustomer
+    && accountType
+    && selectedCurrencyCode
+    && amount
+    && !amountError
+    && feeReason.trim()
+    && remark.trim(),
+  )
+  const adjustmentFormComplete = Boolean(
+    hasBalanceAdjustmentPermission
+    && selectedCustomer
+    && accountType
+    && selectedCurrencyCode
+    && adjustmentDirection
+    && amount
+    && !amountError
+    && adjustmentReason.trim()
+    && remark.trim(),
+  )
+
+  const clearTypeSpecificFields = () => {
+    setChannel('电汇')
+    setBankAccount('')
+    setWithdrawalFee('0')
+    setAmount('')
+    setFeeReason('')
+    setAdjustmentDirection('')
+    setAdjustmentReason('')
+    setRelatedTransactionNo('')
+    setRemark('')
+    setVoucherName('')
+    setConfirmOpen(false)
+  }
+
+  const changeOperationType = (nextType) => {
+    setOperationType(nextType)
+    clearTypeSpecificFields()
+  }
+
+  const changeCustomer = (nextValue) => {
+    setSelectedCustomerValue(nextValue)
+    const customer = manualFiatCustomerProfiles.find((item) => manualCustomerLabel(item) === nextValue)
+    const nextAccountType = Object.keys(customer?.accounts || {})[0] || '香港账户'
+    const nextCurrency = Object.keys(customer?.accounts?.[nextAccountType] || {})[0] || 'USD'
+    onAccountTypeChange?.(nextAccountType)
+    setSelectedCurrency(fiatCurrencySelectLabels[nextCurrency] || nextCurrency)
+    clearTypeSpecificFields()
+  }
+
+  const changeAccountType = (nextAccountType) => {
+    onAccountTypeChange?.(nextAccountType)
+    const nextCurrency = Object.keys(selectedCustomer?.accounts?.[nextAccountType] || {})[0]
+      || getCurrencyCode((fiatAccountCurrencyOptions[nextAccountType] || fiatAccountCurrencyOptions.香港账户)[0])
+    setSelectedCurrency(fiatCurrencySelectLabels[nextCurrency] || nextCurrency)
+    setAmount('')
+    setBankAccount('')
+  }
+
+  const changeCurrency = (nextCurrency) => {
+    setSelectedCurrency(nextCurrency)
+    setAmount('')
+  }
+
+  const submitFeeDeduction = () => {
+    if (!feeFormComplete || submitting) return
+    setSubmitting(true)
+    const operationTime = formatAdminDateTime()
+    const businessNo = `FEE-${operationTime.replace(/\D/g, '').slice(0, 14)}-${String(Date.now()).slice(-4)}`
+    const record = {
+      id: businessNo,
+      businessNo,
+      time: operationTime,
+      customer: selectedCustomer.name,
+      customerId: selectedCustomer.id,
+      customerEmail: selectedCustomer.email,
+      accountType,
+      currency: selectedCurrencyCode,
+      amount: amountNumber,
+      currencyAmount: `${selectedCurrencyCode} ${formatFiatNumber(amountNumber, selectedCurrencyCode)}`,
+      type: '费用扣除',
+      recordType: '费用扣除',
+      channel: '-',
+      referenceNo: relatedTransactionNo.trim() || '-',
+      status: '处理完成',
+      feeReason: feeReason.trim(),
+      customReason: feeReason.trim(),
+      balanceBefore: availableBalance,
+      balanceAfter: feeBalanceAfter,
+      remark: remark.trim(),
+      voucher: voucherName || '-',
+      operator: '运营管理员',
+      operationTime,
+    }
+
+    setTimeout(() => {
+      setSubmitting(false)
+      onFeeDeducted?.(record)
+    }, 650)
+  }
+
+  const submitBalanceAdjustment = () => {
+    if (!adjustmentFormComplete || submitting || !hasBalanceAdjustmentPermission) return
+    setSubmitting(true)
+    const operationTime = formatAdminDateTime()
+    const adjustmentNo = `ADJ-${operationTime.replace(/\D/g, '').slice(0, 14)}-${String(Date.now()).slice(-4)}`
+    const signedAmount = isAdjustmentIncrease ? amountNumber : -amountNumber
+    const record = {
+      id: adjustmentNo,
+      businessNo: adjustmentNo,
+      adjustmentNo,
+      time: operationTime,
+      customer: selectedCustomer.name,
+      customerId: selectedCustomer.id,
+      customerEmail: selectedCustomer.email,
+      accountType,
+      currency: selectedCurrencyCode,
+      amount: amountNumber,
+      signedAmount,
+      currencyAmount: `${selectedCurrencyCode} ${isAdjustmentIncrease ? '+' : '-'}${formatFiatNumber(amountNumber, selectedCurrencyCode)}`,
+      type: '余额调账',
+      recordType: adjustmentDirection,
+      adjustmentDirection,
+      channel: '-',
+      referenceNo: relatedTransactionNo.trim() || '-',
+      status: '处理完成',
+      adjustmentReason: adjustmentReason.trim(),
+      customReason: adjustmentReason.trim(),
+      balanceBefore: availableBalance,
+      balanceAfter: adjustmentBalanceAfter,
+      remark: remark.trim(),
+      voucher: voucherName || '-',
+      operator: manualOperator.name,
+      operationTime,
+      clientSummary: `余额调账 · ${adjustmentDirection}`,
+      locked: true,
+    }
+
+    setTimeout(() => {
+      setSubmitting(false)
+      onBalanceAdjusted?.(record)
+    }, 650)
+  }
+
+  const confirmClass = isDeposit
+    ? 'bg-[#46c800] hover:bg-[#3bb000]'
+    : isFeeDeduction
+      ? 'bg-[#f04f5f] hover:bg-[#db3e4e] disabled:bg-[#f3a3ab]'
+      : isBalanceAdjustment
+        ? isAdjustmentDecrease
+          ? 'bg-[#f04f5f] hover:bg-[#db3e4e] disabled:bg-[#f3a3ab]'
+          : 'bg-[#46b91b] hover:bg-[#3ba113] disabled:bg-[#a9d99a]'
+        : 'bg-[#ff4c57] hover:bg-[#e53d48]'
+
   return (
-    <DrawerShell
-      title={title}
-      onClose={onClose}
-      footer={(
-        <div className="grid grid-cols-2 gap-[8px]">
-          <button type="button" onClick={onClose} className="h-[38px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">取消</button>
-          <button type="button" className={`h-[38px] rounded-[5px] text-[13px] font-semibold text-white ${confirmClass}`}>{isDeposit ? '确认入金' : '确认出金'}</button>
+    <>
+      <DrawerShell
+        title={title}
+        onClose={onClose}
+        footer={(
+          <div className="grid grid-cols-2 gap-[8px]">
+            <button type="button" onClick={onClose} className="h-[38px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">取消</button>
+            <button
+              type="button"
+              disabled={
+                submitting
+                || (isFeeDeduction && !feeFormComplete)
+                || (isBalanceAdjustment && !adjustmentFormComplete)
+              }
+              onClick={isFeeDeduction || isBalanceAdjustment ? () => setConfirmOpen(true) : undefined}
+              className={`h-[38px] rounded-[5px] text-[13px] font-semibold text-white disabled:cursor-not-allowed ${confirmClass}`}
+            >
+              {isDeposit
+                ? '确认入金'
+                : isFeeDeduction
+                  ? '确认扣费'
+                  : isBalanceAdjustment
+                    ? isAdjustmentIncrease
+                      ? '确认调增'
+                      : isAdjustmentDecrease
+                        ? '确认调减'
+                        : '确认调账'
+                    : '确认出金'}
+            </button>
+          </div>
+        )}
+      >
+        <div className="space-y-[14px]">
+          {!isDeposit ? (
+            <DrawerSelectField
+              label="操作类型 *"
+              value={operationType}
+              onChange={changeOperationType}
+              options={manualWithdrawalOperationTypes}
+            />
+          ) : null}
+          <div className={`rounded-[5px] px-[14px] py-[13px] text-[13px] font-semibold leading-[22px] ${toneClass}`}>
+            {message}
+          </div>
+          <DrawerSelectField
+            label="选择客户 *"
+            value={selectedCustomerValue}
+            onChange={changeCustomer}
+            options={manualFiatCustomerProfiles.map(manualCustomerLabel)}
+            placeholder="选择客户 *"
+          />
+          <DrawerSelectField label="选择账户 *" value={accountType} onChange={changeAccountType} options={accountOptions} />
+          <DrawerSelectField label="币种 *" value={selectedCurrency} onChange={changeCurrency} options={currencyOptions} />
+
+          {isFeeDeduction ? (
+            <>
+              <div className="rounded-[5px] border border-[#d7d9e3] bg-[#f7f8fb] px-[14px] py-[12px]">
+                <div className="flex items-center justify-between gap-[16px]">
+                  <span className="text-[12px] text-[#66677f]">当前可用余额</span>
+                  <span className="text-[17px] font-bold text-[#20213a]">{selectedCurrencyCode} {formatFiatNumber(availableBalance, selectedCurrencyCode)}</span>
+                </div>
+                <div className="mt-[7px] text-[11px] text-[#8a8ca0]">
+                  冻结余额 {selectedCurrencyCode} {formatFiatNumber(frozenBalance, selectedCurrencyCode)} 不参与费用扣除。
+                </div>
+              </div>
+              <div>
+                <DrawerInputField
+                  label="扣费金额 *"
+                  prefix={selectedCurrencyCode}
+                  value={amount}
+                  onChange={setAmount}
+                  placeholder={`最多 ${amountPrecision} 位小数`}
+                  type="number"
+                />
+                {amountError ? <div className="mt-[6px] px-[4px] text-[12px] font-semibold text-[#f04f5f]">{amountError}</div> : null}
+              </div>
+              <div>
+                <DrawerInputField
+                  label="扣费原因 *"
+                  value={feeReason}
+                  onChange={setFeeReason}
+                  placeholder="请输入费用名称及具体扣除原因"
+                />
+                <div className="mt-[6px] px-[4px] text-[11px] leading-[18px] text-[#8a8ca0]">
+                  请直接填写费用名称、产生背景或扣除依据。
+                </div>
+              </div>
+              <DrawerInputField
+                label="关联交易单号（选填）"
+                value={relatedTransactionNo}
+                onChange={setRelatedTransactionNo}
+                placeholder="例如：TXN-20260727-001"
+              />
+            </>
+          ) : isBalanceAdjustment ? (
+            <>
+              <div className="flex items-start gap-[10px] rounded-[5px] border border-[#c9b2f5] bg-[#faf7ff] px-[13px] py-[11px]">
+                <ShieldCheck className="mt-[1px] h-[17px] w-[17px] shrink-0 text-[#8b4fff]" />
+                <div>
+                  <div className="text-[12px] font-semibold text-[#6d43b5]">已验证余额调账权限</div>
+                  <div className="mt-[4px] text-[11px] leading-[18px] text-[#77728a]">
+                    当前操作人：{manualOperator.name}。余额调账仅限拥有 BALANCE_ADJUSTMENT 权限的后台用户操作。
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-[5px] border border-[#d7d9e3] bg-[#f7f8fb] px-[14px] py-[12px]">
+                <div className="flex items-center justify-between gap-[16px]">
+                  <span className="text-[12px] text-[#66677f]">当前可用余额</span>
+                  <span className="text-[17px] font-bold text-[#20213a]">{selectedCurrencyCode} {formatFiatNumber(availableBalance, selectedCurrencyCode)}</span>
+                </div>
+                <div className="mt-[7px] text-[11px] text-[#8a8ca0]">
+                  本次仅调整可用余额，冻结余额 {selectedCurrencyCode} {formatFiatNumber(frozenBalance, selectedCurrencyCode)} 不会被修改。
+                </div>
+              </div>
+              <div>
+                <DrawerSelectField
+                  label="调账方向 *"
+                  value={adjustmentDirection}
+                  onChange={(value) => {
+                    setAdjustmentDirection(value)
+                    setAmount('')
+                  }}
+                  options={balanceAdjustmentDirections}
+                  placeholder="请选择调账方向"
+                />
+                <div className="mt-[6px] space-y-[2px] px-[4px] text-[11px] leading-[18px] text-[#8a8ca0]">
+                  <div>调账增加：增加当前币种可用余额，不受当前余额限制。</div>
+                  <div>调账扣减：减少当前币种可用余额，不得超过当前可用余额。</div>
+                </div>
+              </div>
+              <div>
+                <DrawerInputField
+                  label="调账金额 *"
+                  prefix={selectedCurrencyCode}
+                  value={amount}
+                  onChange={setAmount}
+                  placeholder={`最多 ${amountPrecision} 位小数`}
+                  type="number"
+                />
+                {amountError ? <div className="mt-[6px] px-[4px] text-[12px] font-semibold text-[#f04f5f]">{amountError}</div> : null}
+              </div>
+              <div className="flex items-center justify-between rounded-[5px] border border-[#d7d9e3] bg-white px-[14px] py-[12px]">
+                <span className="text-[12px] text-[#66677f]">预计调账后余额</span>
+                <span className={`text-[16px] font-bold ${isAdjustmentDecrease ? 'text-[#f04f5f]' : 'text-[#20894f]'}`}>
+                  {selectedCurrencyCode} {formatFiatNumber(adjustmentBalanceAfter, selectedCurrencyCode)}
+                </span>
+              </div>
+              <DrawerInputField
+                label="调账原因 *"
+                value={adjustmentReason}
+                onChange={setAdjustmentReason}
+                placeholder="请输入调账原因、异常背景及修正依据"
+              />
+              <div className="mt-[-8px] px-[4px] text-[11px] leading-[18px] text-[#8a8ca0]">
+                请直接填写错账、漏账、重复入账或第三方交易未同步等具体原因。
+              </div>
+              <DrawerInputField
+                label="关联交易单号（选填）"
+                value={relatedTransactionNo}
+                onChange={setRelatedTransactionNo}
+                placeholder="例如：TXN-20260727-001"
+              />
+            </>
+          ) : (
+            <>
+              <DrawerSelectField label="打款渠道" value={channel} onChange={setChannel} options={['电汇', 'FPS', 'ACH']} />
+              {!isDeposit ? (
+                <>
+                  <DrawerSelectField
+                    label="银行账号 *"
+                    value={bankAccount}
+                    onChange={setBankAccount}
+                    options={['GLDB · Green Link Digital Bank · 0950', 'WO · 测试银行 · 232232', 'JW · Fidere Partner Bank · 026009593']}
+                    placeholder="银行账号 *"
+                  />
+                  <DrawerInputField
+                    label="出金手续费"
+                    prefix={selectedCurrencyCode}
+                    value={withdrawalFee}
+                    onChange={setWithdrawalFee}
+                    placeholder="0.00"
+                    type="number"
+                  />
+                </>
+              ) : null}
+              <DrawerInputField
+                label={isDeposit ? '入金金额 *' : '出金金额 *'}
+                prefix={selectedCurrencyCode}
+                value={amount}
+                onChange={setAmount}
+                placeholder="请输入正确的金额"
+                type="number"
+              />
+            </>
+          )}
+
+          <DrawerTextareaField
+            label="备注说明 *"
+            value={remark}
+            onChange={setRemark}
+            placeholder={
+              isFeeDeduction
+                ? '必填，请说明费用产生背景和扣除依据'
+                : isBalanceAdjustment
+                  ? '必填，请说明调账背景、计算依据和处理原因'
+                  : '必填项，用于审计追踪'
+            }
+          />
+          <label className="flex h-[40px] w-full cursor-pointer items-center justify-center gap-[8px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">
+            <FileText className="h-[15px] w-[15px]" />
+            <span className="max-w-[360px] truncate">
+              {voucherName || (isFeeDeduction || isBalanceAdjustment ? '上传凭证（选填）' : '上传凭证（可选）')}
+            </span>
+            <input type="file" className="hidden" onChange={(event) => setVoucherName(event.target.files?.[0]?.name || '')} />
+          </label>
         </div>
-      )}
-    >
-      <div className="space-y-[14px]">
-        <div className={`rounded-[5px] px-[14px] py-[13px] text-[13px] font-semibold leading-[22px] ${toneClass}`}>
-          {message}
-        </div>
-        <DrawerSelectField label="选择客户 *" value="" options={customers.map((customer) => `ID: ${customer.id} / ${customer.email}`)} placeholder="选择客户 *" />
-        <DrawerSelectField label="选择账户 *" value={accountType} onChange={changeAccountType} options={manualAccountOptions} />
-        <DrawerSelectField label="币种 *" value={selectedCurrency} onChange={setSelectedCurrency} options={currencyOptions} />
-        <DrawerSelectField label="打款渠道" value="电汇" options={['电汇', 'FPS', 'ACH']} />
-        {!isDeposit ? <DrawerSelectField label="银行账号 *" value="" options={['GLDB · Green Link Digital Bank · 0950', 'WO · 测试银行 · 232232', 'JW · Fidere Partner Bank · 026009593']} placeholder="银行账号 *" /> : null}
-        <DrawerInputField label={isDeposit ? '入金金额 *' : '出金金额 *'} prefix={selectedCurrencyCode} placeholder="请输入正确的金额" />
-        <DrawerTextareaField label="备注说明 *" placeholder="必填项，用于审计追踪" />
-        <button type="button" className="flex h-[40px] w-full items-center justify-center gap-[8px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">
-          <FileText className="h-[15px] w-[15px]" />
-          上传凭证（可选）
-        </button>
-      </div>
-    </DrawerShell>
+      </DrawerShell>
+
+      {confirmOpen && isFeeDeduction ? (
+        <FeeDeductionConfirmationModal
+          customer={selectedCustomer}
+          accountType={accountType}
+          currency={selectedCurrencyCode}
+          availableBalance={availableBalance}
+          amount={amountNumber}
+          reason={finalReason}
+          balanceAfter={feeBalanceAfter}
+          submitting={submitting}
+          onClose={() => {
+            if (!submitting) setConfirmOpen(false)
+          }}
+          onConfirm={submitFeeDeduction}
+        />
+      ) : null}
+      {confirmOpen && isBalanceAdjustment ? (
+        <BalanceAdjustmentConfirmationModal
+          customer={selectedCustomer}
+          accountType={accountType}
+          currency={selectedCurrencyCode}
+          direction={adjustmentDirection}
+          balanceBefore={availableBalance}
+          amount={amountNumber}
+          balanceAfter={adjustmentBalanceAfter}
+          reason={adjustmentFinalReason}
+          relatedTransactionNo={relatedTransactionNo.trim()}
+          remark={remark.trim()}
+          submitting={submitting}
+          onClose={() => {
+            if (!submitting) setConfirmOpen(false)
+          }}
+          onConfirm={submitBalanceAdjustment}
+        />
+      ) : null}
+    </>
   )
 }
 
@@ -4601,13 +5375,30 @@ function FiatOverviewPanel({ onOpenManual, onChangeTab, hideQuestionMarks = fals
   )
 }
 
-function FiatFilterPanel({ variant = 'default', accountType = '', onAccountTypeChange, action }) {
+function FiatFilterPanel({
+  variant = 'default',
+  accountType = '',
+  onAccountTypeChange,
+  recordType = '',
+  onRecordTypeChange,
+  showRecordType = false,
+  action,
+}) {
   const isIncoming = variant === 'incoming'
 
   return (
     <Panel className="mt-[21px] px-[15px] py-[18px]">
       <div className="flex flex-wrap items-center gap-[12px]">
         <AccountTypeFilter value={accountType} onChange={onAccountTypeChange} />
+        {showRecordType ? (
+          <AccountCurrencyFilterSelect label="记录类型" value={recordType} onChange={onRecordTypeChange} width="w-[260px]">
+            <option value="">全部</option>
+            <option value="银行出款">银行出款</option>
+            <option value="费用扣除">费用扣除</option>
+            <option value="调账增加">调账增加</option>
+            <option value="调账扣减">调账扣减</option>
+          </AccountCurrencyFilterSelect>
+        ) : null}
         <SelectBox label="状态：全部" width="w-[296px]" />
         {isIncoming ? <SelectBox label="匹配状态：全部" width="w-[296px]" /> : null}
         <SelectBox label="开始日期" width="w-[296px]" />
@@ -5142,41 +5933,214 @@ function RecentFlowsPanel({ customer }) {
   )
 }
 
-function FiatLedgerQueryPanel() {
-  const [accountType, setAccountType] = useState('香港账户')
-  const filteredRows = fiatLedgerRows.filter((row) => row.accountType === accountType)
+function getFiatLedgerRecordType(record) {
+  if (record.recordType) return record.recordType
+  if (record.type === '出金') return '银行出款'
+  return '银行入金'
+}
+
+function FiatLedgerDetailDrawer({ record, onClose }) {
+  if (!record) return null
+  const recordType = getFiatLedgerRecordType(record)
+  const isFeeDeduction = recordType === '费用扣除'
+  const isBalanceAdjustment = recordType === '调账增加' || recordType === '调账扣减'
+  const isAdjustmentDecrease = recordType === '调账扣减'
+  const currency = record.currency || getCurrencyCode(record.currencyAmount)
+
+  const rows = isFeeDeduction
+    ? [
+      ['业务编号', record.businessNo || record.id],
+      ['记录类型', recordType],
+      ['客户', record.customer],
+      ['客户ID', record.customerId],
+      ['客户邮箱', record.customerEmail || '-'],
+      ['账户类型', record.accountType],
+      ['币种', currency],
+      ['扣费金额', record.currencyAmount],
+      ['扣费原因（自定义）', record.customReason || record.feeReason || '-'],
+      ['扣费前余额', `${currency} ${formatFiatNumber(record.balanceBefore, currency)}`],
+      ['扣费后余额', `${currency} ${formatFiatNumber(record.balanceAfter, currency)}`],
+      ['关联交易单号', record.referenceNo || '-'],
+      ['备注', record.remark || '-'],
+      ['凭证', record.voucher || '-'],
+      ['操作人', record.operator || '-'],
+      ['操作时间', record.operationTime || record.time],
+      ['状态', record.status],
+    ]
+    : isBalanceAdjustment
+      ? [
+        ['调账编号', record.adjustmentNo || record.businessNo || record.id],
+        ['记录类型', recordType],
+        ['客户名称', record.customer],
+        ['用户ID', record.customerId],
+        ['客户邮箱', record.customerEmail || '-'],
+        ['账户类型', record.accountType],
+        ['币种', currency],
+        ['调账方向', record.adjustmentDirection || recordType],
+        ['调账金额', `${currency} ${formatFiatNumber(record.amount, currency)}`],
+        ['调账前余额', `${currency} ${formatFiatNumber(record.balanceBefore, currency)}`],
+        ['调账后余额', `${currency} ${formatFiatNumber(record.balanceAfter, currency)}`],
+        ['调账原因', record.adjustmentReason || '-'],
+        ['关联交易单号', record.referenceNo || '-'],
+        ['备注说明', record.remark || '-'],
+        ['凭证', record.voucher || '-'],
+        ['客户流水摘要', record.clientSummary || `余额调账 · ${recordType}`],
+        ['操作人', record.operator || '-'],
+        ['操作时间', record.operationTime || record.time],
+        ['状态', record.status],
+      ]
+    : [
+      ['业务编号', record.id],
+      ['记录类型', recordType],
+      ['客户', record.customer],
+      ['客户ID', record.customerId],
+      ['账户类型', record.accountType],
+      ['币种/金额', record.currencyAmount],
+      ['打款渠道', record.channel || '-'],
+      ['参考号', record.referenceNo || '-'],
+      ['操作时间', record.time],
+      ['状态', record.status],
+    ]
+
+  return (
+    <DrawerShell
+      title={isFeeDeduction ? '费用扣除详情' : isBalanceAdjustment ? '余额调账详情' : '法币流水详情'}
+      eyebrow={record.businessNo || record.id}
+      onClose={onClose}
+      footer={(
+        <button type="button" onClick={onClose} className="h-[38px] w-full rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">关闭</button>
+      )}
+    >
+      <div className="space-y-[12px]">
+        {isFeeDeduction ? (
+          <div className="rounded-[5px] border border-[#ffd0d5] bg-[#fff4f5] px-[13px] py-[11px] text-[12px] font-semibold leading-[20px] text-[#d93646]">
+            该记录为费用扣除，不涉及银行出款，也不计入普通法币出金统计。
+          </div>
+        ) : null}
+        {isBalanceAdjustment ? (
+          <div className={`rounded-[5px] border px-[13px] py-[11px] text-[12px] font-semibold leading-[20px] ${
+            isAdjustmentDecrease
+              ? 'border-[#ffd0d5] bg-[#fff4f5] text-[#d93646]'
+              : 'border-[#bce9cc] bg-[#eefaf2] text-[#20894f]'
+          }`}>
+            该记录为余额调账，不计入正常入金或出金统计。已完成记录不可编辑或删除；如需冲正，必须新建一笔反方向调账记录。
+          </div>
+        ) : null}
+        <div className="rounded-[5px] border border-[#e2e4ec] bg-white px-[12px]">
+          {rows.map(([label, value]) => (
+            <div key={label} className="border-b border-[#e5e6ef] py-[11px] last:border-b-0">
+              <div className="text-[12px] text-[#66677f]">{label}</div>
+              <div className={`mt-[5px] break-words text-[13px] font-semibold ${
+                label === '扣费金额' || (label === '调账金额' && isAdjustmentDecrease)
+                  ? 'text-[#f04f5f]'
+                  : label === '调账金额'
+                    ? 'text-[#20894f]'
+                    : 'text-[#20213a]'
+              }`}>{value || '-'}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </DrawerShell>
+  )
+}
+
+function FiatLedgerQueryPanel({
+  rows = fiatLedgerRows,
+  defaultAccountType = '香港账户',
+  successMessage = '',
+  onDismissSuccess,
+}) {
+  const [accountType, setAccountType] = useState(defaultAccountType)
+  const [recordType, setRecordType] = useState('')
+  const [selectedRecord, setSelectedRecord] = useState(null)
+  const filteredRows = rows.filter((row) => (
+    row.accountType === accountType
+    && (!recordType || getFiatLedgerRecordType(row) === recordType)
+  ))
 
   return (
     <>
-      <FiatFilterPanel accountType={accountType} onAccountTypeChange={setAccountType} />
+      {successMessage ? (
+        <div className="mb-[-6px] flex items-center justify-between rounded-[5px] border border-[#bce9cc] bg-[#e9f8ee] px-[14px] py-[11px] text-[13px] font-semibold text-[#20894f]">
+          <span>{successMessage}</span>
+          <button type="button" onClick={onDismissSuccess} className="text-[12px] hover:underline">关闭</button>
+        </div>
+      ) : null}
+      <FiatFilterPanel
+        accountType={accountType}
+        onAccountTypeChange={setAccountType}
+        recordType={recordType}
+        onRecordTypeChange={setRecordType}
+        showRecordType
+      />
       <Panel className="mt-[21px] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-[1320px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+          <table className="w-full min-w-[1540px] border-collapse text-left text-[13px] text-[#55556e]">
             <thead>
               <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
-                {['时间', '客户', '客户ID', '账户类型', '币种/金额', '类型', '渠道', '参考号', '状态'].map((item) => (
+                {['时间', '业务编号', '记录类型', '客户', '客户ID', '账户类型', '币种/金额', '渠道', '参考号', '状态', '操作'].map((item) => (
                   <th key={item} className={`${item === '账户类型' ? 'w-[190px]' : ''} whitespace-nowrap px-[18px]`}>{item}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filteredRows.map((row) => (
-                <tr key={row.id} className="h-[56px] border-b border-[#e7e8ef] bg-white">
-                  <td className="px-[18px]">{row.time}</td>
-                  <td className="px-[18px] font-semibold text-[#20213a]">{row.customer}</td>
-                  <td className="px-[18px]">{row.customerId}</td>
-                  <td className="w-[190px] whitespace-nowrap px-[18px] font-semibold text-[#20213a]">{row.accountType}</td>
-                  <td className="px-[18px]">{row.currencyAmount}</td>
-                  <td className="px-[18px]"><DirectionBadge direction={row.type} /></td>
-                  <td className="px-[18px]">{row.channel}</td>
-                  <td className="px-[18px]">{row.referenceNo}</td>
-                  <td className="px-[18px]"><StatusBadge tone={fiatStatusTone(row.status)}>{row.status}</StatusBadge></td>
+              {filteredRows.map((row) => {
+                const currentRecordType = getFiatLedgerRecordType(row)
+                return (
+                  <tr key={row.id} className="h-[62px] border-b border-[#e7e8ef] bg-white">
+                    <td className="whitespace-nowrap px-[18px]">{row.time}</td>
+                    <td className="whitespace-nowrap px-[18px] font-mono text-[12px] font-semibold text-[#237be8]">{row.businessNo || row.id}</td>
+                    <td className="px-[18px]">
+                      <StatusBadge
+                        tone={
+                          currentRecordType === '费用扣除' || currentRecordType === '调账扣减'
+                            ? 'red'
+                            : currentRecordType === '银行出款'
+                              ? 'orange'
+                              : 'green'
+                        }
+                      >
+                        {currentRecordType}
+                      </StatusBadge>
+                    </td>
+                    <td className="px-[18px] font-semibold text-[#20213a]">{row.customer}</td>
+                    <td className="px-[18px]">{row.customerId}</td>
+                    <td className="w-[190px] whitespace-nowrap px-[18px] font-semibold text-[#20213a]">{row.accountType}</td>
+                    <td
+                      className={`px-[18px] font-semibold ${
+                        currentRecordType === '费用扣除' || currentRecordType === '调账扣减'
+                          ? 'text-[#f04f5f]'
+                          : currentRecordType === '调账增加'
+                            ? 'text-[#20894f]'
+                            : 'text-[#20213a]'
+                      }`}
+                    >
+                      {row.currencyAmount}
+                    </td>
+                    <td className="px-[18px]">{row.channel}</td>
+                    <td className="px-[18px]">{row.referenceNo}</td>
+                    <td className="px-[18px]"><StatusBadge tone={fiatStatusTone(row.status)}>{row.status}</StatusBadge></td>
+                    <td className="px-[18px]"><ActionButton icon={Eye} onClick={() => setSelectedRecord(row)}>查看详情</ActionButton></td>
+                  </tr>
+                )
+              })}
+              {!filteredRows.length ? (
+                <tr>
+                  <td colSpan={11} className="h-[110px] text-center text-[13px] text-[#8a8ca0]">暂无符合条件的法币流水记录</td>
                 </tr>
-              ))}
+              ) : null}
             </tbody>
           </table>
         </div>
+        <div className="border-t border-[#e5e6ef] px-[18px] py-[13px] text-[12px] text-[#66677f]">
+          共 {filteredRows.length} 条记录。费用扣除与余额调账独立展示，不计入客户正常入金、出金业务统计。
+        </div>
+        <div className="hidden">
+          共 {filteredRows.length} 条记录。费用扣除独立展示，不计入银行出款统计。
+        </div>
       </Panel>
+      <FiatLedgerDetailDrawer record={selectedRecord} onClose={() => setSelectedRecord(null)} />
     </>
   )
 }
@@ -5281,6 +6245,9 @@ export function FiatAssetManagementPage({ hideQuestionMarks = false, initialTab 
   const [selectedTransfer, setSelectedTransfer] = useState(null)
   const [manualDrawerType, setManualDrawerType] = useState(null)
   const [manualAccountType, setManualAccountType] = useState('香港账户')
+  const [ledgerRows, setLedgerRows] = useState(fiatLedgerRows)
+  const [ledgerFocusAccountType, setLedgerFocusAccountType] = useState('香港账户')
+  const [ledgerSuccessMessage, setLedgerSuccessMessage] = useState('')
   const [selectedIncomingClaim, setSelectedIncomingClaim] = useState(null)
   const [selectedWithdrawal, setSelectedWithdrawal] = useState(null)
 
@@ -5318,7 +6285,14 @@ export function FiatAssetManagementPage({ hideQuestionMarks = false, initialTab 
       <div className="mt-[21px]">
         {activeTab === '总览' ? <FiatOverviewPanel onOpenManual={openManualDrawer} onChangeTab={setActiveTab} hideQuestionMarks={hideQuestionMarks} /> : null}
         {activeTab === '客户资产' ? <CustomerAssetsPanel /> : null}
-        {activeTab === '流水查询' ? <FiatLedgerQueryPanel /> : null}
+        {activeTab === '流水查询' ? (
+          <FiatLedgerQueryPanel
+            rows={ledgerRows}
+            defaultAccountType={ledgerFocusAccountType}
+            successMessage={ledgerSuccessMessage}
+            onDismissSuccess={() => setLedgerSuccessMessage('')}
+          />
+        ) : null}
         {activeTab === '入账认领' ? <IncomingClaimPanel onOpenRecord={setSelectedIncomingClaim} /> : null}
         {activeTab === '出金审批' ? <WithdrawalApprovalPanel onOpenRecord={setSelectedWithdrawal} /> : null}
         {activeTab === '资金互转' ? <FiatTransferPanel onOpenRecord={setSelectedTransfer} /> : null}
@@ -5333,6 +6307,20 @@ export function FiatAssetManagementPage({ hideQuestionMarks = false, initialTab 
           accountType={manualAccountType}
           onAccountTypeChange={setManualAccountType}
           onClose={() => setManualDrawerType(null)}
+          onFeeDeducted={(record) => {
+            setLedgerRows((currentRows) => [record, ...currentRows])
+            setLedgerFocusAccountType(record.accountType)
+            setLedgerSuccessMessage(`费用扣除成功，业务编号：${record.businessNo}`)
+            setManualDrawerType(null)
+            setActiveTab('流水查询')
+          }}
+          onBalanceAdjusted={(record) => {
+            setLedgerRows((currentRows) => [record, ...currentRows])
+            setLedgerFocusAccountType(record.accountType)
+            setLedgerSuccessMessage(`${record.recordType}成功，调账编号：${record.adjustmentNo}`)
+            setManualDrawerType(null)
+            setActiveTab('流水查询')
+          }}
         />
       ) : null}
       <IncomingClaimDrawer record={selectedIncomingClaim} onClose={() => setSelectedIncomingClaim(null)} />
