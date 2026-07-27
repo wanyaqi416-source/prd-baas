@@ -5,24 +5,31 @@ import { PrdBackLink } from '../components/portal/PrdBackLink'
 import { Badge } from '../components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 
-const accountManagementEntries = [
-  {
-    title: '开户流程',
-    description: '复用 BaaS 原型的完整客户端开户流程，客户从账户入口发起开户、确认开户费并进入待审核状态。',
-    buttonLabel: '进入客户端',
-    icon: MonitorSmartphone,
-    route: '/admin/product-manual/account-management-prototype/opening',
-  },
-  {
-    title: '后台审核',
-    description: '进入当前新加坡账户后台审核页面，由运营查看申请列表并完成开户审核处理。',
-    buttonLabel: '进入后台页面',
-    icon: ClipboardCheck,
-    route: '/admin/product-manual/account-management-prototype/admin-review',
-  },
-]
+export function AccountManagementPrototypeHome({
+  onBack,
+  onNavigate,
+  title = '用户新加坡账户配置',
+  description = '将客户端开户流程和后台审核拆成两个入口：开户流程进入客户侧页面，后台审核进入当前运营审核页面。',
+  baseRoute = '/admin/product-manual/account-management-prototype',
+  featureBadge = '新加坡账户',
+}) {
+  const accountManagementEntries = [
+    {
+      title: '开户流程',
+      description: '复用 BaaS 原型的完整客户端开户流程，客户从账户入口发起开户、确认开户费并进入待审核状态。',
+      buttonLabel: '进入客户端',
+      icon: MonitorSmartphone,
+      route: `${baseRoute}/opening`,
+    },
+    {
+      title: '后台审核',
+      description: '进入当前新加坡账户后台审核页面，由运营查看申请列表并完成开户审核处理。',
+      buttonLabel: '进入后台页面',
+      icon: ClipboardCheck,
+      route: `${baseRoute}/admin-review`,
+    },
+  ]
 
-export function AccountManagementPrototypeHome({ onBack, onNavigate }) {
   return (
     <ProductManualLayout>
       <main className="mx-auto min-h-screen max-w-[1160px] px-6 py-10 md:px-10 md:py-14">
@@ -32,13 +39,13 @@ export function AccountManagementPrototypeHome({ onBack, onNavigate }) {
           <section className="space-y-4 border-b pb-8">
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary">原型</Badge>
-              <Badge variant="secondary">新加坡账户</Badge>
+              <Badge variant="secondary">{featureBadge}</Badge>
               <Badge variant="secondary">开户审核</Badge>
             </div>
             <div>
-              <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">用户新加坡账户配置</h1>
+              <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">{title}</h1>
               <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">
-                将客户端开户流程和后台审核拆成两个入口：开户流程进入客户侧页面，后台审核进入当前运营审核页面。
+                {description}
               </p>
             </div>
           </section>

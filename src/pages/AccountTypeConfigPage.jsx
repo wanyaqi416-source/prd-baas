@@ -187,6 +187,7 @@ function createEmptyAccountType() {
     englishName: '',
     code: '',
     status: '启用',
+    requiresDocuments: true,
     isDefault: false,
     allowDeposit: true,
     allowWithdraw: true,
@@ -260,7 +261,11 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
           })
     })
 
-    return { ...source, currencies }
+    return {
+      ...source,
+      requiresDocuments: source.requiresDocuments === true,
+      currencies,
+    }
   })
   const [error, setError] = useState('')
   const updateField = (field, value) => {
@@ -339,6 +344,23 @@ function AccountTypeModal({ initialValue, configs, onClose, onSave }) {
             <FormSelect label="状态 *" value={form.status} onChange={(value) => updateField('status', value)}>
               {accountTypeStatusOptions.map((status) => <option key={status} value={status}>{status}</option>)}
             </FormSelect>
+            <FormSelect
+              label="是否需要上传资料 *"
+              value={form.requiresDocuments ? 'yes' : 'no'}
+              onChange={(value) => updateField('requiresDocuments', value === 'yes')}
+            >
+              <option value="no">否</option>
+              <option value="yes">是</option>
+            </FormSelect>
+          </div>
+          <div className={`mt-[13px] rounded-[5px] px-[12px] py-[10px] text-[12px] font-semibold leading-[20px] ${
+            form.requiresDocuments
+              ? 'bg-[#fff4e5] text-[#b86a00]'
+              : 'bg-[#e9f8ee] text-[#20894f]'
+          }`}>
+            {form.requiresDocuments
+              ? '选择“是”：该账户类型仅支持用户提交资料并通过开户审核后开通，不支持后台手动开通。'
+              : '选择“否”：该账户类型支持运营在后台为用户手动开通，无需进入客户端申请和资料审核流程。'}
           </div>
         </ModalSection>
         <ModalSection title="支持币种及互转手续费">
@@ -694,6 +716,7 @@ export function AccountTypeConfigPage({
             <InfoItem label="账户类型代码" value={selectedAccount.code} />
             <InfoItem label="展示排序" value={selectedAccount.displayOrder} />
             <InfoItem label="状态" value={selectedAccount.status} />
+            <InfoItem label="是否需要上传资料" value={selectedAccount.requiresDocuments ? '是' : '否'} />
             <InfoItem label="是否默认账户" value={selectedAccount.isDefault ? '是' : '否'} />
             <InfoItem label="支持入金" value={selectedAccount.allowDeposit ? '支持' : '不支持'} />
             <InfoItem label="支持出金" value={selectedAccount.allowWithdraw ? '支持' : '不支持'} />
@@ -811,7 +834,7 @@ export function AccountTypeConfigPage({
           <table className="min-w-[1040px] w-full border-collapse text-left text-[13px] text-[#55556e]">
             <thead>
               <tr className="h-[52px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
-                {['账户类型名称', '账户类型英文名称', '账户类型代码', '支持币种', '状态', '展示排序', '操作'].map((item) => (
+                {['账户类型名称', '账户类型英文名称', '账户类型代码', '支持币种', '开户资料', '状态', '展示排序', '操作'].map((item) => (
                   <th key={item} className="whitespace-nowrap px-[14px]">{item}</th>
                 ))}
               </tr>
@@ -823,6 +846,11 @@ export function AccountTypeConfigPage({
                   <td className="whitespace-nowrap px-[14px]">{account.englishName}</td>
                   <td className="whitespace-nowrap px-[14px] font-mono font-semibold text-[#237be8]">{account.code}</td>
                   <td className="px-[14px]"><CurrencyTags currencies={account.currencies} /></td>
+                  <td className="whitespace-nowrap px-[14px]">
+                    <StatusBadge tone={account.requiresDocuments ? 'orange' : 'green'}>
+                      {account.requiresDocuments ? '需要上传' : '无需上传'}
+                    </StatusBadge>
+                  </td>
                   <td className="whitespace-nowrap px-[14px]"><StatusBadge tone={account.status === '启用' ? 'green' : 'gray'}>{account.status}</StatusBadge></td>
                   <td className="whitespace-nowrap px-[14px]">{account.displayOrder}</td>
                   <td className="px-[14px]" onClick={(event) => event.stopPropagation()}>
@@ -840,7 +868,7 @@ export function AccountTypeConfigPage({
               ))}
               {!filteredConfigs.length ? (
                 <tr>
-                  <td colSpan={7} className="px-[18px] py-[36px] text-center text-[13px] text-[#8a8ca0]">暂无符合条件的账户类型配置</td>
+                  <td colSpan={8} className="px-[18px] py-[36px] text-center text-[13px] text-[#8a8ca0]">暂无符合条件的账户类型配置</td>
                 </tr>
               ) : null}
             </tbody>

@@ -1360,7 +1360,204 @@ function SingaporeAccountListModal({ user, accountTypes, onClose, onSave }) {
   )
 }
 
-function UserManagementTable({ singaporeAccountUsers, onOpenSingaporeAccount, onOpenSingaporeApplication }) {
+function getManualAccountDefaults(accountType) {
+  const receivingAccount = accountType?.receivingAccount || {}
+
+  return {
+    beneficiaryName: receivingAccount.beneficiaryName || '',
+    accountNumber: receivingAccount.accountNumber || '',
+    bankName: receivingAccount.bankName || '-',
+    receivingBank: receivingAccount.receivingBank || '-',
+    swiftCode: receivingAccount.swiftCode || '-',
+    bankAddress: receivingAccount.bankAddress || '-',
+    currencies: (accountType?.currencies || [])
+      .filter((currency) => currency.enabled !== false)
+      .map((currency) => currency.code)
+      .join(' / ') || '-',
+  }
+}
+
+function ManualAccountOpeningModal({ user, accountTypes = [], onClose, onSave }) {
+  const singaporeStatus = user?.singaporeAccount?.status || '未开通'
+  const openedTypeIds = new Set((user?.manualAccounts || []).map((account) => account.accountTypeId))
+  const availableAccountTypes = accountTypes.filter((accountType) => accountType.status === '启用')
+  const getUnavailableReason = (accountType) => {
+    if (accountType.requiresDocuments) return '该账户类型需要用户提交开户资料，请通过客户端申请及开户审核流程开通。'
+    if (openedTypeIds.has(accountType.id)) return '该用户已开通此账户类型，不能重复添加。'
+    if (
+      accountType.code === 'SG_ACCOUNT'
+      && ['待处理', '审核中', '已开户'].includes(singaporeStatus)
+    ) {
+      return singaporeStatus === '已开户'
+        ? '该用户的新加坡账户已开户，不能重复添加。'
+        : '该用户的新加坡账户已有客户端申请，请前往开户审核流程处理。'
+    }
+    return ''
+  }
+  const firstSelectableType = availableAccountTypes.find((accountType) => !getUnavailableReason(accountType))
+  const [accountTypeId, setAccountTypeId] = useState(firstSelectableType?.id || '')
+  const selectedAccountType = availableAccountTypes.find((accountType) => accountType.id === accountTypeId) || null
+  const selectedDefaults = getManualAccountDefaults(selectedAccountType)
+  const [beneficiaryName, setBeneficiaryName] = useState(selectedDefaults.beneficiaryName)
+  const [accountNumber, setAccountNumber] = useState(selectedDefaults.accountNumber)
+  const [error, setError] = useState('')
+
+  const selectAccountType = (nextId) => {
+    const nextAccountType = availableAccountTypes.find((accountType) => accountType.id === nextId)
+    const defaults = getManualAccountDefaults(nextAccountType)
+
+    setAccountTypeId(nextId)
+    setBeneficiaryName(defaults.beneficiaryName)
+    setAccountNumber(defaults.accountNumber)
+    setError('')
+  }
+
+  const submit = () => {
+    const latestAccountType = accountTypes.find((accountType) => accountType.id === accountTypeId)
+    if (!latestAccountType || latestAccountType.status !== '启用') {
+      setError('该账户类型已禁用或不存在，请刷新后重新选择。')
+      return
+    }
+    if (latestAccountType.requiresDocuments) {
+      setError('账户类型配置已更新：该账户类型需要用户提交开户资料，无法后台手动开通。')
+      return
+    }
+    const unavailableReason = getUnavailableReason(latestAccountType)
+    if (unavailableReason) {
+      setError(unavailableReason)
+      return
+    }
+    if (!beneficiaryName.trim() || !accountNumber.trim()) {
+      setError('请填写收款人和账户号码。')
+      return
+    }
+
+    const result = onSave?.({
+      accountTypeId: latestAccountType.id,
+      accountTypeCode: latestAccountType.code,
+      accountTypeName: latestAccountType.name,
+      beneficiaryName: beneficiaryName.trim(),
+      accountNumber: accountNumber.trim(),
+    })
+    if (result?.error) setError(result.error)
+  }
+
+  const restrictedTypes = availableAccountTypes.filter((accountType) => accountType.requiresDocuments)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#252236]/55 px-[24px] py-[28px]">
+      <section className="flex max-h-[88vh] w-[760px] flex-col overflow-hidden rounded-[8px] bg-white shadow-[0_18px_48px_rgba(28,29,42,0.28)]">
+        <div className="flex h-[62px] shrink-0 items-center justify-between border-b border-[#e5e6ef] px-[22px]">
+          <div>
+            <h2 className="text-[16px] font-semibold text-[#20213a]">手动开通账户</h2>
+            <div className="mt-[3px] text-[11px] font-semibold uppercase text-[#8a8ca0]">{user?.userName || '-'} / {user?.userId || '-'}</div>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-[4px] p-[7px] text-[#66677f] hover:bg-[#f6f7fb]">
+            <X className="h-[16px] w-[16px]" />
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-[16px] overflow-y-auto px-[22px] py-[18px]">
+          {error ? <div className="rounded-[5px] bg-[#ffe8eb] px-[12px] py-[10px] text-[12px] font-semibold text-[#f04f5f]">{error}</div> : null}
+
+          <div className="rounded-[5px] bg-[#e7f5ff] px-[12px] py-[10px] text-[12px] font-semibold leading-[20px] text-[#237be8]">
+            后台手动开通不会进入客户端申请和资料审核流程。账户类型是否可选，实时读取「是否需要上传资料」配置。
+          </div>
+
+          <div className="grid grid-cols-2 gap-[12px]">
+            <BrokerageReadOnlyField label="用户名称" value={user?.userName || '-'} />
+            <BrokerageReadOnlyField label="开户来源" value="后台手动开通" />
+          </div>
+
+          <label className="block">
+            <span className="mb-[-8px] ml-[10px] inline-block bg-white px-[4px] text-[12px] text-[#66677f]">账户类型 *</span>
+            <select
+              value={accountTypeId}
+              onChange={(event) => selectAccountType(event.target.value)}
+              className="h-[50px] w-full rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] text-[14px] font-semibold text-[#24243d] outline-none focus:border-[#8b4fff]"
+            >
+              {!firstSelectableType ? <option value="">暂无可手动开通的账户类型</option> : null}
+              {availableAccountTypes.map((accountType) => {
+                const reason = getUnavailableReason(accountType)
+                return (
+                  <option key={accountType.id} value={accountType.id} disabled={Boolean(reason)}>
+                    {accountType.name}{reason ? `（${accountType.requiresDocuments ? '需要上传资料' : '不可重复开通'}）` : ''}
+                  </option>
+                )
+              })}
+            </select>
+          </label>
+
+          {restrictedTypes.length ? (
+            <div className="rounded-[5px] border border-[#f3d5a5] bg-[#fff8ed] px-[12px] py-[10px] text-[12px] leading-[20px] text-[#9a5d00]">
+              <div className="font-semibold">以下账户类型不可手动开通：</div>
+              {restrictedTypes.map((accountType) => (
+                <div key={accountType.id} className="mt-[3px]">
+                  {accountType.name}：该账户类型需要用户提交开户资料，请通过客户端申请及开户审核流程开通。
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {selectedAccountType ? (
+            <div className="rounded-[5px] border border-[#e2e4ec] bg-[#fbfbfd] p-[12px]">
+              <div className="mb-[12px] text-[13px] font-semibold text-[#20213a]">账户信息</div>
+              <div className="grid grid-cols-2 gap-[12px]">
+                <label className="block">
+                  <span className="mb-[-8px] ml-[10px] inline-block bg-[#fbfbfd] px-[4px] text-[12px] text-[#66677f]">收款人 *</span>
+                  <input value={beneficiaryName} onChange={(event) => setBeneficiaryName(event.target.value)} className="h-[50px] w-full rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] text-[14px] text-[#24243d] outline-none focus:border-[#8b4fff]" />
+                </label>
+                <label className="block">
+                  <span className="mb-[-8px] ml-[10px] inline-block bg-[#fbfbfd] px-[4px] text-[12px] text-[#66677f]">账户号码 *</span>
+                  <input value={accountNumber} onChange={(event) => setAccountNumber(event.target.value)} className="h-[50px] w-full rounded-[5px] border border-[#cfd1dc] bg-white px-[12px] text-[14px] text-[#24243d] outline-none focus:border-[#8b4fff]" />
+                </label>
+                {[
+                  ['银行名称', selectedDefaults.bankName],
+                  ['收款银行', selectedDefaults.receivingBank],
+                  ['SWIFT Code', selectedDefaults.swiftCode],
+                  ['支持币种', selectedDefaults.currencies],
+                  ['银行地址', selectedDefaults.bankAddress],
+                ].map(([label, value]) => (
+                  <label key={label} className={`${label === '银行地址' || label === '支持币种' ? 'col-span-2' : ''} block`}>
+                    <span className="mb-[-8px] ml-[10px] inline-block bg-[#fbfbfd] px-[4px] text-[12px] text-[#66677f]">{label}</span>
+                    {label === '银行地址' ? (
+                      <textarea readOnly value={value} className="h-[72px] w-full resize-none rounded-[5px] border border-[#d8dae4] bg-[#eef0f4] px-[12px] py-[11px] text-[13px] font-semibold leading-[20px] text-[#66677f] outline-none" />
+                    ) : (
+                      <input readOnly value={value} className="h-[50px] w-full rounded-[5px] border border-[#d8dae4] bg-[#eef0f4] px-[12px] text-[13px] font-semibold text-[#66677f] outline-none" />
+                    )}
+                  </label>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="rounded-[5px] bg-[#f6f7fb] px-[12px] py-[10px] text-[12px] leading-[20px] text-[#66677f]">
+            提交时系统会再次校验账户类型的最新资料要求；配置变化不会影响已开户账户和历史申请。
+          </div>
+        </div>
+
+        <div className="grid shrink-0 grid-cols-2 gap-[10px] border-t border-[#e5e6ef] bg-white p-[14px]">
+          <button type="button" onClick={onClose} className="h-[40px] rounded-[5px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">取消</button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!selectedAccountType}
+            className="h-[40px] rounded-[5px] bg-[#8b4fff] text-[13px] font-semibold text-white hover:bg-[#7f42f2] disabled:cursor-not-allowed disabled:bg-[#d8d9e3]"
+          >
+            确认开通
+          </button>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function UserManagementTable({
+  singaporeAccountUsers,
+  onOpenSingaporeAccount,
+  onOpenSingaporeApplication,
+  onOpenManualAccount,
+}) {
   const showSingaporeAccount = Array.isArray(singaporeAccountUsers)
   const rows = showSingaporeAccount ? mapSingaporeUserRows(singaporeAccountUsers) : userRows
 
@@ -1430,6 +1627,7 @@ function UserManagementTable({ singaporeAccountUsers, onOpenSingaporeAccount, on
                     <ActionButton icon={Eye}>{showSingaporeAccount ? '查看' : '查看详情'}</ActionButton>
                     {showSingaporeAccount ? <ActionButton icon={Pencil}>编辑</ActionButton> : null}
                     {showSingaporeAccount ? <ActionButton icon={WalletCards} onClick={openSingapore}>{sgActionLabel}</ActionButton> : null}
+                    {showSingaporeAccount ? <ActionButton icon={Plus} onClick={() => onOpenManualAccount?.(row.sourceId)}>手动开通账户</ActionButton> : null}
                     {!showSingaporeAccount ? <ActionButton icon={KeyRound}>修改密码</ActionButton> : null}
                   </div>
                 </td>
@@ -1450,8 +1648,13 @@ export function UserManagementPage({
   onOpenSingaporeApplication,
 }) {
   const [editingSingaporeUserId, setEditingSingaporeUserId] = useState('')
+  const [manualOpeningUserId, setManualOpeningUserId] = useState('')
+  const [manualOpeningMessage, setManualOpeningMessage] = useState('')
   const editingSingaporeUser = Array.isArray(singaporeAccountUsers)
     ? singaporeAccountUsers.find((user) => user.id === editingSingaporeUserId)
+    : null
+  const manualOpeningUser = Array.isArray(singaporeAccountUsers)
+    ? singaporeAccountUsers.find((user) => user.id === manualOpeningUserId)
     : null
 
   const saveSingaporeAccount = (patch) => {
@@ -1488,6 +1691,67 @@ export function UserManagementPage({
     setEditingSingaporeUserId('')
   }
 
+  const saveManualAccount = (payload) => {
+    if (!manualOpeningUser || !onChangeSingaporeAccountUsers) {
+      return { error: '用户数据已更新，请关闭弹窗后重试。' }
+    }
+
+    const latestAccountType = accountTypes.find((accountType) => accountType.id === payload.accountTypeId)
+    if (!latestAccountType || latestAccountType.status !== '启用') {
+      return { error: '该账户类型已禁用或不存在，无法手动开通。' }
+    }
+    if (latestAccountType.requiresDocuments) {
+      return { error: '该账户类型需要用户提交开户资料，接口已拒绝本次手动开户。' }
+    }
+
+    const stamp = getManagementStamp()
+    const nextUsers = singaporeAccountUsers.map((user) => {
+      if (user.id !== manualOpeningUser.id) return user
+
+      const nextManualAccount = {
+        ...payload,
+        status: '已开户',
+        openingSource: '后台手动开通',
+        openedAt: stamp,
+        updatedAt: stamp,
+        updatedBy: '运营管理员',
+      }
+      const nextUser = {
+        ...user,
+        updatedAt: stamp,
+        manualAccounts: [
+          ...(user.manualAccounts || []).filter((account) => account.accountTypeId !== payload.accountTypeId),
+          nextManualAccount,
+        ],
+      }
+
+      if (payload.accountTypeCode === 'SG_ACCOUNT') {
+        const currentAccount = user.singaporeAccount || createSingaporeAccountRecord()
+        nextUser.singaporeAccount = {
+          ...currentAccount,
+          beneficiaryName: payload.beneficiaryName,
+          accountNumber: payload.accountNumber,
+          status: '已开户',
+          openingSource: '后台手动开通',
+          approvedAt: currentAccount.approvedAt || stamp,
+          updatedAt: stamp,
+          updatedBy: '运营管理员',
+        }
+      }
+
+      return nextUser
+    })
+
+    if (!nextUsers.some((user) => (user.singaporeAccount?.status || '未开通') === '未开通')) {
+      nextUsers.push(createUnopenedSingaporeDemoUser(nextUsers.length + 1))
+    }
+
+    onChangeSingaporeAccountUsers(nextUsers)
+    setManualOpeningMessage(`已为 ${manualOpeningUser.userName} 手动开通${payload.accountTypeName}。`)
+    setManualOpeningUserId('')
+    return { ok: true }
+  }
+
   if (focusedCustomer) {
     return (
       <AdminShell>
@@ -1514,6 +1778,12 @@ export function UserManagementPage({
       </div>
       <Panel className="mt-[21px] px-[15px] pb-[18px] pt-[21px]">
         <PageTitle title="用户管理" subtitle="已通过KYC审核的活跃用户账户" />
+        {manualOpeningMessage ? (
+          <div className="mt-[14px] flex items-center justify-between rounded-[5px] bg-[#e9f8ee] px-[12px] py-[10px] text-[12px] font-semibold text-[#20894f]">
+            <span>{manualOpeningMessage}</span>
+            <button type="button" onClick={() => setManualOpeningMessage('')} className="text-[#20894f] hover:underline">关闭</button>
+          </div>
+        ) : null}
         <div className="mt-[21px] flex items-center gap-[18px]">
           <SearchBox placeholder="搜索用户名、ID或客户编号..." />
           <SelectBox label="账户状态" />
@@ -1522,6 +1792,7 @@ export function UserManagementPage({
           singaporeAccountUsers={singaporeAccountUsers}
           onOpenSingaporeAccount={setEditingSingaporeUserId}
           onOpenSingaporeApplication={onOpenSingaporeApplication}
+          onOpenManualAccount={setManualOpeningUserId}
         />
       </Panel>
       {editingSingaporeUser ? (
@@ -1530,6 +1801,14 @@ export function UserManagementPage({
           accountTypes={accountTypes}
           onClose={() => setEditingSingaporeUserId('')}
           onSave={saveSingaporeAccount}
+        />
+      ) : null}
+      {manualOpeningUser ? (
+        <ManualAccountOpeningModal
+          user={manualOpeningUser}
+          accountTypes={accountTypes}
+          onClose={() => setManualOpeningUserId('')}
+          onSave={saveManualAccount}
         />
       ) : null}
     </AdminShell>

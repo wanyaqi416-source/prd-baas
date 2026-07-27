@@ -1,8 +1,8 @@
 export const moduleTypeFilters = [
-  { id: 'prd', label: '内部 PRD', moduleType: 'prd' },
-  { id: 'all', label: '产品手册中心' },
-  { id: 'independent', label: '模块独立' },
-  { id: 'prototype', label: '原型', moduleType: 'prototype' },
+  { id: 'all', label: '全部' },
+  { id: 'prd', label: '产品文档', moduleType: 'prd' },
+  { id: 'prototype', label: '功能原型', moduleType: 'prototype' },
+  { id: 'independent', label: '独立模块', phase: 'Independent Module' },
 ]
 
 export const prdModules = [
@@ -97,16 +97,31 @@ export const prdModules = [
     buttonLabel: '进入原型',
   },
   {
-    id: 'user-transfer-prototype',
-    title: '转账给其他用户原型',
-    subtitle: '信托用户之间互转原型入口',
+    id: 'batch-add-account-prototype',
+    title: '批量加账户',
+    subtitle: '客户端开户流程与后台审核双入口原型',
     description:
-      '复用现有客户端账户页面结构，新增转账给其他用户快捷入口，用于演示信托用户之间按邮箱、币种和金额发起互转申请。',
+      '复用用户新加坡账户配置中的完整客户端开户流程和后台审核页面，作为独立的批量加账户原型入口。',
     category: '原型',
     status: 'Prototype',
     phase: 'Prototype Draft',
-    route: '/admin/product-manual/user-transfer-prototype',
-    tags: ['转账', '信托用户', '用户互转', '客户端', '原型'],
+    route: '/admin/product-manual/batch-add-account-prototype',
+    tags: ['批量加账户', '新加坡账户', '开户流程', '后台审核', '客户端', '后台管理'],
+    source: 'Current Project',
+    moduleType: 'prototype',
+    buttonLabel: '进入原型',
+  },
+  {
+    id: 'otc-bank-account-prototype',
+    title: '不同的银行账户体系下做OTC与转账给其他用户原型',
+    subtitle: '多银行账户资产兑换与信托用户互转原型',
+    description:
+      '基于 FIDERE 仪表板展示不同银行账户体系下的 OTC 兑换，并在账户页提供信托用户之间的转账操作。',
+    category: '原型',
+    status: 'Prototype',
+    phase: 'Prototype Draft',
+    route: '/admin/product-manual/otc-bank-account-prototype',
+    tags: ['OTC', '银行账户', '资产兑换', '用户互转', '客户端'],
     source: 'Current Project',
     moduleType: 'prototype',
     buttonLabel: '进入原型',

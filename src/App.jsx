@@ -33,6 +33,7 @@ import { BaasPrototypeHome } from './pages/BaasPrototypeHome'
 import { BaasSystemReformPage } from './pages/BaasSystemReformPage'
 import { ProductManualHome } from './pages/ProductManualHome'
 import { PrdInvestPage } from './pages/PrdInvestPage'
+import { OtcBankAccountPrototype } from './pages/OtcBankAccountPrototype'
 import {
   SecuritiesBrokerageServicePrototype,
   SecuritiesAccountClientPrototype,
@@ -100,6 +101,11 @@ function App() {
   const [baasOpeningInitialStatus, setBaasOpeningInitialStatus] = useState('not_opened')
   const [accountManagementApplicationVariant, setAccountManagementApplicationVariant] = useState('us')
   const [accountManagementJurisdictionStatuses, setAccountManagementJurisdictionStatuses] = useState({
+    us: 'not_opened',
+    singapore: 'not_opened',
+  })
+  const [batchAddAccountApplicationVariant, setBatchAddAccountApplicationVariant] = useState('us')
+  const [batchAddAccountJurisdictionStatuses, setBatchAddAccountJurisdictionStatuses] = useState({
     us: 'not_opened',
     singapore: 'not_opened',
   })
@@ -243,6 +249,75 @@ function App() {
     )
   }
 
+  if (path === '/admin/product-manual/batch-add-account-prototype') {
+    return (
+      <AccountManagementPrototypeHome
+        onBack={() => navigate('/')}
+        onNavigate={navigate}
+        title="批量加账户"
+        description="完整复用用户新加坡账户配置中的客户端开户流程和后台审核页面，并作为独立入口展示。"
+        baseRoute="/admin/product-manual/batch-add-account-prototype"
+        featureBadge="批量加账户"
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/batch-add-account-prototype/opening') {
+    return (
+      <BaasOpeningPrototype
+        onBack={() => navigate('/admin/product-manual/batch-add-account-prototype')}
+        onOpenApplication={(variant = 'us') => {
+          setBatchAddAccountApplicationVariant(variant)
+          navigate('/admin/product-manual/batch-add-account-prototype/account-opening/create')
+        }}
+        onPrototypeHome={() => navigate('/admin/product-manual/batch-add-account-prototype')}
+        initialStatus={batchAddAccountJurisdictionStatuses.us}
+        initialJurisdictionStatuses={batchAddAccountJurisdictionStatuses}
+        onJurisdictionStatusesChange={setBatchAddAccountJurisdictionStatuses}
+        prototypeLabel="批量加账户"
+        accountCurrencyConfigs={accountCurrencyConfigs}
+        enableSingaporeOpening
+        demoStatusAccounts={['us', 'singapore']}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/batch-add-account-prototype/account-opening/create') {
+    return (
+      <BaasOpeningApplicationPage
+        onBack={() => navigate('/admin/product-manual/batch-add-account-prototype/opening')}
+        onProceedToOpeningStatus={() => {
+          setBatchAddAccountJurisdictionStatuses((current) => ({
+            ...current,
+            [batchAddAccountApplicationVariant === 'singapore' ? 'singapore' : 'us']: 'reviewing',
+          }))
+          navigate('/admin/product-manual/batch-add-account-prototype/opening')
+        }}
+        openingAccountVariant={batchAddAccountApplicationVariant}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/batch-add-account-prototype/admin-review') {
+    return (
+      <SecuritiesBrokerageAdminPrototype
+        onBack={() => navigate('/admin/product-manual/batch-add-account-prototype')}
+        brokerageApplications={brokerageApplications}
+        onUpdateBrokerageApplication={updateBrokerageApplication}
+        accountCurrencyConfigs={accountCurrencyConfigs}
+        onChangeAccountCurrencyConfigs={setAccountCurrencyConfigs}
+        brokerageConfigs={brokerageConfigs}
+        onChangeBrokerageConfigs={setBrokerageConfigs}
+        accountTypeConfigs={accountTypeConfigs}
+        onChangeAccountTypeConfigs={setAccountTypeConfigs}
+        userAccountConfigs={userAccountConfigs}
+        onChangeUserAccountConfigs={setUserAccountConfigs}
+        showAccountTypeConfig
+        defaultActivePage="account-opening-review"
+      />
+    )
+  }
+
   if (path === '/admin/product-manual/user-transfer-prototype') {
     return (
       <BaasOpeningPrototype
@@ -256,6 +331,10 @@ function App() {
         accountCurrencyConfigs={accountCurrencyConfigs}
       />
     )
+  }
+
+  if (path === '/admin/product-manual/otc-bank-account-prototype') {
+    return <OtcBankAccountPrototype onBack={() => navigate('/')} />
   }
 
   if (path === '/admin/product-manual/baas-system-reform') {

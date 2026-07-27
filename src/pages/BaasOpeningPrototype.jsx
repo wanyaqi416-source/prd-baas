@@ -1,24 +1,31 @@
 import {
+  ArrowRight,
   Banknote,
   Building2,
   Check,
+  CheckCircle2,
   CircleAlert,
   CircleHelp,
+  Clock3,
   Copy,
   FileText,
   Globe2,
   Landmark,
   Languages,
   LayoutDashboard,
+  LoaderCircle,
   Mail,
+  MousePointerClick,
   RefreshCw,
+  Search,
   Send,
+  ShieldCheck,
   Sun,
   UserRound,
   WalletCards,
   X,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
@@ -427,7 +434,13 @@ function DemoBar({ status, onStatusChange, onPrototypeHome, prototypeLabel = 'Ba
   )
 }
 
-export function ClientTopNav({ onBack, activeNavLabel = '账户', investmentMenu = [] }) {
+export function ClientTopNav({
+  onBack,
+  activeNavLabel = '账户',
+  investmentMenu = [],
+  onNavSelect,
+  clickableNavLabels = [],
+}) {
   const [investmentMenuOpen, setInvestmentMenuOpen] = useState(false)
   const navItems = [
     [LayoutDashboard, '仪表板'],
@@ -448,6 +461,7 @@ export function ClientTopNav({ onBack, activeNavLabel = '账户', investmentMenu
           <nav className="hidden items-center gap-2 text-sm text-slate-500 md:flex">
             {navItems.map(([Icon, label]) => {
               const active = label === activeNavLabel
+              const showClickHint = clickableNavLabels.includes(label)
               const className = active
                 ? 'inline-flex h-9 items-center gap-2 rounded-xl bg-blue-600 px-4 font-semibold text-white shadow-sm'
                 : 'inline-flex h-9 items-center gap-2 rounded-xl px-3 font-medium hover:bg-slate-100'
@@ -485,9 +499,22 @@ export function ClientTopNav({ onBack, activeNavLabel = '账户', investmentMenu
               }
 
               return (
-                <button key={label} type="button" className={className}>
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => onNavSelect?.(label)}
+                  className={`${className} ${showClickHint ? 'cursor-pointer' : ''}`}
+                >
                   <Icon className="h-4 w-4" />
                   {label}
+                  {showClickHint ? (
+                    <span
+                      title="可点击切换页面"
+                      className={active ? 'text-white/80' : 'text-blue-500'}
+                    >
+                      <MousePointerClick className="h-3 w-3" />
+                    </span>
+                  ) : null}
                 </button>
               )
             })}
@@ -2061,199 +2088,617 @@ function InternalTransferConfirmModal({ draft, onClose, onConfirm }) {
   )
 }
 
-function UserTransferPage({ onBack, topNavProps }) {
+const currentUserTransferEmail = 'xr3kes66@123mails.org'
+
+const maskTransferEmail = (email) => {
+  const [localPart = '', domain = ''] = String(email || '').split('@')
+  if (!domain) return email
+  const visiblePrefix = localPart.slice(0, Math.min(3, localPart.length))
+  return `${visiblePrefix}${localPart.length > 3 ? '***' : '*'}@${domain}`
+}
+
+const getUserTransferBalanceValue = (balance) => {
+  const parsed = Number(String(balance || '').replace(/[^\d.-]/g, ''))
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+const getUserTransferPrecision = (currency) => (currency === 'JPY' ? 0 : 2)
+
+function UserTransferConfirmModal({
+  recipient,
+  account,
+  currency,
+  amountDisplay,
+  isSubmitting,
+  onClose,
+  onConfirm,
+}) {
+  const rows = [
+    ['收款用户', recipient.name],
+    ['收款邮箱', recipient.maskedEmail],
+    ['转出账户', account.label],
+    ['币种', formatUserTransferCurrencyLabel(currency)],
+    ['转账金额', amountDisplay],
+  ]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm" role="presentation">
+      <div className="w-full max-w-[540px] rounded-lg bg-white p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="user-transfer-confirm-title">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 id="user-transfer-confirm-title" className="text-xl font-bold text-slate-950">确认提交转账申请</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">请再次核对收款用户和转账信息。</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+            aria-label="关闭确认弹窗"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="mt-5 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-slate-50 px-5">
+          {rows.map(([label, value]) => (
+            <div key={label} className="flex items-start justify-between gap-5 py-3.5 text-sm">
+              <span className="text-slate-500">{label}</span>
+              <span className="max-w-[65%] break-words text-right font-semibold text-slate-950">{value}</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 flex gap-3 rounded-lg bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-800">
+          <Clock3 className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>提交后申请进入待审核状态。实际费用、资金处理方式及最终结果以后端审核为准。</p>
+        </div>
+        <div className="mt-6 flex justify-end gap-3">
+          <Button type="button" onClick={onClose} disabled={isSubmitting} variant="outline" className="rounded-md px-5">
+            取消
+          </Button>
+          <Button type="button" onClick={onConfirm} disabled={isSubmitting} className="rounded-md bg-blue-600 px-5 hover:bg-blue-700">
+            {isSubmitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+            {isSubmitting ? '提交中' : '确认提交'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function UserTransferPage({ onBack, topNavProps, onTransferSubmitted }) {
   const [email, setEmail] = useState('')
+  const [recipientState, setRecipientState] = useState('idle')
+  const [recipient, setRecipient] = useState(null)
   const [accountId, setAccountId] = useState(userTransferAccountOptions[0].id)
   const [currency, setCurrency] = useState(userTransferAccountOptions[0].currencies[0])
   const [amount, setAmount] = useState('')
-  const [error, setError] = useState('')
+  const [amountTouched, setAmountTouched] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const [submittedRecord, setSubmittedRecord] = useState(null)
+  const verificationRequestRef = useRef(0)
   const selectedAccount = userTransferAccountOptions.find((account) => account.id === accountId) || userTransferAccountOptions[0]
-  const currencyOptions = selectedAccount.currencies
+  const currencyOptions = selectedAccount?.currencies || []
   const effectiveCurrency = currencyOptions.includes(currency) ? currency : currencyOptions[0] || ''
-  const selectedBalance = selectedAccount.balance?.[effectiveCurrency] || `${effectiveCurrency} --`
+  const selectedBalance = selectedAccount?.balance?.[effectiveCurrency] || `${effectiveCurrency || '--'} --`
+  const selectedBalanceValue = getUserTransferBalanceValue(selectedBalance)
+  const currencyPrecision = getUserTransferPrecision(effectiveCurrency)
   const numericAmount = Number(amount)
-  const hasValidAmount = Number.isFinite(numericAmount) && numericAmount > 0
-  const amountDisplay = formatCurrencyAmount(effectiveCurrency, hasValidAmount ? numericAmount : 0)
+  const amountPattern = currencyPrecision === 0 ? /^\d+$/ : new RegExp(`^\\d+(\\.\\d{1,${currencyPrecision}})?$`)
+  const amountFormatInvalid = Boolean(amount) && !amountPattern.test(amount)
+  const amountError = !amount
+    ? ''
+    : amountFormatInvalid
+      ? `${effectiveCurrency || '当前币种'}最多支持 ${currencyPrecision} 位小数。`
+      : !Number.isFinite(numericAmount) || numericAmount <= 0
+        ? '转账金额必须大于 0。'
+        : numericAmount > selectedBalanceValue
+          ? '转账金额不能超过当前可用余额。'
+          : ''
+  const hasValidAmount = Boolean(amount) && !amountError
+  const amountDisplay = hasValidAmount
+    ? formatCurrencyAmount(effectiveCurrency, numericAmount)
+    : `${effectiveCurrency || '--'} --`
+  const recipientVerified = recipientState === 'verified' && Boolean(recipient)
+  const canSubmit = recipientVerified
+    && Boolean(selectedAccount)
+    && Boolean(effectiveCurrency)
+    && hasValidAmount
+    && !isSubmitting
+
+  const resetRecipient = (nextEmail) => {
+    verificationRequestRef.current += 1
+    setEmail(nextEmail)
+    setRecipientState('idle')
+    setRecipient(null)
+    setSubmitError('')
+  }
+
+  const verifyRecipient = () => {
+    const normalizedEmail = email.trim().toLowerCase()
+    const requestId = verificationRequestRef.current + 1
+    verificationRequestRef.current = requestId
+    setRecipient(null)
+    setSubmitError('')
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setRecipientState('invalid')
+      return
+    }
+    if (normalizedEmail === currentUserTransferEmail.toLowerCase()) {
+      setRecipientState('self')
+      return
+    }
+
+    setRecipientState('verifying')
+    window.setTimeout(() => {
+      if (verificationRequestRef.current !== requestId) return
+      if (normalizedEmail.includes('notfound')) {
+        setRecipientState('not-found')
+        return
+      }
+      if (normalizedEmail.includes('disabled')) {
+        setRecipientState('disabled')
+        return
+      }
+      if (normalizedEmail.includes('suspended')) {
+        setRecipientState('abnormal')
+        return
+      }
+      setRecipient({
+        name: normalizedEmail.includes('fail') ? '提交失败演示用户' : 'Alex Chen',
+        email: normalizedEmail,
+        maskedEmail: maskTransferEmail(normalizedEmail),
+        status: '账户正常',
+      })
+      setRecipientState('verified')
+    }, 450)
+  }
 
   const changeAccount = (nextAccountId) => {
     const nextAccount = userTransferAccountOptions.find((account) => account.id === nextAccountId) || userTransferAccountOptions[0]
     setAccountId(nextAccount.id)
     setCurrency(nextAccount.currencies[0] || '')
-    setError('')
+    setAmount('')
+    setAmountTouched(false)
+    setSubmitError('')
   }
 
-  const submit = () => {
-    if (!email.trim()) {
-      setError('请输入收款用户邮箱。')
-      return
-    }
-    if (!selectedAccount) {
-      setError('请选择付款账户。')
-      return
-    }
-    if (!effectiveCurrency) {
-      setError('请选择币种。')
-      return
-    }
-    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      setError('请输入大于 0 的转账金额。')
-      return
-    }
-
-    setError('')
-    setSubmittedRecord({
-      id: `UT-${Date.now()}`,
-      email: email.trim(),
-      accountLabel: selectedAccount.label,
-      currency: effectiveCurrency,
-      amount: numericAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      statusLabel: '待审核',
-      createdAt: formatTransferTime(),
-    })
+  const changeCurrency = (nextCurrency) => {
+    setCurrency(nextCurrency)
+    setAmount('')
+    setAmountTouched(false)
+    setSubmitError('')
   }
+
+  const fillAllBalance = () => {
+    const nextAmount = selectedBalanceValue.toFixed(currencyPrecision)
+    setAmount(nextAmount)
+    setAmountTouched(true)
+    setSubmitError('')
+  }
+
+  const openConfirmation = () => {
+    setAmountTouched(true)
+    setSubmitError('')
+    if (!canSubmit) return
+    setConfirmOpen(true)
+  }
+
+  const confirmSubmit = () => {
+    if (!canSubmit || isSubmitting) return
+    setIsSubmitting(true)
+    setSubmitError('')
+    window.setTimeout(() => {
+      if (recipient.email.includes('fail')) {
+        setIsSubmitting(false)
+        setConfirmOpen(false)
+        setSubmitError('提交失败，请稍后重试。表单内容已为你保留。')
+        return
+      }
+      const nextRecord = {
+        id: `TXN-UT-${Date.now()}`,
+        recipientName: recipient.name,
+        recipientEmail: recipient.maskedEmail,
+        accountLabel: selectedAccount.label,
+        currency: effectiveCurrency,
+        amountValue: numericAmount,
+        amount: numericAmount.toLocaleString('en-US', {
+          minimumFractionDigits: currencyPrecision,
+          maximumFractionDigits: currencyPrecision,
+        }),
+        statusLabel: '待审核',
+        createdAt: formatTransferTime(),
+      }
+      setSubmittedRecord(nextRecord)
+      onTransferSubmitted?.(nextRecord)
+      setIsSubmitting(false)
+      setConfirmOpen(false)
+    }, 650)
+  }
+
+  const resetForm = () => {
+    verificationRequestRef.current += 1
+    setEmail('')
+    setRecipientState('idle')
+    setRecipient(null)
+    setAccountId(userTransferAccountOptions[0].id)
+    setCurrency(userTransferAccountOptions[0].currencies[0])
+    setAmount('')
+    setAmountTouched(false)
+    setSubmitError('')
+    setSubmittedRecord(null)
+  }
+
+  const recipientFeedback = {
+    verifying: {
+      icon: LoaderCircle,
+      title: '正在确认收款用户',
+      description: '请稍候，正在核对平台账户状态。',
+      className: 'border-blue-100 bg-blue-50 text-blue-800',
+      iconClassName: 'animate-spin text-blue-600',
+    },
+    invalid: {
+      icon: CircleAlert,
+      title: '邮箱格式不正确',
+      description: '请输入完整、有效的邮箱地址。',
+      className: 'border-red-100 bg-red-50 text-red-800',
+      iconClassName: 'text-red-600',
+    },
+    'not-found': {
+      icon: CircleAlert,
+      title: '未找到该收款用户',
+      description: '请核对邮箱，收款方需要先注册并完成账户开通。',
+      className: 'border-red-100 bg-red-50 text-red-800',
+      iconClassName: 'text-red-600',
+    },
+    self: {
+      icon: CircleAlert,
+      title: '不能转账给本人',
+      description: '请填写其他信托用户的邮箱地址。',
+      className: 'border-red-100 bg-red-50 text-red-800',
+      iconClassName: 'text-red-600',
+    },
+    abnormal: {
+      icon: CircleAlert,
+      title: '收款用户当前不可用',
+      description: '该用户账户状态异常，暂时无法接收转账。',
+      className: 'border-red-100 bg-red-50 text-red-800',
+      iconClassName: 'text-red-600',
+    },
+    disabled: {
+      icon: CircleAlert,
+      title: '收款用户已被禁用',
+      description: '该用户已被平台禁用，无法接收转账。请更换收款用户或联系运营人员。',
+      className: 'border-red-100 bg-red-50 text-red-800',
+      iconClassName: 'text-red-600',
+    },
+  }[recipientState]
 
   return (
     <div className="min-h-screen bg-[#f4f7fb] text-slate-950">
       <ClientTopNav onBack={onBack} {...topNavProps} />
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex h-16 max-w-[1180px] items-center justify-between px-5">
+        <div className="mx-auto flex h-14 max-w-[1120px] items-center justify-between px-5">
           <button type="button" onClick={onBack} className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-900">
             返回账户
           </button>
-          <Badge variant="warning">待后台审核</Badge>
+          <Badge variant="warning">提交后待审核</Badge>
         </div>
       </header>
-      <main className="mx-auto max-w-[1180px] px-5 py-8">
-        <div className="mb-6">
-          <Badge variant="secondary">Trust user transfer</Badge>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">转账给其他用户</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500">用于信托用户之间的同平台转账。当前为前端原型，提交后生成本地待审核记录。</p>
-        </div>
 
-        <div className="grid gap-5 lg:grid-cols-[0.68fr_0.32fr]">
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="grid gap-5">
-              <label className="block">
-                <span className="text-sm font-semibold text-slate-700">收款用户邮箱</span>
-                <div className="mt-2 flex h-12 items-center rounded-xl border border-slate-200 bg-white px-3 focus-within:border-blue-500">
-                  <Mail className="mr-2 h-4 w-4 text-blue-500" />
-                  <input
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="请输入收款用户邮箱"
-                    className="min-w-0 flex-1 text-sm font-semibold text-slate-900 outline-none"
-                  />
+      <main className="mx-auto max-w-[1120px] px-4 py-6 sm:px-5">
+        {submittedRecord ? (
+          <section className="mx-auto max-w-[720px] rounded-lg border border-slate-200 bg-white px-5 py-8 shadow-sm sm:px-8">
+            <div className="text-center">
+              <span className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                <CheckCircle2 className="h-7 w-7" />
+              </span>
+              <Badge variant="warning" className="mt-4">待审核</Badge>
+              <h1 className="mt-3 text-2xl font-bold text-slate-950">转账申请已提交</h1>
+              <p className="mt-2 text-sm leading-6 text-slate-500">后台审核完成后，你可以在转账记录中查看最终结果。</p>
+            </div>
+            <div className="mx-auto mt-6 max-w-[560px] divide-y divide-slate-200 rounded-lg border border-slate-200 bg-slate-50 px-5">
+              {[
+                ['申请编号', submittedRecord.id],
+                ['收款用户', submittedRecord.recipientName],
+                ['收款邮箱', submittedRecord.recipientEmail],
+                ['转出账户', submittedRecord.accountLabel],
+                ['转账金额', `${submittedRecord.currency} ${submittedRecord.amount}`],
+                ['提交时间', submittedRecord.createdAt],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-start justify-between gap-5 py-3.5 text-sm">
+                  <span className="text-slate-500">{label}</span>
+                  <span className="max-w-[65%] break-words text-right font-semibold text-slate-950">{value}</span>
                 </div>
-              </label>
-              <div className="grid gap-5 md:grid-cols-2">
-                <label className="block">
-                  <span className="text-sm font-semibold text-slate-700">付款账户</span>
-                  <select
-                    value={accountId}
-                    onChange={(event) => changeAccount(event.target.value)}
-                    className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
-                  >
-                    {userTransferAccountOptions.map((account) => (
-                      <option key={account.id} value={account.id}>{account.label}</option>
-                    ))}
-                  </select>
-                  <div className="mt-2 text-xs leading-5 text-slate-500">{selectedAccount.helper}</div>
-                </label>
-                <label className="block">
-                  <span className="text-sm font-semibold text-slate-700">币种</span>
-                  <select
-                    value={effectiveCurrency}
-                    onChange={(event) => {
-                      setCurrency(event.target.value)
-                      setError('')
-                    }}
-                    className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
-                  >
-                    {currencyOptions.map((option) => (
-                      <option key={option} value={option}>{formatUserTransferCurrencyLabel(option)}</option>
-                    ))}
-                  </select>
-                  <div className="mt-2 text-xs leading-5 text-slate-500">仅展示该付款账户支持的币种。</div>
-                </label>
-              </div>
-              <div className="grid gap-5 md:grid-cols-2">
-                <label className="block">
-                  <span className="text-sm font-semibold text-slate-700">金额</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={amount}
-                    onChange={(event) => setAmount(event.target.value)}
-                    placeholder="请输入转账金额"
-                    className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
-                  />
-                </label>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">当前可用余额</div>
-                  <div className="mt-2 text-lg font-bold text-slate-950">{selectedBalance}</div>
-                  <div className="mt-1 text-xs leading-5 text-slate-500">{selectedAccount.label} · {formatUserTransferCurrencyLabel(effectiveCurrency)}</div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold text-emerald-900">预计转账金额</div>
-                    <p className="mt-1 text-sm text-emerald-700">当前原型不计算手续费，实际处理以后端审核结果为准。</p>
-                  </div>
-                  <div className="text-2xl font-bold text-emerald-950">{amountDisplay}</div>
-                </div>
-              </div>
-
-              {error ? <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div> : null}
-
-              <div className="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-5">
-                <Button type="button" onClick={submit} className="rounded-lg bg-blue-600 px-6 hover:bg-blue-700">
-                  提交审核
+              ))}
+            </div>
+            <div className="mt-7 flex flex-wrap justify-center gap-3">
+              {topNavProps.onNavSelect ? (
+                <Button
+                  type="button"
+                  onClick={() => topNavProps.onNavSelect('交易')}
+                  className="rounded-md bg-blue-600 px-6 hover:bg-blue-700"
+                >
+                  查看交易记录
                 </Button>
-                <Button type="button" onClick={onBack} variant="outline" className="rounded-lg">
-                  取消
-                </Button>
-              </div>
+              ) : null}
+              <Button type="button" onClick={onBack} variant="outline" className="rounded-md px-6">
+                返回账户
+              </Button>
+              <Button type="button" onClick={resetForm} variant="outline" className="rounded-md px-6">
+                继续转账
+              </Button>
             </div>
           </section>
+        ) : (
+          <>
+            <div className="mb-5">
+              <h1 className="text-2xl font-bold text-slate-950 sm:text-3xl">转账给其他用户</h1>
+              <p className="mt-2 text-sm leading-6 text-slate-500">向同平台信托用户发起转账申请，提交后由后台人工审核。</p>
+            </div>
 
-          <aside className="space-y-5">
-            <section className="rounded-2xl border border-amber-100 bg-amber-50 p-5">
-              <div className="text-sm font-semibold text-amber-900">审核说明</div>
-              <p className="mt-2 text-sm leading-6 text-amber-800">提交后记录进入待审核状态，后台人工处理后客户可查看转账状态。</p>
-              <div className="mt-5 space-y-3 text-sm text-amber-900">
-                <div className="rounded-xl bg-white/70 p-3">当前账户：{selectedAccount.label}</div>
-                <div className="rounded-xl bg-white/70 p-3">支持币种：{currencyOptions.join(' / ')}</div>
-                <div className="rounded-xl bg-white/70 p-3">初始状态：待审核</div>
-              </div>
-            </section>
-            {submittedRecord ? (
-              <section className="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm">
-                <Badge variant="success">已提交</Badge>
-                <h2 className="mt-3 text-lg font-bold text-slate-950">转账申请摘要</h2>
-                <div className="mt-4 space-y-3 text-sm">
-                  {[
-                    ['申请编号', submittedRecord.id],
-                    ['付款账户', submittedRecord.accountLabel],
-                    ['收款邮箱', submittedRecord.email],
-                    ['转账金额', `${submittedRecord.currency} ${submittedRecord.amount}`],
-                    ['状态', submittedRecord.statusLabel],
-                    ['提交时间', submittedRecord.createdAt],
-                  ].map(([label, value]) => (
-                    <div key={label} className="flex justify-between gap-4 border-b border-slate-100 pb-3 last:border-0">
-                      <span className="text-slate-500">{label}</span>
-                      <span className="text-right font-bold text-slate-950">{value}</span>
+            <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+              <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-blue-600">01</span>
+                    <h2 className="text-base font-bold text-slate-950">确认收款用户</h2>
+                  </div>
+                  <label className="mt-4 block">
+                    <span className="text-sm font-semibold text-slate-700">收款用户邮箱</span>
+                    <div className={`mt-2 flex min-h-11 items-center rounded-md border bg-white pl-3 transition focus-within:border-blue-500 ${
+                      ['invalid', 'not-found', 'self', 'abnormal', 'disabled'].includes(recipientState) ? 'border-red-300' : 'border-slate-200'
+                    }`}>
+                      <Mail className="mr-2 h-4 w-4 shrink-0 text-blue-500" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(event) => resetRecipient(event.target.value)}
+                        onBlur={() => {
+                          if (email.trim() && recipientState === 'idle') verifyRecipient()
+                        }}
+                        placeholder="recipient@fidere.com"
+                        className="min-w-0 flex-1 bg-transparent py-2.5 text-sm font-semibold text-slate-900 outline-none placeholder:font-normal placeholder:text-slate-400"
+                        aria-describedby="recipient-feedback"
+                      />
+                      <button
+                        type="button"
+                        onClick={verifyRecipient}
+                        disabled={!email.trim() || recipientState === 'verifying'}
+                        className="mr-1 inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:text-slate-300"
+                      >
+                        {recipientState === 'verifying' ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                        查询
+                      </button>
                     </div>
-                  ))}
+                  </label>
+
+                  {recipientState === 'verified' && recipient ? (
+                    <div id="recipient-feedback" className="mt-3 flex items-center gap-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
+                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-blue-600">
+                        <UserRound className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-slate-950">{recipient.name}</span>
+                          <Badge variant="success">{recipient.status}</Badge>
+                        </div>
+                        <div className="mt-1 truncate text-sm text-slate-500">{recipient.maskedEmail}</div>
+                      </div>
+                      <Check className="h-5 w-5 shrink-0 text-emerald-600" />
+                    </div>
+                  ) : null}
+
+                  {recipientFeedback ? (
+                    <div id="recipient-feedback" className={`mt-3 flex gap-3 rounded-lg border px-4 py-3 ${recipientFeedback.className}`}>
+                      <recipientFeedback.icon className={`mt-0.5 h-4 w-4 shrink-0 ${recipientFeedback.iconClassName}`} />
+                      <div>
+                        <div className="text-sm font-semibold">{recipientFeedback.title}</div>
+                        <div className="mt-1 text-sm leading-5 opacity-90">{recipientFeedback.description}</div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="my-6 h-px bg-slate-200" />
+
+                <fieldset disabled={!recipientVerified} className={!recipientVerified ? 'opacity-55' : ''}>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-bold text-blue-600">02</span>
+                      <h2 className="text-base font-bold text-slate-950">填写转账信息</h2>
+                    </div>
+                    {!recipientVerified ? <span className="text-xs font-medium text-slate-400">请先确认收款用户</span> : null}
+                  </div>
+
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="text-sm font-semibold text-slate-700">转出账户</span>
+                      <select
+                        value={accountId}
+                        onChange={(event) => changeAccount(event.target.value)}
+                        className="mt-2 h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500 disabled:bg-slate-50"
+                      >
+                        {userTransferAccountOptions.map((account) => (
+                          <option key={account.id} value={account.id}>{account.label}</option>
+                        ))}
+                      </select>
+                      <span className="mt-1.5 block text-xs leading-5 text-slate-500">{selectedAccount.helper}</span>
+                    </label>
+
+                    <label className="block">
+                      <span className="text-sm font-semibold text-slate-700">币种</span>
+                      <select
+                        value={effectiveCurrency}
+                        onChange={(event) => changeCurrency(event.target.value)}
+                        disabled={!currencyOptions.length}
+                        className="mt-2 h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500 disabled:bg-slate-50"
+                      >
+                        {currencyOptions.map((option) => (
+                          <option key={option} value={option}>{formatUserTransferCurrencyLabel(option)}</option>
+                        ))}
+                      </select>
+                      <span className="mt-1.5 block text-xs leading-5 text-slate-500">
+                        {currencyOptions.length ? '仅展示该账户支持且可用的币种。' : '当前账户暂无可用币种。'}
+                      </span>
+                    </label>
+                  </div>
+
+                  {!currencyOptions.length ? (
+                    <div className="mt-3 flex gap-3 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                      <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                      当前账户没有可用币种，请返回账户页检查账户状态。
+                    </div>
+                  ) : null}
+
+                  <label className="mt-4 block">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-slate-700">转账金额</span>
+                      <span className="text-xs text-slate-500">可用余额：<strong className="font-semibold text-slate-700">{selectedBalance}</strong></span>
+                    </div>
+                    <div className={`mt-2 flex h-12 items-center rounded-md border bg-white transition focus-within:border-blue-500 ${
+                      amountTouched && amountError ? 'border-red-300' : 'border-slate-200'
+                    }`}>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={amount}
+                        onChange={(event) => {
+                          setAmount(event.target.value.trim())
+                          setAmountTouched(true)
+                          setSubmitError('')
+                        }}
+                        onBlur={() => setAmountTouched(true)}
+                        placeholder="0.00"
+                        className="min-w-0 flex-1 bg-transparent px-3 text-lg font-bold text-slate-950 outline-none placeholder:font-normal placeholder:text-slate-300"
+                      />
+                      <span className="border-l border-slate-200 px-3 text-sm font-semibold text-slate-500">{effectiveCurrency || '--'}</span>
+                      <button
+                        type="button"
+                        onClick={fillAllBalance}
+                        disabled={!effectiveCurrency || selectedBalanceValue <= 0}
+                        className="mr-1 h-9 rounded-md px-3 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:text-slate-300"
+                      >
+                        全部
+                      </button>
+                    </div>
+                    {amountTouched && amountError ? <span className="mt-1.5 block text-xs font-medium text-red-600">{amountError}</span> : null}
+                  </label>
+                </fieldset>
+
+                <div className="my-6 h-px bg-slate-200" />
+
+                <div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-blue-600">03</span>
+                    <h2 className="text-base font-bold text-slate-950">转账摘要</h2>
+                  </div>
+                  <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-4">
+                    <div className="flex flex-wrap items-end justify-between gap-3">
+                      <div>
+                        <div className="text-xs font-medium text-slate-500">转账金额</div>
+                        <div className="mt-1 text-2xl font-bold text-slate-950">{amountDisplay}</div>
+                      </div>
+                      <div className="text-right text-sm">
+                        <div className="text-slate-500">预计手续费：<span className="font-semibold text-slate-700">以后端审核为准</span></div>
+                        <div className="mt-1 text-slate-500">预计到账：<span className="font-semibold text-slate-700">以后端审核为准</span></div>
+                      </div>
+                    </div>
+                    <p className="mt-3 border-t border-slate-200 pt-3 text-xs leading-5 text-slate-500">当前页面不计算前端手续费，实际费用及最终结果以后端审核为准。</p>
+                  </div>
+                </div>
+
+                {submitError ? (
+                  <div className="mt-4 flex gap-3 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                    <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                    {submitError}
+                  </div>
+                ) : null}
+
+                <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-5">
+                  <Button type="button" onClick={onBack} variant="outline" className="rounded-md px-5">
+                    取消
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={openConfirmation}
+                    disabled={!canSubmit}
+                    className="rounded-md bg-blue-600 px-6 hover:bg-blue-700"
+                  >
+                    提交审核
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
                 </div>
               </section>
-            ) : null}
-          </aside>
-        </div>
+
+              <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+                    <ShieldCheck className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-950">审核说明</h2>
+                    <p className="mt-0.5 text-xs text-slate-500">提交前请确认以下信息</p>
+                  </div>
+                </div>
+
+                <dl className="mt-5 divide-y divide-slate-100 text-sm">
+                  <div className="py-3">
+                    <dt className="text-xs text-slate-500">当前转出账户</dt>
+                    <dd className="mt-1 font-semibold text-slate-950">{selectedAccount.label}</dd>
+                  </div>
+                  <div className="py-3">
+                    <dt className="text-xs text-slate-500">支持币种</dt>
+                    <dd className="mt-1 break-words font-semibold leading-6 text-slate-950">{currencyOptions.length ? currencyOptions.join(' / ') : '-'}</dd>
+                  </div>
+                  <div className="py-3">
+                    <dt className="text-xs text-slate-500">提交后的初始状态</dt>
+                    <dd className="mt-1"><Badge variant="warning">待审核</Badge></dd>
+                  </div>
+                </dl>
+
+                <div className="mt-5 border-t border-slate-200 pt-5">
+                  <div className="text-xs font-semibold text-slate-700">处理流程</div>
+                  <div className="mt-4 space-y-4">
+                    {[
+                      ['1', '提交申请'],
+                      ['2', '后台审核'],
+                      ['3', '完成或拒绝'],
+                    ].map(([step, label], index) => (
+                      <div key={step} className="relative flex items-center gap-3">
+                        {index < 2 ? <span className="absolute left-[11px] top-6 h-5 w-px bg-slate-200" /> : null}
+                        <span className="relative inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-700">{step}</span>
+                        <span className="text-sm font-medium text-slate-700">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-5 flex gap-2.5 rounded-lg bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-600">
+                  <CircleHelp className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                  当前页面不预先展示资金冻结；实际资金处理遵循现有后台审核逻辑。
+                </div>
+              </aside>
+            </div>
+          </>
+        )}
       </main>
+
+      {confirmOpen && recipient ? (
+        <UserTransferConfirmModal
+          recipient={recipient}
+          account={selectedAccount}
+          currency={effectiveCurrency}
+          amountDisplay={amountDisplay}
+          isSubmitting={isSubmitting}
+          onClose={() => {
+            if (!isSubmitting) setConfirmOpen(false)
+          }}
+          onConfirm={confirmSubmit}
+        />
+      ) : null}
     </div>
   )
 }
@@ -2825,6 +3270,10 @@ export function BaasOpeningPrototype({
   onJurisdictionStatusesChange,
   demoStatusAccount,
   demoStatusAccounts,
+  topNavActiveLabel = '账户',
+  onTopNavSelect,
+  topNavClickableLabels = [],
+  onUserTransferSubmitted,
 }) {
   const [status, setStatus] = useState(initialStatus)
   const [jurisdictionStatuses, setJurisdictionStatuses] = useState(() => ({
@@ -2931,7 +3380,9 @@ export function BaasOpeningPrototype({
 
   const topNavProps = {
     investmentMenu,
-    activeNavLabel: '账户',
+    activeNavLabel: topNavActiveLabel,
+    onNavSelect: onTopNavSelect,
+    clickableNavLabels: topNavClickableLabels,
   }
 
   const openInternalTransfer = (direction, options = {}) => {
@@ -3013,6 +3464,7 @@ export function BaasOpeningPrototype({
       <UserTransferPage
         onBack={() => setActiveOpenedPage('account')}
         topNavProps={topNavProps}
+        onTransferSubmitted={onUserTransferSubmitted}
       />
     )
   }
