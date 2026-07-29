@@ -98,6 +98,13 @@ const accountOptions = [
   },
 ]
 
+const platformDigitalAssets = [
+  { code: 'BTC', name: 'Bitcoin', network: 'Bitcoin', balance: 0.45 },
+  { code: 'USDT', displayCode: 'USDT-Tron', name: 'Tether', network: 'Tron', balance: 6550 },
+  { code: 'USDT', displayCode: 'USDT-ERC20', name: 'Tether', network: 'ERC20', balance: 13481.2499 },
+  { code: 'ETH', name: 'Ethereum', network: 'Ethereum', balance: 2.53 },
+]
+
 const initialTransactions = [
   {
     id: 'TXN-20260722-5efed465',
@@ -225,13 +232,52 @@ function formatAssetAmount(value, code) {
   return Number(value).toFixed(2)
 }
 
+function isDigitalAsset(asset) {
+  return Boolean(asset?.network) || ['BTC', 'USDT', 'ETH', 'UTGL'].includes(asset?.code)
+}
+
 function getAssetKey(asset) {
   if (!asset) return ''
-  return `${asset.code}-${asset.network || 'FIAT'}`
+  const accountPrefix = asset.accountId ? `${asset.accountId}-` : ''
+  return `${accountPrefix}${asset.code}-${asset.network || 'FIAT'}`
 }
 
 function getAssetDisplayCode(asset) {
   return asset?.displayCode || asset?.code || '—'
+}
+
+function getAssetOwnershipLabel(asset) {
+  return asset?.accountName || '数字资产'
+}
+
+function buildExchangeAssets(accounts) {
+  const fiatAssets = []
+
+  accounts.forEach((account, accountOrder) => {
+    account.assets.forEach((asset) => {
+      if (isDigitalAsset(asset)) return
+
+      fiatAssets.push({
+        ...asset,
+        assetScope: 'fiat',
+        accountId: account.id,
+        accountName: account.name,
+        accountNumber: account.accountNumber,
+        accountOrder,
+      })
+    })
+  })
+
+  return [
+    ...platformDigitalAssets.map((asset) => ({ ...asset, assetScope: 'digital' })),
+    ...fiatAssets,
+  ]
+}
+
+function getExchangeAccountLabel(sellAsset, buyAsset) {
+  const sellOwner = getAssetOwnershipLabel(sellAsset)
+  const buyOwner = getAssetOwnershipLabel(buyAsset)
+  return sellOwner === buyOwner ? sellOwner : `${sellOwner} → ${buyOwner}`
 }
 
 function formatSignedTransactionAmount(record) {
@@ -326,11 +372,39 @@ function CurrencyPicker({ assets, selectedKey, excludedKey, onSelect, onClose })
   const [query, setQuery] = useState('')
   const filteredAssets = assets.filter((asset) => (
     getAssetKey(asset) !== excludedKey
-    && `${getAssetDisplayCode(asset)} ${asset.code} ${asset.name} ${asset.network || ''}`.toLowerCase().includes(query.trim().toLowerCase())
+    && `${getAssetDisplayCode(asset)} ${asset.code} ${asset.name} ${asset.network || ''} ${asset.accountName || ''} ${asset.accountNumber || ''}`
+      .toLowerCase()
+      .includes(query.trim().toLowerCase())
   ))
+  const sections = [
+    {
+      id: 'digital',
+      title: '数字资产',
+      description: '不区分银行账户',
+      assets: filteredAssets.filter((asset) => asset.assetScope === 'digital'),
+    },
+    ...Array.from(
+      filteredAssets
+        .filter((asset) => asset.assetScope === 'fiat')
+        .reduce((groups, asset) => {
+          if (!groups.has(asset.accountId)) {
+            groups.set(asset.accountId, {
+              id: asset.accountId,
+              title: asset.accountName,
+              description: `${asset.accountNumber} · 法币资产`,
+              order: asset.accountOrder,
+              assets: [],
+            })
+          }
+          groups.get(asset.accountId).assets.push(asset)
+          return groups
+        }, new Map())
+        .values(),
+    ).sort((left, right) => left.order - right.order),
+  ].filter((section) => section.assets.length)
 
   return (
-    <div className="absolute left-0 top-[calc(100%+8px)] z-30 w-[min(390px,calc(100vw-72px))] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl">
+    <div className="absolute left-0 top-[calc(100%+8px)] z-30 w-[min(430px,calc(100vw-72px))] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl">
       <div className="flex items-center justify-between px-4 pb-2 pt-4">
         <span className="text-sm font-semibold text-slate-900">选择资产</span>
         <button type="button" onClick={onClose} aria-label="关闭币种列表" className="rounded-md p-1 text-slate-400 hover:bg-slate-100">
@@ -347,48 +421,65 @@ function CurrencyPicker({ assets, selectedKey, excludedKey, onSelect, onClose })
           className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
         />
       </label>
-      <div className="max-h-[310px] overflow-y-auto">
-        {filteredAssets.map((asset) => {
-          const assetKey = getAssetKey(asset)
-          const selected = selectedKey === assetKey
-          return (
-            <button
-              key={assetKey}
-              type="button"
-              onClick={() => onSelect(assetKey)}
-              className={`flex w-full items-center gap-3 border-t border-slate-100 px-4 py-3 text-left hover:bg-slate-50 ${selected ? 'bg-blue-50' : ''}`}
-            >
-              <CurrencyIcon currency={asset.code} className="h-8 w-8 text-[10px]" />
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-slate-800">{getAssetDisplayCode(asset)}</span>
-                <span className="block truncate text-xs text-slate-500">{asset.network ? `${asset.name} · ${asset.network}` : asset.name}</span>
-              </span>
-              <span className={`text-sm font-semibold ${selected ? 'text-blue-600' : 'text-slate-600'}`}>
-                {formatAssetAmount(asset.balance, asset.code)}
-              </span>
-              {selected ? <CheckCircle2 className="h-4 w-4 text-blue-600" /> : null}
-            </button>
-          )
-        })}
-        {!filteredAssets.length ? <div className="px-4 py-8 text-center text-sm text-slate-500">没有匹配币种</div> : null}
+      <div className="max-h-[360px] overflow-y-auto">
+        {sections.map((section) => (
+          <section key={section.id}>
+            <div className="sticky top-0 z-10 flex items-center justify-between border-y border-slate-100 bg-slate-50 px-4 py-2">
+              <span className="text-xs font-semibold text-slate-700">{section.title}</span>
+              <span className="text-[11px] text-slate-400">{section.description}</span>
+            </div>
+            {section.assets.map((asset) => {
+              const assetKey = getAssetKey(asset)
+              const selected = selectedKey === assetKey
+              return (
+                <button
+                  key={assetKey}
+                  type="button"
+                  onClick={() => onSelect(assetKey)}
+                  className={`flex w-full items-center gap-3 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 ${selected ? 'bg-blue-50' : ''}`}
+                >
+                  <CurrencyIcon currency={asset.code} className="h-8 w-8 text-[10px]" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-slate-800">{getAssetDisplayCode(asset)}</span>
+                    <span className="block truncate text-xs text-slate-500">
+                      {asset.assetScope === 'digital'
+                        ? `${asset.name}${asset.network ? ` · ${asset.network}` : ''}`
+                        : `${asset.name} · ${asset.accountName}`}
+                    </span>
+                  </span>
+                  <span className="text-right">
+                    <span className={`block text-sm font-semibold ${selected ? 'text-blue-600' : 'text-slate-600'}`}>
+                      {formatAssetAmount(asset.balance, asset.code)}
+                    </span>
+                    <span className="mt-0.5 block text-[10px] text-slate-400">可用余额</span>
+                  </span>
+                  {selected ? <CheckCircle2 className="h-4 w-4 text-blue-600" /> : null}
+                </button>
+              )
+            })}
+          </section>
+        ))}
+        {!sections.length ? <div className="px-4 py-8 text-center text-sm text-slate-500">没有匹配币种</div> : null}
       </div>
     </div>
   )
 }
 
 function AssetExchangeModal({ accounts = accountOptions, onClose, onComplete }) {
-  const initialAccount = accounts[0] || accountOptions[0]
-  const [accountId, setAccountId] = useState(initialAccount.id)
-  const [sellAssetKey, setSellAssetKey] = useState(() => getAssetKey(initialAccount.assets[0]))
-  const [buyAssetKey, setBuyAssetKey] = useState(() => getAssetKey(initialAccount.assets.find((asset) => asset.code === 'CNY') || initialAccount.assets[1]))
+  const exchangeAssets = useMemo(() => buildExchangeAssets(accounts), [accounts])
+  const initialSellAsset = exchangeAssets.find((asset) => asset.assetScope === 'digital') || exchangeAssets[0]
+  const initialBuyAsset = exchangeAssets.find((asset) => asset.accountId === 'hk' && asset.code === 'CNY')
+    || exchangeAssets.find((asset) => asset.assetScope === 'fiat')
+    || exchangeAssets[1]
+  const [sellAssetKey, setSellAssetKey] = useState(() => getAssetKey(initialSellAsset))
+  const [buyAssetKey, setBuyAssetKey] = useState(() => getAssetKey(initialBuyAsset))
   const [sellAmount, setSellAmount] = useState('')
   const [picker, setPicker] = useState('')
   const [quote, setQuote] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const account = accounts.find((item) => item.id === accountId) || initialAccount
-  const sellAsset = account.assets.find((asset) => getAssetKey(asset) === sellAssetKey)
-  const buyAsset = account.assets.find((asset) => getAssetKey(asset) === buyAssetKey)
+  const sellAsset = exchangeAssets.find((asset) => getAssetKey(asset) === sellAssetKey)
+  const buyAsset = exchangeAssets.find((asset) => getAssetKey(asset) === buyAssetKey)
   const numericAmount = Number(sellAmount)
   const amountError = sellAmount && (!Number.isFinite(numericAmount) || numericAmount <= 0)
     ? '卖出金额必须大于 0'
@@ -396,15 +487,6 @@ function AssetExchangeModal({ accounts = accountOptions, onClose, onComplete }) 
       ? '卖出金额不能超过可用余额'
       : ''
   const canQuote = Boolean(sellAsset && buyAsset && sellAssetKey !== buyAssetKey && sellAmount && !amountError)
-
-  const changeAccount = (nextAccountId) => {
-    setAccountId(nextAccountId)
-    setSellAssetKey('')
-    setBuyAssetKey('')
-    setSellAmount('')
-    setQuote(null)
-    setPicker('')
-  }
 
   const changeCurrency = (type, assetKey) => {
     if (type === 'sell') setSellAssetKey(assetKey)
@@ -446,13 +528,15 @@ function AssetExchangeModal({ accounts = accountOptions, onClose, onComplete }) 
     window.setTimeout(() => {
       onComplete?.({
         id: `TXN-FX-${Date.now()}`,
-        account: account.name,
+        account: getExchangeAccountLabel(sellAsset, buyAsset),
         sellAmount: numericAmount,
         sellCurrency: getAssetDisplayCode(sellAsset),
         sellCurrencyCode: sellAsset.code,
+        sellAccount: getAssetOwnershipLabel(sellAsset),
         buyAmount: quote.receiveAmount,
         buyCurrency: getAssetDisplayCode(buyAsset),
         buyCurrencyCode: buyAsset.code,
+        buyAccount: getAssetOwnershipLabel(buyAsset),
         marketRate: quote.marketRate,
         fee: quote.fee,
         date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
@@ -479,23 +563,9 @@ function AssetExchangeModal({ accounts = accountOptions, onClose, onComplete }) 
         </header>
 
         <div className="space-y-4 px-5 py-5">
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">兑换账户</span>
-            <div className="relative">
-              <select
-                value={accountId}
-                onChange={(event) => changeAccount(event.target.value)}
-                className="h-12 w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-10 text-sm font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              >
-                {accounts.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.accountNumber}</option>)}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-4 h-4 w-4 text-slate-400" />
-            </div>
-          </label>
-
-          <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs">
-            <span className="text-slate-500">当前账户能力</span>
-            <Badge variant={account.statusTone}>{account.status}</Badge>
+          <div className="flex items-start gap-3 rounded-lg border border-blue-100 bg-blue-50/70 px-3 py-2.5 text-xs leading-5 text-blue-700">
+            <RefreshCw className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>数字资产不区分银行账户；法币资产请直接在币种下拉中按香港账户、新加坡账户或美国账户选择。</span>
           </div>
 
           <div className="relative rounded-xl border border-slate-200">
@@ -503,7 +573,7 @@ function AssetExchangeModal({ accounts = accountOptions, onClose, onComplete }) 
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-700">你卖出</span>
                 <span className="text-xs text-slate-500">
-                  可用余额：{sellAsset ? `${formatAssetAmount(sellAsset.balance, sellAsset.code)} ${getAssetDisplayCode(sellAsset)}` : '—'}
+                  {sellAsset ? `${getAssetOwnershipLabel(sellAsset)}可用余额：${formatAssetAmount(sellAsset.balance, sellAsset.code)} ${getAssetDisplayCode(sellAsset)}` : '可用余额：—'}
                 </span>
               </div>
               <div className="mt-3 flex items-center gap-3">
@@ -515,7 +585,11 @@ function AssetExchangeModal({ accounts = accountOptions, onClose, onComplete }) 
                   {sellAsset ? <CurrencyIcon currency={sellAsset.code} className="h-9 w-9 text-[11px]" /> : <span className="h-9 w-9 rounded-full bg-slate-100" />}
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-semibold text-slate-800">{sellAsset ? getAssetDisplayCode(sellAsset) : '选择币种'}</span>
-                    <span className="block text-xs text-slate-500">{sellAsset ? `${sellAsset.name}${sellAsset.network ? ` · ${sellAsset.network}` : ''}` : '请选择卖出资产'}</span>
+                    <span className="block text-xs text-slate-500">
+                      {sellAsset
+                        ? `${sellAsset.name}${sellAsset.network ? ` · ${sellAsset.network}` : ` · ${getAssetOwnershipLabel(sellAsset)}`}`
+                        : '请选择卖出资产'}
+                    </span>
                   </span>
                   <ChevronDown className="h-4 w-4 text-slate-400" />
                 </button>
@@ -532,7 +606,7 @@ function AssetExchangeModal({ accounts = accountOptions, onClose, onComplete }) 
               </div>
               {picker === 'sell' ? (
                 <CurrencyPicker
-                  assets={account.assets}
+                  assets={exchangeAssets}
                   selectedKey={sellAssetKey}
                   excludedKey={buyAssetKey}
                   onSelect={(assetKey) => changeCurrency('sell', assetKey)}
@@ -555,7 +629,7 @@ function AssetExchangeModal({ accounts = accountOptions, onClose, onComplete }) 
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-700">你获得</span>
                 <span className="text-xs text-slate-500">
-                  可用余额：{buyAsset ? `${formatAssetAmount(buyAsset.balance, buyAsset.code)} ${getAssetDisplayCode(buyAsset)}` : '—'}
+                  {buyAsset ? `${getAssetOwnershipLabel(buyAsset)}可用余额：${formatAssetAmount(buyAsset.balance, buyAsset.code)} ${getAssetDisplayCode(buyAsset)}` : '可用余额：—'}
                 </span>
               </div>
               <div className="mt-3 flex items-center gap-3">
@@ -567,7 +641,11 @@ function AssetExchangeModal({ accounts = accountOptions, onClose, onComplete }) 
                   {buyAsset ? <CurrencyIcon currency={buyAsset.code} className="h-9 w-9 text-[11px]" /> : <span className="h-9 w-9 rounded-full bg-slate-100" />}
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-semibold text-slate-800">{buyAsset ? getAssetDisplayCode(buyAsset) : '选择币种'}</span>
-                    <span className="block text-xs text-slate-500">{buyAsset ? `${buyAsset.name}${buyAsset.network ? ` · ${buyAsset.network}` : ''}` : '请选择获得资产'}</span>
+                    <span className="block text-xs text-slate-500">
+                      {buyAsset
+                        ? `${buyAsset.name}${buyAsset.network ? ` · ${buyAsset.network}` : ` · ${getAssetOwnershipLabel(buyAsset)}`}`
+                        : '请选择获得资产'}
+                    </span>
                   </span>
                   <ChevronDown className="h-4 w-4 text-slate-400" />
                 </button>
@@ -577,7 +655,7 @@ function AssetExchangeModal({ accounts = accountOptions, onClose, onComplete }) 
               </div>
               {picker === 'buy' ? (
                 <CurrencyPicker
-                  assets={account.assets}
+                  assets={exchangeAssets}
                   selectedKey={buyAssetKey}
                   excludedKey={sellAssetKey}
                   onSelect={(assetKey) => changeCurrency('buy', assetKey)}
@@ -834,7 +912,9 @@ function TransactionDetailDrawer({ record, onClose }) {
               {(isExchange
                 ? [
                     ['卖出', `${formatAssetAmount(record.sellAmount, record.sellCurrencyCode)} ${record.sellCurrency}`],
+                    ['卖出资产归属', record.sellAccount || record.account],
                     ['获得', `${formatAssetAmount(record.buyAmount, record.buyCurrencyCode)} ${record.buyCurrency}`],
+                    ['获得资产归属', record.buyAccount || record.account],
                     ['成交汇率', `1 ${record.sellCurrency} ≈ ${record.marketRate.toFixed(6)} ${record.buyCurrency}`],
                     ['手续费', record.fee],
                   ]
@@ -1119,9 +1199,11 @@ export function OtcBankAccountPrototype({
       sellAmount: exchange.sellAmount,
       sellCurrency: exchange.sellCurrency,
       sellCurrencyCode: exchange.sellCurrencyCode,
+      sellAccount: exchange.sellAccount,
       buyAmount: exchange.buyAmount,
       buyCurrency: exchange.buyCurrency,
       buyCurrencyCode: exchange.buyCurrencyCode,
+      buyAccount: exchange.buyAccount,
       marketRate: exchange.marketRate,
     }
 
