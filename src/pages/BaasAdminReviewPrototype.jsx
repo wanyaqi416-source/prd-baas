@@ -5157,15 +5157,6 @@ function ManualFiatDrawer({
             </>
           ) : isBalanceAdjustment ? (
             <>
-              <div className="flex items-start gap-[10px] rounded-[5px] border border-[#c9b2f5] bg-[#faf7ff] px-[13px] py-[11px]">
-                <ShieldCheck className="mt-[1px] h-[17px] w-[17px] shrink-0 text-[#8b4fff]" />
-                <div>
-                  <div className="text-[12px] font-semibold text-[#6d43b5]">已验证余额调账权限</div>
-                  <div className="mt-[4px] text-[11px] leading-[18px] text-[#77728a]">
-                    当前操作人：{manualOperator.name}。余额调账仅限拥有 BALANCE_ADJUSTMENT 权限的后台用户操作。
-                  </div>
-                </div>
-              </div>
               <div className="rounded-[5px] border border-[#d7d9e3] bg-[#f7f8fb] px-[14px] py-[12px]">
                 <div className="flex items-center justify-between gap-[16px]">
                   <span className="text-[12px] text-[#66677f]">当前可用余额</span>
