@@ -1,9 +1,12 @@
 import { Fragment, useMemo, useState } from 'react'
 import {
+  ArrowUpRight,
   BriefcaseBusiness,
   CalendarDays,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CircleDot,
   Clock3,
   Copy,
@@ -22,6 +25,8 @@ import {
   Pencil,
   Play,
   Plus,
+  ReceiptText,
+  RotateCcw,
   Search,
   Settings,
   ShieldCheck,
@@ -987,6 +992,581 @@ const initialFeeConfigs = [
 const fiatTabs = ['总览', '客户资产', '流水查询', '入账认领', '出金审批', '资金互转', '对账中心']
 const markedFiatTabs = new Set(['总览', '客户资产', '流水查询', '入账认领', '出金审批', '资金互转'])
 
+const accountLedgerPrecision = {
+  BHD: 3,
+  BTC: 8,
+  ETH: 6,
+  JPY: 0,
+  USDT: 2,
+}
+
+const accountLedgerRows = [
+  {
+    id: 'FL-20260804-0001',
+    assetClass: 'fiat',
+    businessNo: 'OTC-20260804-0001',
+    userName: 'YAQI WAN',
+    userId: '6',
+    userEmail: 'wanyaqi416@gmail.com',
+    transactionType: 'OTC兑换',
+    accountType: '巴林账户',
+    currency: 'EUR',
+    amount: 4.32,
+    beforeBalance: 100,
+    afterBalance: 104.32,
+    fee: 0,
+    remark: 'OTC兑换到账，卖出 5 USDT（TRC20）',
+    createdAt: '2026-08-04 10:32:16',
+    completedAt: '2026-08-04 10:32:18',
+  },
+  {
+    id: 'FL-20260804-0002',
+    assetClass: 'fiat',
+    businessNo: 'FEE-20260804-0018',
+    userName: 'WANYARA WAN',
+    userId: '154',
+    userEmail: 'xr3kes66@123mails.org',
+    transactionType: '费用扣除',
+    accountType: '香港账户',
+    currency: 'USD',
+    amount: -2,
+    beforeBalance: 50,
+    afterBalance: 48,
+    fee: 0,
+    remark: '第三方服务费补扣',
+    createdAt: '2026-08-04 09:48:03',
+    completedAt: '2026-08-04 09:48:03',
+  },
+  {
+    id: 'FL-20260804-0003',
+    assetClass: 'fiat',
+    businessNo: 'ADJ-20260804-0007',
+    userName: 'YUE QI',
+    userId: '4',
+    userEmail: 'voigtus1@123mails.org',
+    transactionType: '余额调整',
+    accountType: '新加坡账户',
+    currency: 'SGD',
+    amount: 10,
+    beforeBalance: 20,
+    afterBalance: 30,
+    fee: 0,
+    remark: '历史数据差额补录',
+    createdAt: '2026-08-03 18:21:42',
+    completedAt: '2026-08-03 18:21:42',
+  },
+  {
+    id: 'FL-20260803-0004',
+    assetClass: 'fiat',
+    businessNo: 'DEP-20260803-0142',
+    userName: 'YAQI WAN',
+    userId: '6',
+    userEmail: 'wanyaqi416@gmail.com',
+    transactionType: '法币入金',
+    accountType: '香港账户',
+    currency: 'USD',
+    amount: 1000,
+    beforeBalance: 2500.5,
+    afterBalance: 3500.5,
+    fee: 0,
+    remark: '银行入金审核通过',
+    createdAt: '2026-08-03 16:05:28',
+    completedAt: '2026-08-03 16:18:51',
+  },
+  {
+    id: 'FL-20260803-0005',
+    assetClass: 'fiat',
+    businessNo: 'WDR-20260803-0031',
+    userName: 'PERUMILY HU',
+    userId: '34',
+    userEmail: 'perumily2@mediaholy.com',
+    transactionType: '法币出金',
+    accountType: '巴林账户',
+    currency: 'USD',
+    amount: -300,
+    beforeBalance: 2000,
+    afterBalance: 1700,
+    fee: 5,
+    feeLedgerId: 'FL-20260803-0018',
+    remark: '银行出款 300 USD，手续费单独记账',
+    createdAt: '2026-08-03 14:36:09',
+    completedAt: '2026-08-03 15:02:24',
+  },
+  {
+    id: 'FL-20260803-0018',
+    assetClass: 'fiat',
+    businessNo: 'WDR-20260803-0031',
+    userName: 'PERUMILY HU',
+    userId: '34',
+    userEmail: 'perumily2@mediaholy.com',
+    transactionType: '手续费扣除',
+    accountType: '巴林账户',
+    currency: 'USD',
+    amount: -5,
+    beforeBalance: 1700,
+    afterBalance: 1695,
+    fee: 0,
+    isFeeLedger: true,
+    feeForLedgerId: 'FL-20260803-0005',
+    remark: '法币出金手续费 5 USD',
+    createdAt: '2026-08-03 14:36:10',
+    completedAt: '2026-08-03 15:02:24',
+  },
+  {
+    id: 'FL-20260803-0006',
+    assetClass: 'fiat',
+    businessNo: 'TRF-20260803-0088',
+    userName: 'YAQI WAN',
+    userId: '6',
+    userEmail: 'wanyaqi416@gmail.com',
+    transactionType: '资金互转',
+    accountType: '香港账户',
+    currency: 'HKD',
+    amount: -2000,
+    beforeBalance: 10000,
+    afterBalance: 8000,
+    fee: 0,
+    remark: '转出至新加坡账户',
+    createdAt: '2026-08-03 11:08:32',
+    completedAt: '2026-08-03 11:08:35',
+  },
+  {
+    id: 'FL-20260803-0007',
+    assetClass: 'fiat',
+    businessNo: 'TRF-20260803-0088',
+    userName: 'YAQI WAN',
+    userId: '6',
+    userEmail: 'wanyaqi416@gmail.com',
+    transactionType: '资金互转',
+    accountType: '新加坡账户',
+    currency: 'HKD',
+    amount: 2000,
+    beforeBalance: 3000,
+    afterBalance: 5000,
+    fee: 0,
+    remark: '由香港账户转入',
+    createdAt: '2026-08-03 11:08:32',
+    completedAt: '2026-08-03 11:08:35',
+  },
+  {
+    id: 'FL-20260802-0008',
+    assetClass: 'fiat',
+    businessNo: 'UTR-20260802-0026',
+    userName: 'YUE QI',
+    userId: '4',
+    userEmail: 'voigtus1@123mails.org',
+    transactionType: '用户间转账',
+    accountType: '新加坡账户',
+    currency: 'USD',
+    amount: -150,
+    beforeBalance: 900,
+    afterBalance: 750,
+    fee: 0,
+    remark: '转账给用户 YAQI WAN',
+    createdAt: '2026-08-02 17:44:15',
+    completedAt: '2026-08-02 17:46:02',
+  },
+  {
+    id: 'FL-20260802-0009',
+    assetClass: 'fiat',
+    businessNo: 'UTR-20260802-0026',
+    userName: 'YAQI WAN',
+    userId: '6',
+    userEmail: 'wanyaqi416@gmail.com',
+    transactionType: '用户间转账',
+    accountType: '巴林账户',
+    currency: 'USD',
+    amount: 150,
+    beforeBalance: 1100,
+    afterBalance: 1250,
+    fee: 0,
+    remark: '收到用户 YUE QI 转账',
+    createdAt: '2026-08-02 17:44:15',
+    completedAt: '2026-08-02 17:46:02',
+  },
+  {
+    id: 'FL-20260802-0010',
+    assetClass: 'fiat',
+    businessNo: 'MDEP-20260802-0014',
+    userName: 'WANYARA WAN',
+    userId: '154',
+    userEmail: 'xr3kes66@123mails.org',
+    transactionType: '手动入金',
+    accountType: '香港账户',
+    currency: 'CNY',
+    amount: 500,
+    beforeBalance: 3000,
+    afterBalance: 3500,
+    fee: 0,
+    remark: '运营补录线下到账',
+    createdAt: '2026-08-02 13:12:08',
+    completedAt: '2026-08-02 13:12:08',
+  },
+  {
+    id: 'FL-20260801-0011',
+    assetClass: 'fiat',
+    businessNo: 'MWDR-20260801-0009',
+    userName: 'YUE QI',
+    userId: '4',
+    userEmail: 'voigtus1@123mails.org',
+    transactionType: '手动出金',
+    accountType: '新加坡账户',
+    currency: 'AED',
+    amount: -100,
+    beforeBalance: 700,
+    afterBalance: 600,
+    fee: 0,
+    remark: '运营线下银行出款',
+    createdAt: '2026-08-01 18:33:26',
+    completedAt: '2026-08-01 18:33:26',
+  },
+  {
+    id: 'FL-20260801-0012',
+    assetClass: 'fiat',
+    businessNo: 'OPEN-20260801-0038',
+    userName: 'YAQI WAN',
+    userId: '6',
+    userEmail: 'wanyaqi416@gmail.com',
+    transactionType: '开户费扣除',
+    accountType: '香港账户',
+    currency: 'USD',
+    amount: -50,
+    beforeBalance: 500,
+    afterBalance: 450,
+    fee: 50,
+    remark: '巴林账户开户费扣除',
+    createdAt: '2026-08-01 10:19:44',
+    completedAt: '2026-08-01 10:19:45',
+  },
+  {
+    id: 'FL-20260731-0013',
+    assetClass: 'fiat',
+    businessNo: 'REF-20260731-0011',
+    userName: 'YAQI WAN',
+    userId: '6',
+    userEmail: 'wanyaqi416@gmail.com',
+    transactionType: '退款',
+    accountType: '巴林账户',
+    currency: 'EUR',
+    amount: 25,
+    beforeBalance: 104.32,
+    afterBalance: 129.32,
+    fee: 0,
+    remark: '出金失败退回',
+    createdAt: '2026-07-31 15:22:13',
+    completedAt: '2026-07-31 15:22:13',
+  },
+  {
+    id: 'FL-20260731-0014',
+    assetClass: 'fiat',
+    businessNo: 'REV-20260731-0006',
+    userName: 'WANYARA WAN',
+    userId: '154',
+    userEmail: 'xr3kes66@123mails.org',
+    transactionType: '冲正',
+    accountType: '香港账户',
+    currency: 'USD',
+    amount: 2,
+    beforeBalance: 48,
+    afterBalance: 50,
+    fee: 0,
+    remark: '冲正错误费用扣除',
+    createdAt: '2026-07-31 11:07:58',
+    completedAt: '2026-07-31 11:07:58',
+  },
+  {
+    id: 'FL-20260730-0015',
+    assetClass: 'fiat',
+    businessNo: 'YLD-20260730-0042',
+    userName: 'YAQI WAN',
+    userId: '6',
+    userEmail: 'wanyaqi416@gmail.com',
+    transactionType: '收益发放',
+    accountType: '巴林账户',
+    currency: 'USD',
+    amount: 18.75,
+    beforeBalance: 1250,
+    afterBalance: 1268.75,
+    fee: 0,
+    remark: '7月现金管理收益',
+    createdAt: '2026-07-30 20:00:00',
+    completedAt: '2026-07-30 20:00:00',
+  },
+  {
+    id: 'FL-20260730-0016',
+    assetClass: 'fiat',
+    businessNo: 'DEP-20260730-0108',
+    userName: 'YUE QI',
+    userId: '4',
+    userEmail: 'voigtus1@123mails.org',
+    transactionType: '法币入金',
+    accountType: '新加坡账户',
+    currency: 'JPY',
+    amount: 100000,
+    beforeBalance: 500000,
+    afterBalance: 600000,
+    fee: 0,
+    remark: 'JPY银行入金到账',
+    createdAt: '2026-07-30 12:31:09',
+    completedAt: '2026-07-30 13:02:41',
+  },
+  {
+    id: 'FL-20260729-0017',
+    assetClass: 'fiat',
+    businessNo: 'ADJ-20260729-0004',
+    userName: 'YAQI WAN',
+    userId: '6',
+    userEmail: 'wanyaqi416@gmail.com',
+    transactionType: '余额调整',
+    accountType: '巴林账户',
+    currency: 'BHD',
+    amount: -5.125,
+    beforeBalance: 1900.625,
+    afterBalance: 1895.5,
+    fee: 0,
+    remark: '第三方交易金额修正',
+    createdAt: '2026-07-29 16:09:52',
+    completedAt: '2026-07-29 16:09:52',
+  },
+  {
+    id: 'DL-20260804-0001',
+    assetClass: 'digital',
+    businessNo: 'OTC-20260804-0001',
+    userName: 'YAQI WAN',
+    userId: '6',
+    userEmail: 'wanyaqi416@gmail.com',
+    transactionType: 'OTC兑换',
+    currency: 'USDT',
+    network: 'TRC20',
+    amount: -5,
+    beforeBalance: 10,
+    afterBalance: 5,
+    fee: 0,
+    remark: '兑换为巴林账户 EUR 4.32',
+    createdAt: '2026-08-04 10:32:16',
+    completedAt: '2026-08-04 10:32:18',
+  },
+  {
+    id: 'DL-20260804-0002',
+    assetClass: 'digital',
+    businessNo: 'DIN-20260804-0076',
+    userName: 'WANYARA WAN',
+    userId: '154',
+    userEmail: 'xr3kes66@123mails.org',
+    transactionType: '数字资产转入',
+    currency: 'USDT',
+    network: 'ERC20',
+    amount: 250,
+    beforeBalance: 300,
+    afterBalance: 550,
+    fee: 0,
+    remark: '链上充值确认完成',
+    createdAt: '2026-08-04 08:22:05',
+    completedAt: '2026-08-04 08:34:18',
+  },
+  {
+    id: 'DL-20260803-0003',
+    assetClass: 'digital',
+    businessNo: 'DOUT-20260803-0035',
+    userName: 'PERUMILY HU',
+    userId: '34',
+    userEmail: 'perumily2@mediaholy.com',
+    transactionType: '数字资产转出',
+    currency: 'ETH',
+    network: 'Ethereum',
+    amount: -1.25,
+    beforeBalance: 4.5,
+    afterBalance: 3.25,
+    fee: 0.003,
+    feeLedgerId: 'DL-20260803-0013',
+    remark: '转出 1.25 ETH，网络费单独记账',
+    createdAt: '2026-08-03 19:08:44',
+    completedAt: '2026-08-03 19:22:10',
+  },
+  {
+    id: 'DL-20260803-0013',
+    assetClass: 'digital',
+    businessNo: 'DOUT-20260803-0035',
+    userName: 'PERUMILY HU',
+    userId: '34',
+    userEmail: 'perumily2@mediaholy.com',
+    transactionType: '手续费扣除',
+    currency: 'ETH',
+    network: 'Ethereum',
+    amount: -0.003,
+    beforeBalance: 3.25,
+    afterBalance: 3.247,
+    fee: 0,
+    isFeeLedger: true,
+    feeForLedgerId: 'DL-20260803-0003',
+    remark: 'ETH 链上转出网络手续费',
+    createdAt: '2026-08-03 19:08:45',
+    completedAt: '2026-08-03 19:22:10',
+  },
+  {
+    id: 'DL-20260803-0004',
+    assetClass: 'digital',
+    businessNo: 'OTC-20260803-0019',
+    userName: 'YUE QI',
+    userId: '4',
+    userEmail: 'voigtus1@123mails.org',
+    transactionType: 'OTC兑换',
+    currency: 'BTC',
+    network: 'Bitcoin',
+    amount: 0.00095,
+    beforeBalance: 0.005,
+    afterBalance: 0.00595,
+    fee: 0,
+    remark: '由香港账户 USD 兑换所得',
+    createdAt: '2026-08-03 12:11:27',
+    completedAt: '2026-08-03 12:11:29',
+  },
+  {
+    id: 'DL-20260802-0005',
+    assetClass: 'digital',
+    businessNo: 'TRF-20260802-0041',
+    userName: 'YAQI WAN',
+    userId: '6',
+    userEmail: 'wanyaqi416@gmail.com',
+    transactionType: '资金互转',
+    currency: 'USDT',
+    network: 'TRC20',
+    amount: -20,
+    beforeBalance: 80,
+    afterBalance: 60,
+    fee: 0,
+    remark: '平台内数字资产划转',
+    createdAt: '2026-08-02 16:42:12',
+    completedAt: '2026-08-02 16:42:14',
+  },
+  {
+    id: 'DL-20260802-0006',
+    assetClass: 'digital',
+    businessNo: 'UTR-20260802-0033',
+    userName: 'WANYARA WAN',
+    userId: '154',
+    userEmail: 'xr3kes66@123mails.org',
+    transactionType: '用户间转账',
+    currency: 'USDT',
+    network: 'ERC20',
+    amount: 15,
+    beforeBalance: 12,
+    afterBalance: 27,
+    fee: 0,
+    remark: '收到平台用户数字资产转账',
+    createdAt: '2026-08-02 09:16:38',
+    completedAt: '2026-08-02 09:18:04',
+  },
+  {
+    id: 'DL-20260801-0007',
+    assetClass: 'digital',
+    businessNo: 'FEE-20260801-0008',
+    userName: 'YAQI WAN',
+    userId: '6',
+    userEmail: 'wanyaqi416@gmail.com',
+    transactionType: '费用扣除',
+    currency: 'USDT',
+    network: 'TRC20',
+    amount: -1,
+    beforeBalance: 61,
+    afterBalance: 60,
+    fee: 0,
+    remark: '链上服务费补扣',
+    createdAt: '2026-08-01 15:20:06',
+    completedAt: '2026-08-01 15:20:06',
+  },
+  {
+    id: 'DL-20260731-0008',
+    assetClass: 'digital',
+    businessNo: 'ADJ-20260731-0005',
+    userName: 'PERUMILY HU',
+    userId: '34',
+    userEmail: 'perumily2@mediaholy.com',
+    transactionType: '余额调整',
+    currency: 'BTC',
+    network: 'Bitcoin',
+    amount: 0.005,
+    beforeBalance: 0.02,
+    afterBalance: 0.025,
+    fee: 0,
+    remark: '历史链上交易补录',
+    createdAt: '2026-07-31 17:26:51',
+    completedAt: '2026-07-31 17:26:51',
+  },
+  {
+    id: 'DL-20260731-0009',
+    assetClass: 'digital',
+    businessNo: 'REF-20260731-0017',
+    userName: 'YUE QI',
+    userId: '4',
+    userEmail: 'voigtus1@123mails.org',
+    transactionType: '退款',
+    currency: 'USDT',
+    network: 'ERC20',
+    amount: 5,
+    beforeBalance: 27,
+    afterBalance: 32,
+    fee: 0,
+    remark: '转出失败资产退回',
+    createdAt: '2026-07-31 10:41:23',
+    completedAt: '2026-07-31 10:41:23',
+  },
+  {
+    id: 'DL-20260730-0010',
+    assetClass: 'digital',
+    businessNo: 'REV-20260730-0003',
+    userName: 'WANYARA WAN',
+    userId: '154',
+    userEmail: 'xr3kes66@123mails.org',
+    transactionType: '冲正',
+    currency: 'ETH',
+    network: 'Ethereum',
+    amount: 0.2,
+    beforeBalance: 1.1,
+    afterBalance: 1.3,
+    fee: 0,
+    remark: '冲正重复转出记录',
+    createdAt: '2026-07-30 14:05:09',
+    completedAt: '2026-07-30 14:05:09',
+  },
+  {
+    id: 'DL-20260729-0011',
+    assetClass: 'digital',
+    businessNo: 'YLD-20260729-0012',
+    userName: 'YAQI WAN',
+    userId: '6',
+    userEmail: 'wanyaqi416@gmail.com',
+    transactionType: '收益发放',
+    currency: 'BTC',
+    network: 'Bitcoin',
+    amount: 0.0002,
+    beforeBalance: 0.025,
+    afterBalance: 0.0252,
+    fee: 0,
+    remark: '数字资产增值收益发放',
+    createdAt: '2026-07-29 20:00:00',
+    completedAt: '2026-07-29 20:00:00',
+  },
+  {
+    id: 'DL-20260728-0012',
+    assetClass: 'digital',
+    businessNo: 'DIN-20260728-0061',
+    userName: 'YAQI WAN',
+    userId: '6',
+    userEmail: 'wanyaqi416@gmail.com',
+    transactionType: '数字资产转入',
+    currency: 'USDT',
+    network: 'TRC20',
+    amount: 100,
+    beforeBalance: 60,
+    afterBalance: 160,
+    fee: 0,
+    remark: 'TRC20充值确认完成',
+    createdAt: '2026-07-28 09:56:31',
+    completedAt: '2026-07-28 10:03:27',
+  },
+]
+
 function Header({ onBack }) {
   return (
     <header className="fixed inset-x-0 top-0 z-30 flex h-[64px] items-center justify-between border-b border-[#dedfe8] bg-white px-[18px]">
@@ -1079,6 +1659,7 @@ function Sidebar({ activePage, onSelect }) {
           <SidebarItem icon={UserRound} label="客户" />
           <SidebarItem icon={UserRound} label="资产中心" />
           <SidebarItem icon={ShoppingCart} label="法币资产管理" marked active={activePage === 'fiat-assets'} onClick={() => onSelect('fiat-assets')} />
+          <SidebarItem icon={ReceiptText} label="账变流水" active={activePage === 'account-ledger'} onClick={() => onSelect('account-ledger')} />
           <SidebarItem icon={CircleDot} label="数字资产管理" />
           <SidebarItem icon={LineChart} label="理财产品" />
           <SidebarItem icon={CircleDot} label="交易管理" />
@@ -1089,10 +1670,10 @@ function Sidebar({ activePage, onSelect }) {
   )
 }
 
-function AdminShell({ children, standalone = false }) {
+function AdminShell({ children, standalone = false, fluid = false }) {
   return (
     <main className={`min-h-screen bg-[#f4f5fb] pt-[64px] ${standalone ? '' : 'pl-[220px]'}`}>
-      <div className={`mx-auto pb-10 pt-[16px] ${standalone ? 'w-[1392px]' : 'w-[1254px]'}`}>{children}</div>
+      <div className={`mx-auto pb-10 pt-[16px] ${fluid ? 'w-full px-[16px]' : standalone ? 'w-[1392px]' : 'w-[1254px]'}`}>{children}</div>
     </main>
   )
 }
@@ -6329,6 +6910,510 @@ export function FiatAssetManagementPage({ hideQuestionMarks = false, initialTab 
   )
 }
 
+function createEmptyAccountLedgerFilters() {
+  return {
+    startDate: '',
+    endDate: '',
+    transactionNo: '',
+    userKeyword: '',
+    accountType: '',
+    network: '',
+    direction: '',
+  }
+}
+
+function getAccountLedgerPrecision(currency) {
+  return accountLedgerPrecision[currency] ?? 2
+}
+
+function getAccountLedgerAccountId(record) {
+  const userCode = String(record.userId).padStart(6, '0')
+  if (record.assetClass === 'digital') {
+    return `DA-${userCode}-${record.currency}-${record.network || 'MAIN'}`
+  }
+
+  const accountCode = {
+    香港账户: 'HK',
+    新加坡账户: 'SG',
+    美国账户: 'US',
+    巴林账户: 'BH',
+  }[record.accountType] || 'OT'
+
+  return `FA-${userCode}-${accountCode}-01`
+}
+
+function formatAccountLedgerValue(value, currency) {
+  return Number(value).toLocaleString('en-US', {
+    minimumFractionDigits: getAccountLedgerPrecision(currency),
+    maximumFractionDigits: getAccountLedgerPrecision(currency),
+  })
+}
+
+function formatAccountLedgerChange(record) {
+  const sign = record.amount >= 0 ? '+' : '-'
+  return `${sign}${formatAccountLedgerValue(Math.abs(record.amount), record.currency)} ${record.currency}`
+}
+
+function AccountLedgerFilterInput({ label, value, onChange, placeholder, type = 'text' }) {
+  return (
+    <label className="block min-w-0">
+      <span className="mb-[7px] block text-[12px] font-semibold text-[#55566f]">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="h-[42px] w-full rounded-[4px] border border-[#cfd1dc] bg-white px-[12px] text-[13px] text-[#24243d] outline-none transition focus:border-[#8b4fff] focus:ring-2 focus:ring-[#8b4fff]/10"
+      />
+    </label>
+  )
+}
+
+function AccountLedgerFilterSelect({ label, value, onChange, options, allLabel }) {
+  return (
+    <label className="block min-w-0">
+      <span className="mb-[7px] block text-[12px] font-semibold text-[#55566f]">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-[42px] w-full rounded-[4px] border border-[#cfd1dc] bg-white px-[12px] text-[13px] text-[#24243d] outline-none transition focus:border-[#8b4fff] focus:ring-2 focus:ring-[#8b4fff]/10"
+      >
+        <option value="">{allLabel}</option>
+        {options.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+function AccountLedgerPagination({ page, pageCount, total, pageSize, onChange }) {
+  if (!total) return null
+
+  const start = (page - 1) * pageSize + 1
+  const end = Math.min(page * pageSize, total)
+
+  return (
+    <div className="flex items-center justify-between border-t border-[#e5e6ef] px-[16px] py-[13px]">
+      <div className="text-[12px] text-[#77788d]">显示 {start}-{end} 条，共 {total} 条</div>
+      <div className="flex items-center gap-[6px]">
+        <button
+          type="button"
+          disabled={page === 1}
+          onClick={() => onChange(page - 1)}
+          className="flex h-[30px] w-[30px] items-center justify-center rounded-[4px] border border-[#d7d9e2] text-[#55566f] disabled:cursor-not-allowed disabled:opacity-40"
+          title="上一页"
+        >
+          <ChevronLeft className="h-[15px] w-[15px]" />
+        </button>
+        {Array.from({ length: pageCount }, (_, index) => index + 1).map((item) => (
+          <button
+            type="button"
+            key={item}
+            onClick={() => onChange(item)}
+            className={`h-[30px] min-w-[30px] rounded-[4px] px-[8px] text-[12px] font-semibold ${
+              item === page ? 'bg-[#8b4fff] text-white' : 'border border-[#d7d9e2] bg-white text-[#55566f] hover:border-[#8b4fff] hover:text-[#8b4fff]'
+            }`}
+          >
+            {item}
+          </button>
+        ))}
+        <button
+          type="button"
+          disabled={page === pageCount}
+          onClick={() => onChange(page + 1)}
+          className="flex h-[30px] w-[30px] items-center justify-center rounded-[4px] border border-[#d7d9e2] text-[#55566f] disabled:cursor-not-allowed disabled:opacity-40"
+          title="下一页"
+        >
+          <ChevronRight className="h-[15px] w-[15px]" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function AccountLedgerDetailRow({ label, value, strong = false, children }) {
+  return (
+    <div className="grid grid-cols-[128px_1fr] gap-[12px] border-b border-[#ececf2] py-[11px] text-[13px] last:border-b-0">
+      <div className="text-[#85869a]">{label}</div>
+      <div className={`${strong ? 'font-semibold text-[#20213a]' : 'text-[#4c4c68]'} min-w-0 break-words`}>{children || value || '-'}</div>
+    </div>
+  )
+}
+
+function AccountLedgerDetailDrawer({ record, onClose, onSelectLedger }) {
+  if (!record) return null
+
+  const isIncrease = record.amount >= 0
+  const isDigital = record.assetClass === 'digital'
+  const relatedLedgerRecords = accountLedgerRows.filter((item) => item.businessNo === record.businessNo && item.id !== record.id)
+  const feeLedgerRecord = record.feeLedgerId ? accountLedgerRows.find((item) => item.id === record.feeLedgerId) : null
+
+  return (
+    <DrawerShell
+      title="账变详情"
+      eyebrow={record.id}
+      onClose={onClose}
+      footer={(
+        <button type="button" onClick={onClose} className="h-[38px] w-full rounded-[4px] border border-[#cfd1dc] text-[13px] font-semibold text-[#55566f] hover:bg-[#f6f7fb]">关闭</button>
+      )}
+    >
+      <div className="rounded-[5px] border border-[#e2e4ec] bg-[#f8f9fc] px-[14px] py-[13px]">
+        <div className="text-[11px] font-semibold uppercase text-[#8a8ca0]">余额变动恒等式</div>
+        <div className="mt-[4px] text-[11px] text-[#85869a]">
+          {isIncrease ? '前余额 + 变动金额 = 后余额' : '前余额 - 变动金额绝对值 = 后余额'}
+        </div>
+        <div className="mt-[8px] flex flex-wrap items-baseline gap-[7px] font-mono text-[14px] font-semibold text-[#20213a]">
+          <span>{formatAccountLedgerValue(record.beforeBalance, record.currency)}</span>
+          <span className={isIncrease ? 'text-[#169b57]' : 'text-[#e34856]'}>{isIncrease ? '+' : '-'}</span>
+          <span className={isIncrease ? 'text-[#169b57]' : 'text-[#e34856]'}>{formatAccountLedgerValue(Math.abs(record.amount), record.currency)}</span>
+          <span>=</span>
+          <span>{formatAccountLedgerValue(record.afterBalance, record.currency)} {record.currency}</span>
+        </div>
+      </div>
+
+      <div className="mt-[14px]">
+        <AccountLedgerDetailRow label="账变流水号" value={record.id} strong />
+        <AccountLedgerDetailRow label="业务交易编号" value={record.businessNo} strong />
+        <AccountLedgerDetailRow label="用户信息">
+          <div className="font-semibold text-[#20213a]">{record.userName} / ID: {record.userId}</div>
+          <div className="mt-[2px] text-[12px] text-[#85869a]">{record.userEmail}</div>
+        </AccountLedgerDetailRow>
+        <AccountLedgerDetailRow label="交易类型" value={record.transactionType} />
+        <AccountLedgerDetailRow label="资产分类" value={isDigital ? '数字资产' : '法币'} />
+        {!isDigital ? <AccountLedgerDetailRow label="账户类型" value={record.accountType} /> : null}
+        <AccountLedgerDetailRow label="内部账户 ID" value={getAccountLedgerAccountId(record)} strong />
+        <AccountLedgerDetailRow label="币种" value={record.currency} />
+        {isDigital ? <AccountLedgerDetailRow label="网络" value={record.network} /> : null}
+        {record.isFeeLedger ? <AccountLedgerDetailRow label="账变性质"><StatusBadge tone="orange">手续费账变</StatusBadge></AccountLedgerDetailRow> : null}
+        <AccountLedgerDetailRow label="变动方向">
+          <StatusBadge tone={isIncrease ? 'green' : 'red'}>{isIncrease ? '增加' : '减少'}</StatusBadge>
+        </AccountLedgerDetailRow>
+        <AccountLedgerDetailRow label="变动金额">
+          <span className={`font-mono text-[15px] font-bold ${isIncrease ? 'text-[#169b57]' : 'text-[#e34856]'}`}>{formatAccountLedgerChange(record)}</span>
+        </AccountLedgerDetailRow>
+        <AccountLedgerDetailRow label="交易前余额" value={`${formatAccountLedgerValue(record.beforeBalance, record.currency)} ${record.currency}`} strong />
+        <AccountLedgerDetailRow label="交易后余额" value={`${formatAccountLedgerValue(record.afterBalance, record.currency)} ${record.currency}`} strong />
+        {record.fee > 0 ? (
+          <AccountLedgerDetailRow label="手续费">
+            <div className="flex flex-wrap items-center gap-[10px]">
+              <span>{formatAccountLedgerValue(record.fee, record.currency)} {record.currency}</span>
+              {feeLedgerRecord ? (
+                <button type="button" onClick={() => onSelectLedger(feeLedgerRecord)} className="inline-flex items-center gap-[4px] text-[12px] font-semibold text-[#8b4fff] hover:underline">
+                  查看手续费账变
+                  <ArrowUpRight className="h-[13px] w-[13px]" />
+                </button>
+              ) : null}
+            </div>
+          </AccountLedgerDetailRow>
+        ) : !record.isFeeLedger ? (
+          <AccountLedgerDetailRow label="手续费"><StatusBadge tone="green">免费</StatusBadge></AccountLedgerDetailRow>
+        ) : null}
+        <AccountLedgerDetailRow label="备注说明" value={record.remark} />
+        <AccountLedgerDetailRow label="账变时间" value={record.createdAt} />
+        <AccountLedgerDetailRow label="完成时间" value={record.completedAt} />
+      </div>
+
+      <div className="mt-[20px] border-t border-[#e2e4ec] pt-[16px]">
+        <div className="flex items-center justify-between gap-[12px]">
+          <div>
+            <div className="text-[14px] font-semibold text-[#20213a]">关联账变</div>
+            <div className="mt-[3px] text-[11px] text-[#85869a]">同一业务交易编号下的其他余额变动记录</div>
+          </div>
+          <StatusBadge tone={relatedLedgerRecords.length ? 'violet' : 'gray'}>{relatedLedgerRecords.length} 条</StatusBadge>
+        </div>
+        {relatedLedgerRecords.length ? (
+          <div className="mt-[11px] divide-y divide-[#ececf2] border-y border-[#ececf2]">
+            {relatedLedgerRecords.map((related) => {
+              const relatedIsIncrease = related.amount >= 0
+              const relatedAsset = related.assetClass === 'digital'
+                ? `${related.currency} / ${related.network}`
+                : `${related.accountType} / ${related.currency}`
+              return (
+                <button
+                  type="button"
+                  key={related.id}
+                  onClick={() => onSelectLedger(related)}
+                  className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-[12px] py-[11px] text-left hover:bg-[#fbfaff]"
+                  aria-label={`查看关联账变 ${related.id}`}
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-mono text-[12px] font-semibold text-[#20213a]">{related.id}</span>
+                    <span className="mt-[3px] block truncate text-[11px] text-[#77788d]">{related.transactionType} · {relatedAsset}</span>
+                  </span>
+                  <span className="flex items-center gap-[8px]">
+                    <span className={`font-mono text-[12px] font-bold ${relatedIsIncrease ? 'text-[#169b57]' : 'text-[#e34856]'}`}>{formatAccountLedgerChange(related)}</span>
+                    <Eye className="h-[14px] w-[14px] text-[#8b4fff]" />
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="mt-[11px] rounded-[4px] bg-[#f7f8fb] px-[12px] py-[11px] text-[12px] text-[#77788d]">该业务当前仅产生一条账变记录。</div>
+        )}
+      </div>
+    </DrawerShell>
+  )
+}
+
+function exportAccountLedgerRows(rows, assetClass) {
+  const isFiat = assetClass === 'fiat'
+  const headers = [
+    '账变时间',
+    '业务交易编号',
+    '账变流水号',
+    '用户姓名',
+    '用户ID',
+    '用户邮箱',
+    '交易类型',
+    ...(isFiat ? ['账户类型'] : []),
+    '内部账户ID',
+    '币种',
+    ...(!isFiat ? ['网络'] : []),
+    '变动方向',
+    '变动金额',
+    '交易前余额',
+    '交易后余额',
+    '手续费',
+    '备注说明',
+  ]
+  const dataRows = rows.map((record) => [
+    record.createdAt,
+    record.businessNo,
+    record.id,
+    record.userName,
+    record.userId,
+    record.userEmail,
+    record.transactionType,
+    ...(isFiat ? [record.accountType] : []),
+    getAccountLedgerAccountId(record),
+    record.currency,
+    ...(!isFiat ? [record.network] : []),
+    record.amount >= 0 ? '增加' : '减少',
+    formatAccountLedgerChange(record),
+    formatAccountLedgerValue(record.beforeBalance, record.currency),
+    formatAccountLedgerValue(record.afterBalance, record.currency),
+    record.fee > 0 ? `${formatAccountLedgerValue(record.fee, record.currency)} ${record.currency}` : '免费',
+    record.remark,
+  ])
+  const escapeCell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`
+  const csv = [headers, ...dataRows].map((row) => row.map(escapeCell).join(',')).join('\n')
+  const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = `${isFiat ? '法币' : '数字资产'}账变流水-当前筛选结果.csv`
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+export function AccountLedgerPage() {
+  const [assetTab, setAssetTab] = useState('fiat')
+  const [draftFilters, setDraftFilters] = useState(createEmptyAccountLedgerFilters)
+  const [appliedFilters, setAppliedFilters] = useState(createEmptyAccountLedgerFilters)
+  const [page, setPage] = useState(1)
+  const [selectedRecord, setSelectedRecord] = useState(null)
+  const [exportMessage, setExportMessage] = useState('')
+  const pageSize = 6
+
+  const tabRows = useMemo(() => accountLedgerRows.filter((record) => record.assetClass === assetTab), [assetTab])
+  const options = useMemo(() => ({
+    accountTypes: [...new Set(accountLedgerRows.filter((record) => record.assetClass === 'fiat').map((record) => record.accountType))],
+    networks: [...new Set(accountLedgerRows.filter((record) => record.assetClass === 'digital').map((record) => record.network))],
+  }), [])
+
+  const filteredRows = useMemo(() => tabRows.filter((record) => {
+    const recordDate = record.createdAt.slice(0, 10)
+    const transactionKeyword = appliedFilters.transactionNo.trim().toLowerCase()
+    const userKeyword = appliedFilters.userKeyword.trim().toLowerCase()
+
+    if (appliedFilters.startDate && recordDate < appliedFilters.startDate) return false
+    if (appliedFilters.endDate && recordDate > appliedFilters.endDate) return false
+    if (transactionKeyword && !`${record.id} ${record.businessNo}`.toLowerCase().includes(transactionKeyword)) return false
+    if (userKeyword && !`${record.userName} ${record.userEmail}`.toLowerCase().includes(userKeyword)) return false
+    if (assetTab === 'fiat' && appliedFilters.accountType && record.accountType !== appliedFilters.accountType) return false
+    if (assetTab === 'digital' && appliedFilters.network && record.network !== appliedFilters.network) return false
+    if (appliedFilters.direction === '增加' && record.amount < 0) return false
+    if (appliedFilters.direction === '减少' && record.amount >= 0) return false
+    return true
+  }), [appliedFilters, assetTab, tabRows])
+
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize))
+  const visibleRows = filteredRows.slice((page - 1) * pageSize, page * pageSize)
+  const increaseCount = filteredRows.filter((record) => record.amount >= 0).length
+  const decreaseCount = filteredRows.length - increaseCount
+  const isFiat = assetTab === 'fiat'
+
+  const updateDraft = (key, value) => setDraftFilters((current) => ({ ...current, [key]: value }))
+  const applyFilters = () => {
+    setAppliedFilters({ ...draftFilters })
+    setPage(1)
+    setExportMessage('')
+  }
+  const resetFilters = () => {
+    const empty = createEmptyAccountLedgerFilters()
+    setDraftFilters(empty)
+    setAppliedFilters(empty)
+    setPage(1)
+    setExportMessage('')
+  }
+  const changeTab = (nextTab) => {
+    setAssetTab(nextTab)
+    setDraftFilters(createEmptyAccountLedgerFilters())
+    setAppliedFilters(createEmptyAccountLedgerFilters())
+    setPage(1)
+    setSelectedRecord(null)
+    setExportMessage('')
+  }
+  const handleExport = () => {
+    exportAccountLedgerRows(filteredRows, assetTab)
+    setExportMessage(`已导出当前筛选结果，共 ${filteredRows.length} 条`)
+  }
+
+  return (
+    <AdminShell fluid>
+      <Panel className="px-[18px] py-[22px]">
+        <div className="flex items-start justify-between gap-[24px]">
+          <PageTitle title="账变流水" subtitle="查询平台内所有引起用户余额变化的明细，账变记录与原始业务订单相互独立。" />
+          <button
+            type="button"
+            disabled={!filteredRows.length}
+            onClick={handleExport}
+            className="inline-flex h-[36px] items-center gap-[7px] rounded-[4px] border border-[#8b4fff] bg-white px-[14px] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <Download className="h-[15px] w-[15px]" />
+            导出当前结果
+          </button>
+        </div>
+        <div className="mt-[22px] flex gap-[28px] border-b border-[#e5e6ef]">
+          {[
+            ['fiat', '法币'],
+            ['digital', '数字资产'],
+          ].map(([key, label]) => (
+            <button
+              type="button"
+              key={key}
+              onClick={() => changeTab(key)}
+              className={`border-b-2 px-[8px] pb-[13px] text-[13px] font-semibold ${
+                assetTab === key ? 'border-[#8b4fff] text-[#8b4fff]' : 'border-transparent text-[#55566f] hover:text-[#8b4fff]'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </Panel>
+
+      <Panel className="mt-[18px] p-[18px]">
+        <div className="grid grid-cols-1 gap-x-[12px] gap-y-[14px] md:grid-cols-2 xl:grid-cols-4">
+          <AccountLedgerFilterInput label="开始时间" type="date" value={draftFilters.startDate} onChange={(value) => updateDraft('startDate', value)} />
+          <AccountLedgerFilterInput label="结束时间" type="date" value={draftFilters.endDate} onChange={(value) => updateDraft('endDate', value)} />
+          <AccountLedgerFilterInput label="交易编号" value={draftFilters.transactionNo} onChange={(value) => updateDraft('transactionNo', value)} placeholder="业务交易编号 / 账变流水号" />
+          <AccountLedgerFilterInput label="用户姓名/邮箱" value={draftFilters.userKeyword} onChange={(value) => updateDraft('userKeyword', value)} placeholder="输入姓名或邮箱" />
+          {isFiat ? (
+            <AccountLedgerFilterSelect label="账户类型" value={draftFilters.accountType} onChange={(value) => updateDraft('accountType', value)} options={options.accountTypes} allLabel="全部账户类型" />
+          ) : (
+            <AccountLedgerFilterSelect label="网络" value={draftFilters.network} onChange={(value) => updateDraft('network', value)} options={options.networks} allLabel="全部网络" />
+          )}
+          <AccountLedgerFilterSelect label="变动方向" value={draftFilters.direction} onChange={(value) => updateDraft('direction', value)} options={['增加', '减少']} allLabel="全部方向" />
+        </div>
+        <div className="mt-[16px] flex flex-wrap items-center justify-between gap-[12px] border-t border-[#ececf2] pt-[14px]">
+          <div className="text-[12px] text-[#77788d]">支持组合筛选；数字资产账变不关联香港、新加坡、巴林等法域账户。</div>
+          <div className="flex gap-[8px]">
+            <button type="button" onClick={resetFilters} className="inline-flex h-[34px] items-center gap-[6px] rounded-[4px] border border-[#cfd1dc] px-[13px] text-[12px] font-semibold text-[#55566f] hover:bg-[#f6f7fb]">
+              <RotateCcw className="h-[14px] w-[14px]" />
+              重置
+            </button>
+            <button type="button" onClick={applyFilters} className="inline-flex h-[34px] items-center gap-[6px] rounded-[4px] bg-[#8b4fff] px-[15px] text-[12px] font-semibold text-white hover:bg-[#7f42f2]">
+              <Search className="h-[14px] w-[14px]" />
+              查询
+            </button>
+          </div>
+        </div>
+      </Panel>
+
+      <Panel className="mt-[18px] overflow-hidden">
+        <div className="flex min-h-[58px] items-center justify-between gap-[16px] border-b border-[#e5e6ef] px-[16px]">
+          <div className="flex items-center gap-[14px] text-[12px]">
+            <span className="font-semibold text-[#20213a]">当前结果 {filteredRows.length} 条</span>
+            <span className="text-[#169b57]">增加 {increaseCount}</span>
+            <span className="text-[#e34856]">减少 {decreaseCount}</span>
+          </div>
+          {exportMessage ? <div className="text-[12px] font-semibold text-[#169b57]">{exportMessage}</div> : null}
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className={`border-separate border-spacing-0 text-left text-[12px] text-[#55566f] ${isFiat ? 'min-w-[1600px]' : 'min-w-[1490px]'}`}>
+            <thead>
+              <tr className="h-[50px] bg-[#f6f7fb] font-semibold text-[#22223d]">
+                <th className="sticky left-0 z-20 w-[150px] border-b border-[#e5e6ef] bg-[#f6f7fb] px-[14px]">账变时间</th>
+                <th className="w-[225px] border-b border-[#e5e6ef] px-[14px]">交易编号</th>
+                <th className="w-[200px] border-b border-[#e5e6ef] px-[14px]">用户</th>
+                <th className="w-[110px] border-b border-[#e5e6ef] px-[14px]">交易类型</th>
+                {isFiat ? <th className="w-[110px] border-b border-[#e5e6ef] px-[14px]">账户类型</th> : null}
+                <th className="w-[72px] border-b border-[#e5e6ef] px-[14px]">币种</th>
+                {!isFiat ? <th className="w-[90px] border-b border-[#e5e6ef] px-[14px]">网络</th> : null}
+                <th className="w-[125px] border-b border-[#e5e6ef] px-[14px]">变动金额</th>
+                <th className="w-[125px] border-b border-[#e5e6ef] px-[14px]">交易前余额</th>
+                <th className="w-[125px] border-b border-[#e5e6ef] px-[14px]">交易后余额</th>
+                <th className="min-w-[210px] border-b border-[#e5e6ef] px-[14px]">备注说明</th>
+                <th className="sticky right-0 z-20 w-[82px] border-b border-l border-[#e5e6ef] bg-[#f6f7fb] px-[14px]">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleRows.map((record) => {
+                const isIncrease = record.amount >= 0
+                return (
+                  <tr key={record.id} className="h-[78px] bg-white hover:bg-[#fbfaff]">
+                    <td className="sticky left-0 z-10 border-b border-[#ececf2] bg-white px-[14px] tabular-nums text-[#4c4c68]">{record.createdAt}</td>
+                    <td className="border-b border-[#ececf2] px-[14px]">
+                      <div className="font-mono font-semibold text-[#20213a]">{record.businessNo}</div>
+                      <div className="mt-[4px] font-mono text-[11px] text-[#85869a]">账变：{record.id}</div>
+                    </td>
+                    <td className="border-b border-[#ececf2] px-[14px]">
+                      <div className="font-semibold text-[#20213a]">{record.userName}</div>
+                      <div className="mt-[3px] text-[11px] text-[#85869a]">ID: {record.userId} / {record.userEmail}</div>
+                    </td>
+                    <td className="border-b border-[#ececf2] px-[14px]"><StatusBadge tone="violet">{record.transactionType}</StatusBadge></td>
+                    {isFiat ? <td className="border-b border-[#ececf2] px-[14px] font-semibold text-[#4c4c68]">{record.accountType}</td> : null}
+                    <td className="border-b border-[#ececf2] px-[14px] font-semibold text-[#20213a]">{record.currency}</td>
+                    {!isFiat ? <td className="border-b border-[#ececf2] px-[14px]"><StatusBadge tone="gray">{record.network}</StatusBadge></td> : null}
+                    <td className={`border-b border-[#ececf2] px-[14px] font-mono text-[13px] font-bold ${isIncrease ? 'text-[#169b57]' : 'text-[#e34856]'}`}>{formatAccountLedgerChange(record)}</td>
+                    <td className="border-b border-[#ececf2] px-[14px] font-mono font-semibold tabular-nums text-[#4c4c68]">{formatAccountLedgerValue(record.beforeBalance, record.currency)}</td>
+                    <td className="border-b border-[#ececf2] px-[14px] font-mono font-semibold tabular-nums text-[#20213a]">{formatAccountLedgerValue(record.afterBalance, record.currency)}</td>
+                    <td className="border-b border-[#ececf2] px-[14px] leading-[19px] text-[#66677f]">{record.remark}</td>
+                    <td className="sticky right-0 z-10 border-b border-l border-[#ececf2] bg-white px-[14px]">
+                      <ActionButton icon={Eye} onClick={() => setSelectedRecord(record)}>查看</ActionButton>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+          {!visibleRows.length ? (
+            <div className="flex min-h-[250px] flex-col items-center justify-center bg-white px-[20px] text-center">
+              <ReceiptText className="h-[34px] w-[34px] text-[#b0b1bf]" strokeWidth={1.5} />
+              <div className="mt-[10px] text-[14px] font-semibold text-[#4c4c68]">暂无符合条件的账变流水</div>
+              <div className="mt-[5px] text-[12px] text-[#85869a]">请调整账变时间、账户或网络、变动方向或用户条件后重试。</div>
+              <button type="button" onClick={resetFilters} className="mt-[14px] h-[32px] rounded-[4px] border border-[#8b4fff] px-[13px] text-[12px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">重置筛选</button>
+            </div>
+          ) : null}
+        </div>
+        <AccountLedgerPagination page={page} pageCount={pageCount} total={filteredRows.length} pageSize={pageSize} onChange={setPage} />
+      </Panel>
+
+      <AccountLedgerDetailDrawer
+        record={selectedRecord}
+        onClose={() => setSelectedRecord(null)}
+        onSelectLedger={(record) => setSelectedRecord(record)}
+      />
+    </AdminShell>
+  )
+}
+
 function modeLabel(mode) {
   if (mode === 'percent') return '百分比'
   if (mode === 'fixed') return '固定金额'
@@ -6519,6 +7604,7 @@ export function BaasAdminReviewPrototype({ onBack }) {
       {activePage === 'opening-review' && reviewMode !== 'list' ? <OpeningReviewDetailPage mode={reviewMode} onBack={() => setReviewMode('list')} /> : null}
       {activePage === 'user-management' ? <UserManagementPage /> : null}
       {activePage === 'fiat-assets' ? <FiatAssetManagementPage /> : null}
+      {activePage === 'account-ledger' ? <AccountLedgerPage /> : null}
       {activePage === 'fee-config' ? <FeeConfigPage /> : null}
       <button
         type="button"

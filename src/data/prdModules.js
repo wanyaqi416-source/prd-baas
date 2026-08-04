@@ -126,6 +126,21 @@ export const prdModules = [
     moduleType: 'prototype',
     buttonLabel: '进入原型',
   },
+  {
+    id: 'account-ledger-prototype',
+    title: '账变流水',
+    subtitle: '平台用户余额变动明细管理端原型',
+    description:
+      '独立展示法币与数字资产账变流水，支持筛选、分页、导出、账前账后余额核对，以及查看关联业务交易。',
+    category: '原型',
+    status: 'Prototype',
+    phase: 'Prototype Draft',
+    route: '/admin/product-manual/account-ledger-prototype',
+    tags: ['账变流水', '账户与资金', '余额变动', '法币', '数字资产', '管理端'],
+    source: 'Current Project',
+    moduleType: 'prototype',
+    buttonLabel: '进入原型',
+  },
 ]
 
 export const baasPrototypeEntries = [

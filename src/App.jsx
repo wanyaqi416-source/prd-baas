@@ -397,6 +397,29 @@ function App() {
     )
   }
 
+  if (path === '/admin/product-manual/account-ledger-prototype') {
+    return (
+      <SecuritiesBrokerageAdminPrototype
+        onBack={() => navigate('/')}
+        brokerageApplications={brokerageApplications}
+        onUpdateBrokerageApplication={updateBrokerageApplication}
+        accountCurrencyConfigs={accountCurrencyConfigs}
+        onChangeAccountCurrencyConfigs={setAccountCurrencyConfigs}
+        brokerageConfigs={brokerageConfigs}
+        onChangeBrokerageConfigs={setBrokerageConfigs}
+        accountTypeConfigs={accountTypeConfigs}
+        onChangeAccountTypeConfigs={setAccountTypeConfigs}
+        userAccountConfigs={userAccountConfigs}
+        onChangeUserAccountConfigs={setUserAccountConfigs}
+        showAccountTypeConfig
+        guideMarkedPage="account-ledger"
+        defaultActivePage="account-ledger"
+        jurisdictionStatuses={otcJurisdictionStatuses}
+        onJurisdictionStatusesChange={setOtcJurisdictionStatuses}
+      />
+    )
+  }
+
   if (path === '/admin/product-manual/baas-system-reform') {
     return (
       <BaasSystemReformPage

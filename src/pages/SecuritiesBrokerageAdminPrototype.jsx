@@ -11,6 +11,7 @@ import {
   LineChart,
   ListChecks,
   Percent,
+  ReceiptText,
   Settings,
   ShieldCheck,
   ShoppingCart,
@@ -21,7 +22,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 
-import { BrokerageApplicationManagementPage, BrokerageManagementPage, FiatAssetManagementPage } from './BaasAdminReviewPrototype'
+import { AccountLedgerPage, BrokerageApplicationManagementPage, BrokerageManagementPage, FiatAssetManagementPage } from './BaasAdminReviewPrototype'
 import { AccountTypeConfigPage } from './AccountTypeConfigPage'
 import { UserManagementPage } from './JurisdictionUserManagementPage'
 import { SingaporeAccountOpeningReviewPage } from './SingaporeAccountOpeningReviewPage'
@@ -90,7 +91,11 @@ function SidebarGroup({ icon: Icon, label }) {
   )
 }
 
-function BrokerageAdminSidebar({ activePage, onSelect, showAccountTypeConfig = false }) {
+function BrokerageAdminSidebar({ activePage, onSelect, showAccountTypeConfig = false, guideMarkedPage }) {
+  const shouldMark = (page, markedByDefault = false) => (
+    guideMarkedPage ? guideMarkedPage === page : markedByDefault
+  )
+
   return (
     <aside className="fixed bottom-0 left-0 top-[64px] z-20 w-[220px] overflow-y-auto bg-[#f4f5fb] pr-[4px]">
       <nav className="pb-8 pt-[2px]">
@@ -98,8 +103,8 @@ function BrokerageAdminSidebar({ activePage, onSelect, showAccountTypeConfig = f
         <div className="mt-[10px] space-y-[4px]">
           <SidebarItem icon={BriefcaseBusiness} label="案件工作台" />
           <SidebarItem icon={WalletCards} label="券商开户管理" active={activePage === 'brokerage-applications'} onClick={() => onSelect('brokerage-applications')} />
-          {showAccountTypeConfig ? <SidebarItem icon={ListChecks} label="开户审核" marked active={activePage === 'account-opening-review'} onClick={() => onSelect('account-opening-review')} /> : <SidebarItem icon={ListChecks} label="开户审核" />}
-          <SidebarItem icon={UsersRound} label="用户管理" marked active={activePage === 'user-management'} onClick={() => onSelect('user-management')} />
+          {showAccountTypeConfig ? <SidebarItem icon={ListChecks} label="开户审核" marked={shouldMark('account-opening-review', true)} active={activePage === 'account-opening-review'} onClick={() => onSelect('account-opening-review')} /> : <SidebarItem icon={ListChecks} label="开户审核" />}
+          <SidebarItem icon={UsersRound} label="用户管理" marked={shouldMark('user-management', true)} active={activePage === 'user-management'} onClick={() => onSelect('user-management')} />
           <SidebarItem icon={Gauge} label="处理中审核" />
           <SidebarItem icon={WalletCards} label="法币账户审核" />
           <SidebarItem icon={FileCheck2} label="数字资产地址审核" />
@@ -112,9 +117,10 @@ function BrokerageAdminSidebar({ activePage, onSelect, showAccountTypeConfig = f
           <SidebarItem icon={Gauge} label="概览" />
           <SidebarItem icon={UserRound} label="客户" />
           <SidebarItem icon={UserRound} label="资产中心" />
-          <SidebarItem icon={ShoppingCart} label="法币资产管理" marked active={activePage === 'fiat-assets'} onClick={() => onSelect('fiat-assets')} />
+          <SidebarItem icon={ShoppingCart} label="法币资产管理" marked={shouldMark('fiat-assets', true)} active={activePage === 'fiat-assets'} onClick={() => onSelect('fiat-assets')} />
+          <SidebarItem icon={ReceiptText} label="账变流水" marked={shouldMark('account-ledger')} active={activePage === 'account-ledger'} onClick={() => onSelect('account-ledger')} />
           <SidebarItem icon={Coins} label="券商管理" active={activePage === 'brokerage-management'} onClick={() => onSelect('brokerage-management')} />
-          {showAccountTypeConfig ? <SidebarItem icon={WalletCards} label="账户类型配置" marked active={activePage === 'account-type-config'} onClick={() => onSelect('account-type-config')} /> : null}
+          {showAccountTypeConfig ? <SidebarItem icon={WalletCards} label="账户类型配置" marked={shouldMark('account-type-config', true)} active={activePage === 'account-type-config'} onClick={() => onSelect('account-type-config')} /> : null}
           <SidebarItem icon={CircleDot} label="数字资产管理" />
           <SidebarItem icon={LineChart} label="理财产品" />
           <SidebarItem icon={CircleDot} label="交易管理" />
@@ -138,6 +144,7 @@ export function SecuritiesBrokerageAdminPrototype({
   userAccountConfigs = initialUserAccountConfigs,
   onChangeUserAccountConfigs,
   showAccountTypeConfig = false,
+  guideMarkedPage,
   defaultActivePage = 'brokerage-applications',
   defaultFiatTab = '总览',
   jurisdictionStatuses,
@@ -164,7 +171,12 @@ export function SecuritiesBrokerageAdminPrototype({
   return (
     <div className="min-h-screen bg-[#f4f5fb] font-sans text-[#24243d]">
       <BrokerageAdminHeader onBack={onBack} />
-      <BrokerageAdminSidebar activePage={activePage} onSelect={selectPage} showAccountTypeConfig={showAccountTypeConfig} />
+      <BrokerageAdminSidebar
+        activePage={activePage}
+        onSelect={selectPage}
+        showAccountTypeConfig={showAccountTypeConfig}
+        guideMarkedPage={guideMarkedPage}
+      />
       {activePage === 'brokerage-applications' ? (
         <BrokerageApplicationManagementPage
           applications={brokerageApplications}
@@ -194,6 +206,7 @@ export function SecuritiesBrokerageAdminPrototype({
         />
       ) : null}
       {activePage === 'fiat-assets' ? <FiatAssetManagementPage initialTab={defaultFiatTab} /> : null}
+      {activePage === 'account-ledger' ? <AccountLedgerPage /> : null}
       {activePage === 'brokerage-management' ? (
         <BrokerageManagementPage
           brokers={effectiveBrokerageConfigs}
