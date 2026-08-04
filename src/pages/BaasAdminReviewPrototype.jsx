@@ -6916,6 +6916,7 @@ function createEmptyAccountLedgerFilters() {
     endDate: '',
     transactionNo: '',
     userKeyword: '',
+    transactionType: '',
     accountType: '',
     network: '',
     direction: '',
@@ -7221,6 +7222,8 @@ export function AccountLedgerPage() {
 
   const tabRows = useMemo(() => accountLedgerRows.filter((record) => record.assetClass === assetTab), [assetTab])
   const options = useMemo(() => ({
+    fiatTransactionTypes: [...new Set(accountLedgerRows.filter((record) => record.assetClass === 'fiat').map((record) => record.transactionType))],
+    digitalTransactionTypes: [...new Set(accountLedgerRows.filter((record) => record.assetClass === 'digital').map((record) => record.transactionType))],
     accountTypes: [...new Set(accountLedgerRows.filter((record) => record.assetClass === 'fiat').map((record) => record.accountType))],
     networks: [...new Set(accountLedgerRows.filter((record) => record.assetClass === 'digital').map((record) => record.network))],
   }), [])
@@ -7234,6 +7237,7 @@ export function AccountLedgerPage() {
     if (appliedFilters.endDate && recordDate > appliedFilters.endDate) return false
     if (transactionKeyword && !`${record.id} ${record.businessNo}`.toLowerCase().includes(transactionKeyword)) return false
     if (userKeyword && !`${record.userName} ${record.userEmail}`.toLowerCase().includes(userKeyword)) return false
+    if (appliedFilters.transactionType && record.transactionType !== appliedFilters.transactionType) return false
     if (assetTab === 'fiat' && appliedFilters.accountType && record.accountType !== appliedFilters.accountType) return false
     if (assetTab === 'digital' && appliedFilters.network && record.network !== appliedFilters.network) return false
     if (appliedFilters.direction === '增加' && record.amount < 0) return false
@@ -7318,6 +7322,13 @@ export function AccountLedgerPage() {
           ) : (
             <AccountLedgerFilterSelect label="网络" value={draftFilters.network} onChange={(value) => updateDraft('network', value)} options={options.networks} allLabel="全部网络" />
           )}
+          <AccountLedgerFilterSelect
+            label="交易类型"
+            value={draftFilters.transactionType}
+            onChange={(value) => updateDraft('transactionType', value)}
+            options={isFiat ? options.fiatTransactionTypes : options.digitalTransactionTypes}
+            allLabel="全部交易类型"
+          />
           <AccountLedgerFilterSelect label="变动方向" value={draftFilters.direction} onChange={(value) => updateDraft('direction', value)} options={['增加', '减少']} allLabel="全部方向" />
         </div>
         <div className="mt-[16px] flex flex-wrap items-center justify-between gap-[12px] border-t border-[#ececf2] pt-[14px]">
@@ -7397,7 +7408,7 @@ export function AccountLedgerPage() {
             <div className="flex min-h-[250px] flex-col items-center justify-center bg-white px-[20px] text-center">
               <ReceiptText className="h-[34px] w-[34px] text-[#b0b1bf]" strokeWidth={1.5} />
               <div className="mt-[10px] text-[14px] font-semibold text-[#4c4c68]">暂无符合条件的账变流水</div>
-              <div className="mt-[5px] text-[12px] text-[#85869a]">请调整账变时间、账户或网络、变动方向或用户条件后重试。</div>
+              <div className="mt-[5px] text-[12px] text-[#85869a]">请调整账变时间、交易类型、账户或网络、变动方向或用户条件后重试。</div>
               <button type="button" onClick={resetFilters} className="mt-[14px] h-[32px] rounded-[4px] border border-[#8b4fff] px-[13px] text-[12px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">重置筛选</button>
             </div>
           ) : null}
