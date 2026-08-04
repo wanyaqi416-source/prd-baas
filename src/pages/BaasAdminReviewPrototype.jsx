@@ -1257,24 +1257,6 @@ const accountLedgerRows = [
     completedAt: '2026-07-31 15:22:13',
   },
   {
-    id: 'FL-20260731-0014',
-    assetClass: 'fiat',
-    businessNo: 'REV-20260731-0006',
-    userName: 'WANYARA WAN',
-    userId: '154',
-    userEmail: 'xr3kes66@123mails.org',
-    transactionType: '冲正',
-    accountType: '香港账户',
-    currency: 'USD',
-    amount: 2,
-    beforeBalance: 48,
-    afterBalance: 50,
-    fee: 0,
-    remark: '冲正错误费用扣除',
-    createdAt: '2026-07-31 11:07:58',
-    completedAt: '2026-07-31 11:07:58',
-  },
-  {
     id: 'FL-20260730-0015',
     assetClass: 'fiat',
     businessNo: 'YLD-20260730-0042',
@@ -1510,24 +1492,6 @@ const accountLedgerRows = [
     remark: '转出失败资产退回',
     createdAt: '2026-07-31 10:41:23',
     completedAt: '2026-07-31 10:41:23',
-  },
-  {
-    id: 'DL-20260730-0010',
-    assetClass: 'digital',
-    businessNo: 'REV-20260730-0003',
-    userName: 'WANYARA WAN',
-    userId: '154',
-    userEmail: 'xr3kes66@123mails.org',
-    transactionType: '冲正',
-    currency: 'ETH',
-    network: 'Ethereum',
-    amount: 0.2,
-    beforeBalance: 1.1,
-    afterBalance: 1.3,
-    fee: 0,
-    remark: '冲正重复转出记录',
-    createdAt: '2026-07-30 14:05:09',
-    completedAt: '2026-07-30 14:05:09',
   },
   {
     id: 'DL-20260729-0011',
@@ -6927,22 +6891,6 @@ function getAccountLedgerPrecision(currency) {
   return accountLedgerPrecision[currency] ?? 2
 }
 
-function getAccountLedgerAccountId(record) {
-  const userCode = String(record.userId).padStart(6, '0')
-  if (record.assetClass === 'digital') {
-    return `DA-${userCode}-${record.currency}-${record.network || 'MAIN'}`
-  }
-
-  const accountCode = {
-    香港账户: 'HK',
-    新加坡账户: 'SG',
-    美国账户: 'US',
-    巴林账户: 'BH',
-  }[record.accountType] || 'OT'
-
-  return `FA-${userCode}-${accountCode}-01`
-}
-
 function formatAccountLedgerValue(value, currency) {
   return Number(value).toLocaleString('en-US', {
     minimumFractionDigits: getAccountLedgerPrecision(currency),
@@ -7059,21 +7007,7 @@ function AccountLedgerDetailDrawer({ record, onClose, onSelectLedger }) {
         <button type="button" onClick={onClose} className="h-[38px] w-full rounded-[4px] border border-[#cfd1dc] text-[13px] font-semibold text-[#55566f] hover:bg-[#f6f7fb]">关闭</button>
       )}
     >
-      <div className="rounded-[5px] border border-[#e2e4ec] bg-[#f8f9fc] px-[14px] py-[13px]">
-        <div className="text-[11px] font-semibold uppercase text-[#8a8ca0]">余额变动恒等式</div>
-        <div className="mt-[4px] text-[11px] text-[#85869a]">
-          {isIncrease ? '前余额 + 变动金额 = 后余额' : '前余额 - 变动金额绝对值 = 后余额'}
-        </div>
-        <div className="mt-[8px] flex flex-wrap items-baseline gap-[7px] font-mono text-[14px] font-semibold text-[#20213a]">
-          <span>{formatAccountLedgerValue(record.beforeBalance, record.currency)}</span>
-          <span className={isIncrease ? 'text-[#169b57]' : 'text-[#e34856]'}>{isIncrease ? '+' : '-'}</span>
-          <span className={isIncrease ? 'text-[#169b57]' : 'text-[#e34856]'}>{formatAccountLedgerValue(Math.abs(record.amount), record.currency)}</span>
-          <span>=</span>
-          <span>{formatAccountLedgerValue(record.afterBalance, record.currency)} {record.currency}</span>
-        </div>
-      </div>
-
-      <div className="mt-[14px]">
+      <div>
         <AccountLedgerDetailRow label="账变流水号" value={record.id} strong />
         <AccountLedgerDetailRow label="业务交易编号" value={record.businessNo} strong />
         <AccountLedgerDetailRow label="用户信息">
@@ -7083,7 +7017,6 @@ function AccountLedgerDetailDrawer({ record, onClose, onSelectLedger }) {
         <AccountLedgerDetailRow label="交易类型" value={record.transactionType} />
         <AccountLedgerDetailRow label="资产分类" value={isDigital ? '数字资产' : '法币'} />
         {!isDigital ? <AccountLedgerDetailRow label="账户类型" value={record.accountType} /> : null}
-        <AccountLedgerDetailRow label="内部账户 ID" value={getAccountLedgerAccountId(record)} strong />
         <AccountLedgerDetailRow label="币种" value={record.currency} />
         {isDigital ? <AccountLedgerDetailRow label="网络" value={record.network} /> : null}
         {record.isFeeLedger ? <AccountLedgerDetailRow label="账变性质"><StatusBadge tone="orange">手续费账变</StatusBadge></AccountLedgerDetailRow> : null}
@@ -7169,7 +7102,6 @@ function exportAccountLedgerRows(rows, assetClass) {
     '用户邮箱',
     '交易类型',
     ...(isFiat ? ['账户类型'] : []),
-    '内部账户ID',
     '币种',
     ...(!isFiat ? ['网络'] : []),
     '变动方向',
@@ -7188,7 +7120,6 @@ function exportAccountLedgerRows(rows, assetClass) {
     record.userEmail,
     record.transactionType,
     ...(isFiat ? [record.accountType] : []),
-    getAccountLedgerAccountId(record),
     record.currency,
     ...(!isFiat ? [record.network] : []),
     record.amount >= 0 ? '增加' : '减少',
@@ -7247,8 +7178,6 @@ export function AccountLedgerPage() {
 
   const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize))
   const visibleRows = filteredRows.slice((page - 1) * pageSize, page * pageSize)
-  const increaseCount = filteredRows.filter((record) => record.amount >= 0).length
-  const decreaseCount = filteredRows.length - increaseCount
   const isFiat = assetTab === 'fiat'
 
   const updateDraft = (key, value) => setDraftFilters((current) => ({ ...current, [key]: value }))
@@ -7347,14 +7276,11 @@ export function AccountLedgerPage() {
       </Panel>
 
       <Panel className="mt-[18px] overflow-hidden">
-        <div className="flex min-h-[58px] items-center justify-between gap-[16px] border-b border-[#e5e6ef] px-[16px]">
-          <div className="flex items-center gap-[14px] text-[12px]">
-            <span className="font-semibold text-[#20213a]">当前结果 {filteredRows.length} 条</span>
-            <span className="text-[#169b57]">增加 {increaseCount}</span>
-            <span className="text-[#e34856]">减少 {decreaseCount}</span>
+        {exportMessage ? (
+          <div className="flex min-h-[44px] items-center justify-end border-b border-[#e5e6ef] px-[16px] text-[12px] font-semibold text-[#169b57]" aria-live="polite">
+            {exportMessage}
           </div>
-          {exportMessage ? <div className="text-[12px] font-semibold text-[#169b57]">{exportMessage}</div> : null}
-        </div>
+        ) : null}
 
         <div className="overflow-x-auto">
           <table className={`border-separate border-spacing-0 text-left text-[12px] text-[#55566f] ${isFiat ? 'min-w-[1600px]' : 'min-w-[1490px]'}`}>
