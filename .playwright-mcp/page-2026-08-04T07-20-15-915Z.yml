@@ -1,0 +1,221 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - button "FIDERE TRUST" [ref=e5] [cursor=pointer]
+  - complementary [ref=e29]:
+    - navigation [ref=e30]:
+      - generic [ref=e31]: KYC审核
+      - generic [ref=e38]:
+        - button "案件工作台" [ref=e39] [cursor=pointer]
+        - button "券商开户管理" [ref=e45] [cursor=pointer]
+        - button "开户审核" [ref=e51] [cursor=pointer]
+        - button "用户管理" [ref=e56] [cursor=pointer]
+        - button "处理中审核" [ref=e62] [cursor=pointer]
+        - button "法币账户审核" [ref=e67] [cursor=pointer]
+        - button "数字资产地址审核" [ref=e73] [cursor=pointer]
+        - button "信托管理" [ref=e79] [cursor=pointer]
+        - button "审核日志" [ref=e84] [cursor=pointer]
+      - generic [ref=e89]: 运营
+      - generic [ref=e96]:
+        - button "概览" [ref=e97] [cursor=pointer]
+        - button "客户" [ref=e102] [cursor=pointer]
+        - button "资产中心" [ref=e107] [cursor=pointer]
+        - button "法币资产管理" [ref=e112] [cursor=pointer]
+        - button "账变流水 ?" [ref=e118] [cursor=pointer]:
+          - generic [ref=e121]: 账变流水
+          - generic [ref=e122]: "?"
+        - button "券商管理" [ref=e123] [cursor=pointer]
+        - button "账户类型配置" [ref=e130] [cursor=pointer]
+        - button "数字资产管理" [ref=e136] [cursor=pointer]
+        - button "理财产品" [ref=e141] [cursor=pointer]
+        - button "交易管理" [ref=e146] [cursor=pointer]
+        - button "提现服务费配置" [ref=e151] [cursor=pointer]
+  - main [ref=e157]:
+    - generic [ref=e158]:
+      - generic [ref=e160]:
+        - generic [ref=e161]:
+          - heading "账变流水" [level=1] [ref=e162]
+          - paragraph [ref=e163]: 统一查询法币与数字资产的余额变动明细，并通过业务交易编号关联同一笔业务产生的多条账变。
+        - button "导出当前结果" [ref=e164] [cursor=pointer]
+      - generic [ref=e168]:
+        - generic [ref=e169]:
+          - generic [ref=e170]:
+            - generic [ref=e171]: 开始时间
+            - textbox "开始时间" [ref=e172]
+          - generic [ref=e173]:
+            - generic [ref=e174]: 结束时间
+            - textbox "结束时间" [ref=e175]
+          - generic [ref=e176]:
+            - generic [ref=e177]: 交易编号
+            - textbox "交易编号" [ref=e178]:
+              - /placeholder: 业务交易编号 / 账变流水号
+          - generic [ref=e179]:
+            - generic [ref=e180]: 用户姓名/邮箱
+            - textbox "用户姓名/邮箱" [ref=e181]:
+              - /placeholder: 输入姓名或邮箱
+          - generic [ref=e182]:
+            - generic [ref=e183]: 交易类型
+            - combobox "交易类型" [ref=e184]:
+              - option "全部交易类型" [selected]
+              - option "OTC兑换"
+              - option "费用扣除"
+              - option "余额调整"
+              - option "法币入金"
+              - option "法币出金"
+              - option "手续费扣除"
+              - option "资金互转"
+              - option "用户间转账"
+              - option "手动入金"
+              - option "手动出金"
+              - option "开户费扣除"
+              - option "退款"
+              - option "收益发放"
+              - option "数字资产转入"
+              - option "数字资产转出"
+              - option "归集"
+          - generic [ref=e185]:
+            - generic [ref=e186]: 变动方向
+            - combobox "变动方向" [ref=e187]:
+              - option "全部方向" [selected]
+              - option "增加"
+              - option "减少"
+        - generic [ref=e188]:
+          - generic [ref=e189]: 法币与数字资产账变统一展示，同一笔业务可通过业务交易编号查看关联账变。
+          - generic [ref=e190]:
+            - button "重置" [ref=e191] [cursor=pointer]
+            - button "查询" [ref=e195] [cursor=pointer]
+      - generic [ref=e199]:
+        - table [ref=e201]:
+          - rowgroup [ref=e202]:
+            - row [ref=e203]:
+              - columnheader "账变时间" [ref=e204]
+              - columnheader "交易编号" [ref=e205]
+              - columnheader "用户" [ref=e206]
+              - columnheader "交易类型" [ref=e207]
+              - columnheader "账户类型" [ref=e208]
+              - columnheader "币种" [ref=e209]
+              - columnheader "网络" [ref=e210]
+              - columnheader "变动金额" [ref=e211]
+              - columnheader "交易前余额" [ref=e212]
+              - columnheader "交易后余额" [ref=e213]
+              - columnheader "备注说明" [ref=e214]
+              - columnheader "操作" [ref=e215]
+          - rowgroup [ref=e216]:
+            - row [ref=e217]:
+              - cell "2026-08-04 10:32:16" [ref=e218]
+              - cell "OTC-20260804-0001 账变：DL-20260804-0001" [ref=e219]:
+                - generic [ref=e220]: OTC-20260804-0001
+                - generic [ref=e221]: 账变：DL-20260804-0001
+              - 'cell "YAQI WAN ID: 6 / wanyaqi416@gmail.com" [ref=e222]':
+                - generic [ref=e223]: YAQI WAN
+                - generic [ref=e224]: "ID: 6 / wanyaqi416@gmail.com"
+              - cell "OTC兑换" [ref=e225]
+              - cell "数字资产" [ref=e227]
+              - cell "USDT" [ref=e228]
+              - cell "TRC20" [ref=e229]
+              - cell "-5.00 USDT" [ref=e231]
+              - cell "10.00" [ref=e232]
+              - cell "5.00" [ref=e233]
+              - cell "兑换为巴林账户 EUR 4.32" [ref=e234]
+              - cell [ref=e235]:
+                - button "查看" [ref=e236] [cursor=pointer]
+            - row [ref=e240]:
+              - cell "2026-08-04 10:32:16" [ref=e241]
+              - cell "OTC-20260804-0001 账变：FL-20260804-0001" [ref=e242]:
+                - generic [ref=e243]: OTC-20260804-0001
+                - generic [ref=e244]: 账变：FL-20260804-0001
+              - 'cell "YAQI WAN ID: 6 / wanyaqi416@gmail.com" [ref=e245]':
+                - generic [ref=e246]: YAQI WAN
+                - generic [ref=e247]: "ID: 6 / wanyaqi416@gmail.com"
+              - cell "OTC兑换" [ref=e248]
+              - cell "巴林账户" [ref=e250]
+              - cell "EUR" [ref=e251]
+              - cell "-" [ref=e252]
+              - cell "+4.32 EUR" [ref=e253]
+              - cell "100.00" [ref=e254]
+              - cell "104.32" [ref=e255]
+              - cell "OTC兑换到账，卖出 5 USDT（TRC20）" [ref=e256]
+              - cell [ref=e257]:
+                - button "查看" [ref=e258] [cursor=pointer]
+            - row [ref=e262]:
+              - cell "2026-08-04 09:48:03" [ref=e263]
+              - cell "FEE-20260804-0018 账变：FL-20260804-0002" [ref=e264]:
+                - generic [ref=e265]: FEE-20260804-0018
+                - generic [ref=e266]: 账变：FL-20260804-0002
+              - 'cell "WANYARA WAN ID: 154 / xr3kes66@123mails.org" [ref=e267]':
+                - generic [ref=e268]: WANYARA WAN
+                - generic [ref=e269]: "ID: 154 / xr3kes66@123mails.org"
+              - cell "费用扣除" [ref=e270]
+              - cell "香港账户" [ref=e272]
+              - cell "USD" [ref=e273]
+              - cell "-" [ref=e274]
+              - cell "-2.00 USD" [ref=e275]
+              - cell "50.00" [ref=e276]
+              - cell "48.00" [ref=e277]
+              - cell "第三方服务费补扣" [ref=e278]
+              - cell [ref=e279]:
+                - button "查看" [ref=e280] [cursor=pointer]
+            - row [ref=e284]:
+              - cell "2026-08-04 08:22:05" [ref=e285]
+              - cell "DIN-20260804-0076 账变：DL-20260804-0002" [ref=e286]:
+                - generic [ref=e287]: DIN-20260804-0076
+                - generic [ref=e288]: 账变：DL-20260804-0002
+              - 'cell "WANYARA WAN ID: 154 / xr3kes66@123mails.org" [ref=e289]':
+                - generic [ref=e290]: WANYARA WAN
+                - generic [ref=e291]: "ID: 154 / xr3kes66@123mails.org"
+              - cell "数字资产转入" [ref=e292]
+              - cell "数字资产" [ref=e294]
+              - cell "USDT" [ref=e295]
+              - cell "ERC20" [ref=e296]
+              - cell "+250.00 USDT" [ref=e298]
+              - cell "300.00" [ref=e299]
+              - cell "550.00" [ref=e300]
+              - cell "链上充值确认完成" [ref=e301]
+              - cell [ref=e302]:
+                - button "查看" [ref=e303] [cursor=pointer]
+            - row [ref=e307]:
+              - cell "2026-08-03 19:08:45" [ref=e308]
+              - cell "DOUT-20260803-0035 账变：DL-20260803-0013" [ref=e309]:
+                - generic [ref=e310]: DOUT-20260803-0035
+                - generic [ref=e311]: 账变：DL-20260803-0013
+              - 'cell "PERUMILY HU ID: 34 / perumily2@mediaholy.com" [ref=e312]':
+                - generic [ref=e313]: PERUMILY HU
+                - generic [ref=e314]: "ID: 34 / perumily2@mediaholy.com"
+              - cell "手续费扣除" [ref=e315]
+              - cell "数字资产" [ref=e317]
+              - cell "ETH" [ref=e318]
+              - cell "Ethereum" [ref=e319]
+              - cell "-0.003000 ETH" [ref=e321]
+              - cell "3.250000" [ref=e322]
+              - cell "3.247000" [ref=e323]
+              - cell "ETH 链上转出网络手续费" [ref=e324]
+              - cell [ref=e325]:
+                - button "查看" [ref=e326] [cursor=pointer]
+            - row [ref=e330]:
+              - cell "2026-08-03 19:08:44" [ref=e331]
+              - cell "DOUT-20260803-0035 账变：DL-20260803-0003" [ref=e332]:
+                - generic [ref=e333]: DOUT-20260803-0035
+                - generic [ref=e334]: 账变：DL-20260803-0003
+              - 'cell "PERUMILY HU ID: 34 / perumily2@mediaholy.com" [ref=e335]':
+                - generic [ref=e336]: PERUMILY HU
+                - generic [ref=e337]: "ID: 34 / perumily2@mediaholy.com"
+              - cell "数字资产转出" [ref=e338]
+              - cell "数字资产" [ref=e340]
+              - cell "ETH" [ref=e341]
+              - cell "Ethereum" [ref=e342]
+              - cell "-1.250000 ETH" [ref=e344]
+              - cell "4.500000" [ref=e345]
+              - cell "3.250000" [ref=e346]
+              - cell "转出 1.25 ETH，网络费单独记账" [ref=e347]
+              - cell [ref=e348]:
+                - button "查看" [ref=e349] [cursor=pointer]
+        - generic [ref=e353]:
+          - generic [ref=e354]: 显示 1-6 条，共 26 条
+          - generic [ref=e355]:
+            - button "上一页" [disabled] [ref=e356]
+            - button "1" [ref=e359] [cursor=pointer]
+            - button "2" [ref=e360] [cursor=pointer]
+            - button "3" [ref=e361] [cursor=pointer]
+            - button "4" [ref=e362] [cursor=pointer]
+            - button "5" [ref=e363] [cursor=pointer]
+            - button "下一页" [ref=e364] [cursor=pointer]
+  - button "后台设置" [ref=e367] [cursor=pointer]

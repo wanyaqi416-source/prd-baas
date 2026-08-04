@@ -6936,7 +6936,7 @@ function AccountLedgerDetailRow({ label, value, strong = false, children }) {
   )
 }
 
-function AccountLedgerDetailDrawer({ record, onClose, onSelectLedger }) {
+function AccountLedgerDetailDrawer({ record, onClose, onSelectLedger, onOpenTransaction }) {
   if (!record) return null
 
   const isIncrease = record.amount >= 0
@@ -6950,7 +6950,13 @@ function AccountLedgerDetailDrawer({ record, onClose, onSelectLedger }) {
       eyebrow={record.id}
       onClose={onClose}
       footer={(
-        <button type="button" onClick={onClose} className="h-[38px] w-full rounded-[4px] border border-[#cfd1dc] text-[13px] font-semibold text-[#55566f] hover:bg-[#f6f7fb]">关闭</button>
+        <div className="grid grid-cols-[1fr_1.3fr] gap-[8px]">
+          <button type="button" onClick={onClose} className="h-[38px] rounded-[4px] border border-[#cfd1dc] text-[13px] font-semibold text-[#55566f] hover:bg-[#f6f7fb]">关闭</button>
+          <button type="button" onClick={() => onOpenTransaction(record)} className="inline-flex h-[38px] items-center justify-center gap-[7px] rounded-[4px] bg-[#8b4fff] text-[13px] font-semibold text-white hover:bg-[#7f42f2]">
+            <ArrowUpRight className="h-[15px] w-[15px]" />
+            查看关联交易
+          </button>
+        </div>
       )}
     >
       <div>
@@ -7037,8 +7043,43 @@ function AccountLedgerDetailDrawer({ record, onClose, onSelectLedger }) {
   )
 }
 
+function RelatedLedgerTransactionDrawer({ record, onClose, onBack }) {
+  if (!record) return null
+
+  const relatedLedgerCount = accountLedgerRows.filter((item) => item.businessNo === record.businessNo).length
+
+  return (
+    <DrawerShell
+      title={`${record.transactionType}关联交易`}
+      eyebrow={record.businessNo}
+      onClose={onClose}
+      footer={(
+        <div className="grid grid-cols-2 gap-[8px]">
+          <button type="button" onClick={onBack} className="h-[38px] rounded-[4px] border border-[#8b4fff] text-[13px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">返回账变详情</button>
+          <button type="button" onClick={onClose} className="h-[38px] rounded-[4px] bg-[#8b4fff] text-[13px] font-semibold text-white hover:bg-[#7f42f2]">关闭</button>
+        </div>
+      )}
+    >
+      <div className="rounded-[5px] bg-[#e9f8ee] px-[14px] py-[12px] text-[13px] leading-[21px] text-[#18794e]">
+        已按业务交易编号定位原始业务，同一笔业务共关联 {relatedLedgerCount} 条账变记录。
+      </div>
+      <div className="mt-[14px]">
+        <AccountLedgerDetailRow label="业务交易编号" value={record.businessNo} strong />
+        <AccountLedgerDetailRow label="交易类型" value={record.transactionType} />
+        <AccountLedgerDetailRow label="用户信息" value={`${record.userName} / ID: ${record.userId}`} />
+        <AccountLedgerDetailRow label="交易状态"><StatusBadge tone="green">已完成</StatusBadge></AccountLedgerDetailRow>
+        <AccountLedgerDetailRow label="关联账变数量" value={`${relatedLedgerCount} 条`} />
+        <AccountLedgerDetailRow label="当前资产" value={record.assetClass === 'digital' ? `${record.currency} / ${record.network}` : `${record.accountType} / ${record.currency}`} />
+        <AccountLedgerDetailRow label="交易摘要" value={record.remark} />
+        <AccountLedgerDetailRow label="完成时间" value={record.completedAt} />
+      </div>
+    </DrawerShell>
+  )
+}
+
 function exportAccountLedgerRows(rows, assetClass) {
   const isFiat = assetClass === 'fiat'
+  const isAll = assetClass === 'all'
   const headers = [
     '账变时间',
     '业务交易编号',
@@ -7046,10 +7087,11 @@ function exportAccountLedgerRows(rows, assetClass) {
     '用户姓名',
     '用户ID',
     '用户邮箱',
+    '资产类型',
     '交易类型',
-    ...(isFiat ? ['账户类型'] : []),
+    ...(isAll || isFiat ? ['账户类型'] : []),
     '币种',
-    ...(!isFiat ? ['网络'] : []),
+    ...(isAll || !isFiat ? ['网络'] : []),
     '变动方向',
     '变动金额',
     '交易前余额',
@@ -7064,10 +7106,11 @@ function exportAccountLedgerRows(rows, assetClass) {
     record.userName,
     record.userId,
     record.userEmail,
+    record.assetClass === 'fiat' ? '法币' : '数字资产',
     record.transactionType,
-    ...(isFiat ? [record.accountType] : []),
+    ...(isAll || isFiat ? [record.assetClass === 'fiat' ? record.accountType : '数字资产'] : []),
     record.currency,
-    ...(!isFiat ? [record.network] : []),
+    ...(isAll || !isFiat ? [record.assetClass === 'digital' ? record.network : '-'] : []),
     record.amount >= 0 ? '增加' : '减少',
     formatAccountLedgerChange(record),
     formatAccountLedgerValue(record.beforeBalance, record.currency),
@@ -7081,7 +7124,8 @@ function exportAccountLedgerRows(rows, assetClass) {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = `${isFiat ? '法币' : '数字资产'}账变流水-当前筛选结果.csv`
+  const assetLabel = isAll ? '全部' : isFiat ? '法币' : '数字资产'
+  anchor.download = `${assetLabel}账变流水-当前筛选结果.csv`
   document.body.appendChild(anchor)
   anchor.click()
   anchor.remove()
@@ -7089,23 +7133,24 @@ function exportAccountLedgerRows(rows, assetClass) {
 }
 
 export function AccountLedgerPage() {
-  const [assetTab, setAssetTab] = useState('fiat')
   const [draftFilters, setDraftFilters] = useState(createEmptyAccountLedgerFilters)
   const [appliedFilters, setAppliedFilters] = useState(createEmptyAccountLedgerFilters)
   const [page, setPage] = useState(1)
   const [selectedRecord, setSelectedRecord] = useState(null)
+  const [relatedTransaction, setRelatedTransaction] = useState(null)
   const [exportMessage, setExportMessage] = useState('')
   const pageSize = 6
 
-  const tabRows = useMemo(() => accountLedgerRows.filter((record) => record.assetClass === assetTab), [assetTab])
-  const options = useMemo(() => ({
-    fiatTransactionTypes: [...new Set(accountLedgerRows.filter((record) => record.assetClass === 'fiat').map((record) => record.transactionType))],
-    digitalTransactionTypes: [...new Set(accountLedgerRows.filter((record) => record.assetClass === 'digital').map((record) => record.transactionType))],
-    accountTypes: [...new Set(accountLedgerRows.filter((record) => record.assetClass === 'fiat').map((record) => record.accountType))],
-    networks: [...new Set(accountLedgerRows.filter((record) => record.assetClass === 'digital').map((record) => record.network))],
-  }), [])
+  const ledgerRows = useMemo(() => (
+    [...accountLedgerRows].sort((left, right) => (
+      right.createdAt.localeCompare(left.createdAt)
+      || left.businessNo.localeCompare(right.businessNo)
+      || left.amount - right.amount
+    ))
+  ), [])
+  const transactionTypes = useMemo(() => [...new Set(accountLedgerRows.map((record) => record.transactionType))], [])
 
-  const filteredRows = useMemo(() => tabRows.filter((record) => {
+  const filteredRows = useMemo(() => ledgerRows.filter((record) => {
     const recordDate = record.createdAt.slice(0, 10)
     const transactionKeyword = appliedFilters.transactionNo.trim().toLowerCase()
     const userKeyword = appliedFilters.userKeyword.trim().toLowerCase()
@@ -7115,16 +7160,13 @@ export function AccountLedgerPage() {
     if (transactionKeyword && !`${record.id} ${record.businessNo}`.toLowerCase().includes(transactionKeyword)) return false
     if (userKeyword && !`${record.userName} ${record.userEmail}`.toLowerCase().includes(userKeyword)) return false
     if (appliedFilters.transactionType && record.transactionType !== appliedFilters.transactionType) return false
-    if (assetTab === 'fiat' && appliedFilters.accountType && record.accountType !== appliedFilters.accountType) return false
-    if (assetTab === 'digital' && appliedFilters.network && record.network !== appliedFilters.network) return false
     if (appliedFilters.direction === '增加' && record.amount < 0) return false
     if (appliedFilters.direction === '减少' && record.amount >= 0) return false
     return true
-  }), [appliedFilters, assetTab, tabRows])
+  }), [appliedFilters, ledgerRows])
 
   const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize))
   const visibleRows = filteredRows.slice((page - 1) * pageSize, page * pageSize)
-  const isFiat = assetTab === 'fiat'
 
   const updateDraft = (key, value) => setDraftFilters((current) => ({ ...current, [key]: value }))
   const applyFilters = () => {
@@ -7139,16 +7181,8 @@ export function AccountLedgerPage() {
     setPage(1)
     setExportMessage('')
   }
-  const changeTab = (nextTab) => {
-    setAssetTab(nextTab)
-    setDraftFilters(createEmptyAccountLedgerFilters())
-    setAppliedFilters(createEmptyAccountLedgerFilters())
-    setPage(1)
-    setSelectedRecord(null)
-    setExportMessage('')
-  }
   const handleExport = () => {
-    exportAccountLedgerRows(filteredRows, assetTab)
+    exportAccountLedgerRows(filteredRows, 'all')
     setExportMessage(`已导出当前筛选结果，共 ${filteredRows.length} 条`)
   }
 
@@ -7156,7 +7190,7 @@ export function AccountLedgerPage() {
     <AdminShell fluid>
       <Panel className="px-[18px] py-[22px]">
         <div className="flex items-start justify-between gap-[24px]">
-          <PageTitle title="账变流水" subtitle="查询平台内所有引起用户余额变化的明细，账变记录与原始业务订单相互独立。" />
+          <PageTitle title="账变流水" subtitle="统一查询法币与数字资产的余额变动明细，并通过业务交易编号关联同一笔业务产生的多条账变。" />
           <button
             type="button"
             disabled={!filteredRows.length}
@@ -7167,23 +7201,6 @@ export function AccountLedgerPage() {
             导出当前结果
           </button>
         </div>
-        <div className="mt-[22px] flex gap-[28px] border-b border-[#e5e6ef]">
-          {[
-            ['fiat', '法币'],
-            ['digital', '数字资产'],
-          ].map(([key, label]) => (
-            <button
-              type="button"
-              key={key}
-              onClick={() => changeTab(key)}
-              className={`border-b-2 px-[8px] pb-[13px] text-[13px] font-semibold ${
-                assetTab === key ? 'border-[#8b4fff] text-[#8b4fff]' : 'border-transparent text-[#55566f] hover:text-[#8b4fff]'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
       </Panel>
 
       <Panel className="mt-[18px] p-[18px]">
@@ -7192,22 +7209,17 @@ export function AccountLedgerPage() {
           <AccountLedgerFilterInput label="结束时间" type="date" value={draftFilters.endDate} onChange={(value) => updateDraft('endDate', value)} />
           <AccountLedgerFilterInput label="交易编号" value={draftFilters.transactionNo} onChange={(value) => updateDraft('transactionNo', value)} placeholder="业务交易编号 / 账变流水号" />
           <AccountLedgerFilterInput label="用户姓名/邮箱" value={draftFilters.userKeyword} onChange={(value) => updateDraft('userKeyword', value)} placeholder="输入姓名或邮箱" />
-          {isFiat ? (
-            <AccountLedgerFilterSelect label="账户类型" value={draftFilters.accountType} onChange={(value) => updateDraft('accountType', value)} options={options.accountTypes} allLabel="全部账户类型" />
-          ) : (
-            <AccountLedgerFilterSelect label="网络" value={draftFilters.network} onChange={(value) => updateDraft('network', value)} options={options.networks} allLabel="全部网络" />
-          )}
           <AccountLedgerFilterSelect
             label="交易类型"
             value={draftFilters.transactionType}
             onChange={(value) => updateDraft('transactionType', value)}
-            options={isFiat ? options.fiatTransactionTypes : options.digitalTransactionTypes}
+            options={transactionTypes}
             allLabel="全部交易类型"
           />
           <AccountLedgerFilterSelect label="变动方向" value={draftFilters.direction} onChange={(value) => updateDraft('direction', value)} options={['增加', '减少']} allLabel="全部方向" />
         </div>
         <div className="mt-[16px] flex flex-wrap items-center justify-between gap-[12px] border-t border-[#ececf2] pt-[14px]">
-          <div className="text-[12px] text-[#77788d]">支持组合筛选；数字资产账变不关联香港、新加坡、巴林等法域账户。</div>
+          <div className="text-[12px] text-[#77788d]">法币与数字资产账变统一展示，同一笔业务可通过业务交易编号查看关联账变。</div>
           <div className="flex gap-[8px]">
             <button type="button" onClick={resetFilters} className="inline-flex h-[34px] items-center gap-[6px] rounded-[4px] border border-[#cfd1dc] px-[13px] text-[12px] font-semibold text-[#55566f] hover:bg-[#f6f7fb]">
               <RotateCcw className="h-[14px] w-[14px]" />
@@ -7229,16 +7241,16 @@ export function AccountLedgerPage() {
         ) : null}
 
         <div className="overflow-x-auto">
-          <table className={`border-separate border-spacing-0 text-left text-[12px] text-[#55566f] ${isFiat ? 'min-w-[1600px]' : 'min-w-[1490px]'}`}>
+          <table className="min-w-[1710px] border-separate border-spacing-0 text-left text-[12px] text-[#55566f]">
             <thead>
               <tr className="h-[50px] bg-[#f6f7fb] font-semibold text-[#22223d]">
                 <th className="sticky left-0 z-20 w-[150px] border-b border-[#e5e6ef] bg-[#f6f7fb] px-[14px]">账变时间</th>
                 <th className="w-[225px] border-b border-[#e5e6ef] px-[14px]">交易编号</th>
                 <th className="w-[200px] border-b border-[#e5e6ef] px-[14px]">用户</th>
                 <th className="w-[110px] border-b border-[#e5e6ef] px-[14px]">交易类型</th>
-                {isFiat ? <th className="w-[110px] border-b border-[#e5e6ef] px-[14px]">账户类型</th> : null}
+                <th className="w-[110px] border-b border-[#e5e6ef] px-[14px]">账户类型</th>
                 <th className="w-[72px] border-b border-[#e5e6ef] px-[14px]">币种</th>
-                {!isFiat ? <th className="w-[90px] border-b border-[#e5e6ef] px-[14px]">网络</th> : null}
+                <th className="w-[90px] border-b border-[#e5e6ef] px-[14px]">网络</th>
                 <th className="w-[125px] border-b border-[#e5e6ef] px-[14px]">变动金额</th>
                 <th className="w-[125px] border-b border-[#e5e6ef] px-[14px]">交易前余额</th>
                 <th className="w-[125px] border-b border-[#e5e6ef] px-[14px]">交易后余额</th>
@@ -7261,9 +7273,13 @@ export function AccountLedgerPage() {
                       <div className="mt-[3px] text-[11px] text-[#85869a]">ID: {record.userId} / {record.userEmail}</div>
                     </td>
                     <td className="border-b border-[#ececf2] px-[14px]"><StatusBadge tone="violet">{record.transactionType}</StatusBadge></td>
-                    {isFiat ? <td className="border-b border-[#ececf2] px-[14px] font-semibold text-[#4c4c68]">{record.accountType}</td> : null}
+                    <td className="border-b border-[#ececf2] px-[14px] font-semibold text-[#4c4c68]">
+                      {record.assetClass === 'fiat' ? record.accountType : '数字资产'}
+                    </td>
                     <td className="border-b border-[#ececf2] px-[14px] font-semibold text-[#20213a]">{record.currency}</td>
-                    {!isFiat ? <td className="border-b border-[#ececf2] px-[14px]"><StatusBadge tone="gray">{record.network}</StatusBadge></td> : null}
+                    <td className="border-b border-[#ececf2] px-[14px]">
+                      {record.assetClass === 'digital' ? <StatusBadge tone="gray">{record.network}</StatusBadge> : <span className="text-[#b0b1bf]">-</span>}
+                    </td>
                     <td className={`border-b border-[#ececf2] px-[14px] font-mono text-[13px] font-bold ${isIncrease ? 'text-[#169b57]' : 'text-[#e34856]'}`}>{formatAccountLedgerChange(record)}</td>
                     <td className="border-b border-[#ececf2] px-[14px] font-mono font-semibold tabular-nums text-[#4c4c68]">{formatAccountLedgerValue(record.beforeBalance, record.currency)}</td>
                     <td className="border-b border-[#ececf2] px-[14px] font-mono font-semibold tabular-nums text-[#20213a]">{formatAccountLedgerValue(record.afterBalance, record.currency)}</td>
@@ -7280,7 +7296,7 @@ export function AccountLedgerPage() {
             <div className="flex min-h-[250px] flex-col items-center justify-center bg-white px-[20px] text-center">
               <ReceiptText className="h-[34px] w-[34px] text-[#b0b1bf]" strokeWidth={1.5} />
               <div className="mt-[10px] text-[14px] font-semibold text-[#4c4c68]">暂无符合条件的账变流水</div>
-              <div className="mt-[5px] text-[12px] text-[#85869a]">请调整账变时间、交易类型、账户或网络、变动方向或用户条件后重试。</div>
+              <div className="mt-[5px] text-[12px] text-[#85869a]">请调整账变时间、交易类型、变动方向或用户条件后重试。</div>
               <button type="button" onClick={resetFilters} className="mt-[14px] h-[32px] rounded-[4px] border border-[#8b4fff] px-[13px] text-[12px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">重置筛选</button>
             </div>
           ) : null}
@@ -7292,6 +7308,18 @@ export function AccountLedgerPage() {
         record={selectedRecord}
         onClose={() => setSelectedRecord(null)}
         onSelectLedger={(record) => setSelectedRecord(record)}
+        onOpenTransaction={(record) => {
+          setSelectedRecord(null)
+          setRelatedTransaction(record)
+        }}
+      />
+      <RelatedLedgerTransactionDrawer
+        record={relatedTransaction}
+        onClose={() => setRelatedTransaction(null)}
+        onBack={() => {
+          setSelectedRecord(relatedTransaction)
+          setRelatedTransaction(null)
+        }}
       />
     </AdminShell>
   )
