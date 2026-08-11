@@ -420,6 +420,15 @@ function App() {
     )
   }
 
+  if (path === '/admin/product-manual/recommended-articles-prototype') {
+    return (
+      <BaasAdminReviewPrototype
+        onBack={() => navigate('/')}
+        defaultActivePage="recommended-articles"
+      />
+    )
+  }
+
   if (path === '/admin/product-manual/baas-system-reform') {
     return (
       <BaasSystemReformPage

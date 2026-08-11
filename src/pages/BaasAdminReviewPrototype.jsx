@@ -1,6 +1,7 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowUpRight,
+  Bold,
   BriefcaseBusiness,
   CalendarDays,
   CheckCircle2,
@@ -16,10 +17,17 @@ import {
   FileCheck2,
   FileText,
   Gauge,
+  Heading2,
+  ImagePlus,
+  Italic,
   KeyRound,
   Languages,
   LineChart,
+  Link2,
+  List,
   ListChecks,
+  ListOrdered,
+  Newspaper,
   PauseCircle,
   Percent,
   Pencil,
@@ -28,9 +36,11 @@ import {
   ReceiptText,
   RotateCcw,
   Search,
+  Save,
   Settings,
   ShieldCheck,
   ShoppingCart,
+  Star,
   Sun,
   UploadCloud,
   UserCheck,
@@ -64,6 +74,10 @@ import {
 } from '../data/securitiesBrokerageApplications'
 import { createSingaporeAccountRecord } from '../data/userAccountConfig'
 import { CurrencyIcon } from '../components/baas/CurrencyIcon'
+import articleAccountCover from '../../client/account.png'
+import articleDashboardCover from '../../client/home.png'
+import articleInvestmentCover from '../../client/licai.png'
+import articleOtcCover from '../../client/duihuan.png'
 
 const pendingApplications = [
   {
@@ -989,6 +1003,90 @@ const initialFeeConfigs = [
   { id: '4', email: 'voigtus1@123mails.org', mode: 'combo', value: 'USD 10.00 + 0.20%', usePlatformDefault: false },
 ]
 
+const articlePositionOptions = [
+  {
+    key: 'featured',
+    label: '特色推荐',
+    limit: 3,
+    description: '展示于基金页面特色推荐区域，最多展示3篇',
+  },
+  {
+    key: 'home',
+    label: '首页热门推荐',
+    limit: 1,
+    description: '展示于首页热门推荐区域，同一时间仅展示1篇',
+  },
+]
+
+const initialRecommendedArticles = [
+  {
+    id: 'ARTICLE-001',
+    cover: articleDashboardCover,
+    title: 'A Smarter Way to Manage Your Global Wealth',
+    summary: 'Bring accounts, assets and day-to-day financial decisions into one clear Fidere experience.',
+    bodyHtml: '<h2>One view for your global wealth</h2><p>Fidere brings your account balances, recent activity and investment opportunities together so you can make informed decisions with less friction.</p><ul><li>Monitor balances across supported accounts</li><li>Review recent transactions</li><li>Access curated opportunities</li></ul>',
+    buttonText: 'Learn More',
+    positions: ['featured', 'home'],
+    sort: 1,
+    status: 'published',
+    isHomeFeatured: true,
+    updatedAt: '2026-08-10 16:20',
+  },
+  {
+    id: 'ARTICLE-002',
+    cover: articleOtcCover,
+    title: 'Convert Assets Across Your Fidere Accounts',
+    summary: 'Explore a clearer way to exchange supported fiat and digital assets across your Fidere balances.',
+    bodyHtml: '<h2>Asset conversion, made clearer</h2><p>Select the assets you want to sell and receive, review the quote, and confirm the transaction in one focused flow.</p><p>Available assets and balances are shown based on your current holdings.</p>',
+    buttonText: 'Explore Conversion',
+    positions: ['featured'],
+    sort: 2,
+    status: 'published',
+    isHomeFeatured: false,
+    updatedAt: '2026-08-09 11:45',
+  },
+  {
+    id: 'ARTICLE-003',
+    cover: articleInvestmentCover,
+    title: 'Explore Curated Investment Opportunities',
+    summary: 'Discover selected products designed for different investment goals, time horizons and risk preferences.',
+    bodyHtml: '<h2>Opportunities selected for Fidere clients</h2><p>Browse available products, compare key terms and review risk information before making an investment decision.</p><ol><li>Review the product overview</li><li>Understand the risk level</li><li>Check minimum investment requirements</li></ol>',
+    buttonText: 'Explore Products',
+    positions: ['featured'],
+    sort: 3,
+    status: 'published',
+    isHomeFeatured: false,
+    updatedAt: '2026-08-08 09:10',
+  },
+  {
+    id: 'ARTICLE-004',
+    cover: articleAccountCover,
+    title: 'Understanding Your Multi-Account Experience',
+    summary: 'Learn how Fidere keeps balances and transactions clear across supported jurisdictional accounts.',
+    bodyHtml: '<h2>Your accounts, clearly separated</h2><p>Each jurisdictional account keeps its own supported currencies and transaction history while remaining accessible from one experience.</p>',
+    buttonText: 'Read Guide',
+    positions: ['featured'],
+    sort: 3,
+    status: 'offline',
+    isHomeFeatured: false,
+    updatedAt: '2026-08-06 18:30',
+  },
+]
+
+const createEmptyRecommendedArticle = () => ({
+  id: '',
+  cover: '',
+  title: '',
+  summary: '',
+  bodyHtml: '',
+  buttonText: 'Learn More',
+  positions: [],
+  sort: 1,
+  status: 'offline',
+  isHomeFeatured: false,
+  updatedAt: '',
+})
+
 const fiatTabs = ['总览', '客户资产', '流水查询', '入账认领', '出金审批', '资金互转', '对账中心']
 const markedFiatTabs = new Set(['总览', '客户资产', '流水查询', '入账认领', '出金审批', '资金互转'])
 
@@ -1574,6 +1672,11 @@ function Sidebar({ activePage, onSelect }) {
           <SidebarItem icon={LineChart} label="理财产品" />
           <SidebarItem icon={CircleDot} label="交易管理" />
           <SidebarItem icon={Percent} label="提现服务费配置" marked active={activePage === 'fee-config'} onClick={() => onSelect('fee-config')} />
+        </div>
+
+        <SidebarGroup icon={Newspaper} label="内容管理" />
+        <div className="mt-[9px] space-y-[4px]">
+          <SidebarItem icon={Newspaper} label="推荐文章管理" active={activePage === 'recommended-articles'} onClick={() => onSelect('recommended-articles')} />
         </div>
       </nav>
     </aside>
@@ -7376,6 +7479,585 @@ function FeeConfigModal({ draft, onChange, onClose, onSave, editingFee }) {
   )
 }
 
+function recommendedArticlePositionLabel(positions) {
+  if (positions.includes('featured') && positions.includes('home')) return '两处展示'
+  if (positions.includes('home')) return '首页热门推荐'
+  return '特色推荐'
+}
+
+function ArticleActionButton({ icon: Icon, children, onClick, tone = 'violet' }) {
+  const toneClass = {
+    violet: 'border-[#8b4fff] text-[#8b4fff] hover:bg-[#f6f0ff]',
+    green: 'border-[#20a05a] text-[#18864a] hover:bg-[#edf9f1]',
+    red: 'border-[#f04f5f] text-[#e34856] hover:bg-[#fff1f2]',
+    amber: 'border-[#e8a12a] text-[#c47b07] hover:bg-[#fff8e9]',
+  }[tone]
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex h-[31px] items-center gap-[5px] whitespace-nowrap rounded-[4px] border px-[9px] text-[12px] font-semibold ${toneClass}`}
+    >
+      <Icon className="h-[13px] w-[13px]" strokeWidth={1.9} />
+      {children}
+    </button>
+  )
+}
+
+function RecommendedArticleField({ label, required = false, hint, error, children }) {
+  return (
+    <div className="block">
+      <span className="flex items-center justify-between gap-[12px]">
+        <span className="text-[13px] font-semibold text-[#34344d]">
+          {label}{required ? <span className="ml-[3px] text-[#e34856]">*</span> : null}
+        </span>
+        {hint ? <span className="text-[11px] text-[#9293a4]">{hint}</span> : null}
+      </span>
+      <span className="mt-[8px] block">{children}</span>
+      {error ? <span className="mt-[6px] block text-[11px] font-medium text-[#e34856]">{error}</span> : null}
+    </div>
+  )
+}
+
+function RichTextToolbarButton({ icon: Icon, title, onClick }) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={onClick}
+      className="flex h-[30px] w-[30px] items-center justify-center rounded-[3px] border border-transparent text-[#55566f] hover:border-[#d7d9e2] hover:bg-white hover:text-[#8b4fff]"
+    >
+      <Icon className="h-[15px] w-[15px]" strokeWidth={1.9} />
+    </button>
+  )
+}
+
+function RecommendedArticleRichEditor({ value, onChange, error }) {
+  const editorRef = useRef(null)
+  const imageInputRef = useRef(null)
+
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value || '<p><br></p>'
+    }
+  }, [value])
+
+  const syncValue = () => onChange(editorRef.current?.innerHTML || '')
+  const execute = (command, commandValue = null) => {
+    editorRef.current?.focus()
+    document.execCommand(command, false, commandValue)
+    syncValue()
+  }
+  const insertLink = () => {
+    const url = window.prompt('Enter the destination URL')
+    if (url) execute('createLink', url)
+  }
+  const insertImage = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => execute('insertImage', reader.result)
+    reader.readAsDataURL(file)
+    event.target.value = ''
+  }
+
+  return (
+    <div>
+      <div className={`overflow-hidden rounded-[4px] border bg-white ${error ? 'border-[#e34856]' : 'border-[#cfd1dc]'}`}>
+        <div className="flex flex-wrap items-center gap-[3px] border-b border-[#e5e6ef] bg-[#f7f8fb] px-[8px] py-[6px]">
+          <RichTextToolbarButton icon={Bold} title="Bold" onClick={() => execute('bold')} />
+          <RichTextToolbarButton icon={Italic} title="Italic" onClick={() => execute('italic')} />
+          <span className="mx-[3px] h-[18px] w-px bg-[#d9dbe4]" />
+          <RichTextToolbarButton icon={Heading2} title="Heading" onClick={() => execute('formatBlock', 'h2')} />
+          <RichTextToolbarButton icon={List} title="Bullet list" onClick={() => execute('insertUnorderedList')} />
+          <RichTextToolbarButton icon={ListOrdered} title="Numbered list" onClick={() => execute('insertOrderedList')} />
+          <span className="mx-[3px] h-[18px] w-px bg-[#d9dbe4]" />
+          <RichTextToolbarButton icon={Link2} title="Insert link" onClick={insertLink} />
+          <RichTextToolbarButton icon={ImagePlus} title="Insert image" onClick={() => imageInputRef.current?.click()} />
+          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={insertImage} />
+        </div>
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          role="textbox"
+          aria-label="文章正文"
+          aria-multiline="true"
+          onInput={syncValue}
+          className="min-h-[300px] px-[15px] py-[14px] text-[13px] leading-[1.75] text-[#34344d] outline-none [&_a]:text-[#2f6fe4] [&_a]:underline [&_h2]:mb-[8px] [&_h2]:mt-[12px] [&_h2]:text-[18px] [&_h2]:font-semibold [&_img]:my-[12px] [&_img]:max-h-[260px] [&_img]:max-w-full [&_img]:rounded-[4px] [&_li]:ml-[21px] [&_ol]:list-decimal [&_p]:my-[8px] [&_ul]:list-disc"
+        />
+      </div>
+      <div className="mt-[6px] text-[11px] text-[#85869a]">支持标题、粗体、斜体、列表、链接和正文图片。</div>
+      {error ? <div className="mt-[6px] text-[11px] font-medium text-[#e34856]">{error}</div> : null}
+    </div>
+  )
+}
+
+function RecommendedArticleFormModal({ mode, article, articles, onClose, onSave }) {
+  const [draft, setDraft] = useState(() => ({ ...article, positions: [...article.positions] }))
+  const [errors, setErrors] = useState({})
+  const [pendingHomeReplacement, setPendingHomeReplacement] = useState(null)
+  const [confirmedHomeReplacementId, setConfirmedHomeReplacementId] = useState(null)
+
+  const publishedFeaturedCount = articles.filter((item) => item.status === 'published' && item.positions.includes('featured')).length
+  const publishedHomeArticle = articles.find((item) => item.status === 'published' && item.positions.includes('home')) || null
+  const articleOriginallyFeatured = article.positions.includes('featured')
+  const featuredAtCapacity = publishedFeaturedCount >= 3 && !articleOriginallyFeatured
+
+  useEffect(() => {
+    setDraft({ ...article, positions: [...article.positions] })
+    setErrors({})
+    setPendingHomeReplacement(null)
+    setConfirmedHomeReplacementId(null)
+  }, [article])
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    const closeOnEscape = (event) => {
+      if (event.key !== 'Escape') return
+      if (pendingHomeReplacement) {
+        setPendingHomeReplacement(null)
+        return
+      }
+      onClose()
+    }
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [onClose, pendingHomeReplacement])
+
+  const updateDraft = (key, value) => {
+    setDraft((current) => ({ ...current, [key]: value }))
+    setErrors((current) => ({ ...current, [key]: '' }))
+  }
+  const togglePosition = (position) => {
+    const checked = draft.positions.includes(position)
+    if (checked) {
+      updateDraft('positions', draft.positions.filter((item) => item !== position))
+      if (position === 'home') setConfirmedHomeReplacementId(null)
+      if (position === 'featured') setErrors((current) => ({ ...current, sort: '' }))
+      return
+    }
+    if (position === 'featured' && featuredAtCapacity) return
+    if (position === 'home' && publishedHomeArticle && publishedHomeArticle.id !== article.id) {
+      setPendingHomeReplacement(publishedHomeArticle)
+      return
+    }
+    updateDraft('positions', [...draft.positions, position])
+  }
+  const confirmHomeReplacement = () => {
+    if (!pendingHomeReplacement) return
+    updateDraft('positions', [...new Set([...draft.positions, 'home'])])
+    setConfirmedHomeReplacementId(pendingHomeReplacement.id)
+    setPendingHomeReplacement(null)
+  }
+  const uploadCover = (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => updateDraft('cover', reader.result)
+    reader.readAsDataURL(file)
+    event.target.value = ''
+  }
+  const validateAndSave = () => {
+    const nextErrors = {}
+    const bodyText = String(draft.bodyHtml || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
+    if (!draft.cover) nextErrors.cover = '请上传文章封面图片。'
+    if (!draft.title.trim()) nextErrors.title = '请输入英文文章标题。'
+    if (!draft.summary.trim()) nextErrors.summary = '请输入英文文章摘要。'
+    if (!bodyText) nextErrors.bodyHtml = '请输入英文文章正文。'
+    if (!draft.buttonText.trim()) nextErrors.buttonText = '请输入按钮文案。'
+    if (!draft.positions.length) nextErrors.positions = '请至少选择一个展示位置。'
+    if (draft.positions.includes('featured') && ![1, 2, 3].includes(Number(draft.sort))) nextErrors.sort = '特色推荐排序仅支持1、2、3。'
+    setErrors(nextErrors)
+    if (Object.keys(nextErrors).length) return
+    const result = onSave(
+      { ...draft, sort: draft.positions.includes('featured') ? Number(draft.sort) : null },
+      { replaceHomeArticleId: confirmedHomeReplacementId },
+    )
+    if (result?.ok === false) {
+      setErrors((current) => ({ ...current, [result.field || 'positions']: result.message }))
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-[#252236]/55 px-[20px] py-[24px]"
+      onMouseDown={(event) => {
+        if (event.currentTarget === event.target) onClose()
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="recommended-article-modal-title"
+        className="flex max-h-[calc(100vh-48px)] w-full max-w-[900px] flex-col overflow-hidden rounded-[6px] bg-white shadow-[0_20px_54px_rgba(28,29,42,0.3)]"
+      >
+        <header className="flex shrink-0 items-center justify-between gap-[20px] border-b border-[#e5e6ef] px-[22px] pb-[10px] pt-[18px]">
+          <h2 id="recommended-article-modal-title" className="text-[16px] font-semibold text-[#20213a]">{mode === 'create' ? '新增文章' : '编辑文章'}</h2>
+          <button type="button" onClick={onClose} aria-label="关闭弹窗" className="flex h-[32px] w-[32px] items-center justify-center rounded-[4px] text-[#66677f] hover:bg-[#f5f6f9]">
+            <X className="h-[17px] w-[17px]" />
+          </button>
+        </header>
+
+        <div className="overflow-y-auto px-[22px] py-[18px]">
+          <div className="flex items-center gap-[10px] rounded-[5px] border border-[#cfe3ff] bg-[#eef6ff] px-[14px] py-[11px] text-[12px] text-[#296aa8]">
+            <Languages className="h-[16px] w-[16px] shrink-0" />
+            <span><strong>Content Language: English</strong> · Currently only English content is supported.</span>
+          </div>
+
+          <div className="mt-[14px] space-y-[12px]">
+            <section className="rounded-[6px] border border-[#dedfe7] bg-[#fafafd] p-[16px]">
+              <div className="flex items-center gap-[8px] border-b border-[#e7e8ef] pb-[13px] text-[14px] font-semibold text-[#20213a]">
+                <Settings className="h-[16px] w-[16px] text-[#8b4fff]" />
+                展示设置
+              </div>
+              <div className="mt-[16px] grid gap-[17px]">
+                <RecommendedArticleField label="按钮文案" required hint={`${draft.buttonText.length}/40`} error={errors.buttonText}>
+                  <input value={draft.buttonText} maxLength={40} onChange={(event) => updateDraft('buttonText', event.target.value)} placeholder="Learn More" className={`h-[42px] w-full rounded-[4px] border px-[11px] text-[13px] outline-none ${errors.buttonText ? 'border-[#e34856]' : 'border-[#cfd1dc] focus:border-[#8b4fff]'}`} />
+                </RecommendedArticleField>
+
+                <RecommendedArticleField label="展示位置" required error={errors.positions}>
+                  <div className="space-y-[10px]">
+                    {articlePositionOptions.map((option) => {
+                      const checked = draft.positions.includes(option.key)
+                      const usage = option.key === 'featured' ? publishedFeaturedCount : publishedHomeArticle ? 1 : 0
+                      const disabled = option.key === 'featured' && featuredAtCapacity
+                      return (
+                        <div key={option.key}>
+                          <label className={`flex items-start gap-[11px] rounded-[5px] border px-[13px] py-[12px] ${disabled ? 'cursor-not-allowed border-[#e1e2e9] bg-[#f4f5f8] text-[#9a9bab]' : checked ? 'cursor-pointer border-[#8b4fff] bg-[#f8f4ff] text-[#5f31bd]' : 'cursor-pointer border-[#dfe1e9] bg-white text-[#55566f]'}`}>
+                            <input
+                              type="checkbox"
+                              aria-label={option.label}
+                              checked={checked}
+                              disabled={disabled}
+                              onChange={() => togglePosition(option.key)}
+                              className="mt-[2px] h-[15px] w-[15px] shrink-0 accent-[#8b4fff]"
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="flex items-center justify-between gap-[12px]">
+                                <span className="text-[13px] font-semibold">{option.label}</span>
+                                <span className={`shrink-0 rounded-[3px] px-[7px] py-[2px] text-[11px] font-semibold tabular-nums ${usage >= option.limit ? 'bg-[#fff2dc] text-[#b96d05]' : 'bg-[#eef1f6] text-[#67687c]'}`}>
+                                  {usage} / {option.limit}
+                                </span>
+                              </span>
+                              <span className={`mt-[4px] block text-[11px] leading-[17px] ${disabled ? 'text-[#a2a3b1]' : 'text-[#7d7e91]'}`}>{option.description}</span>
+                            </span>
+                          </label>
+                          {disabled ? <div className="mt-[6px] text-[11px] font-medium leading-[17px] text-[#e34856]">特色推荐最多展示3篇，请先下架或取消其他文章的特色推荐。</div> : null}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </RecommendedArticleField>
+
+                {draft.positions.includes('featured') ? (
+                  <RecommendedArticleField label="特色推荐排序" required hint="数字越小越靠前" error={errors.sort}>
+                    <select
+                      aria-label="特色推荐排序"
+                      value={draft.sort ?? 1}
+                      onChange={(event) => updateDraft('sort', Number(event.target.value))}
+                      className={`h-[42px] w-full rounded-[4px] border bg-white px-[11px] text-[13px] text-[#34344d] outline-none ${errors.sort ? 'border-[#e34856]' : 'border-[#cfd1dc] focus:border-[#8b4fff]'}`}
+                    >
+                      <option value={1}>1</option>
+                      <option value={2}>2</option>
+                      <option value={3}>3</option>
+                    </select>
+                  </RecommendedArticleField>
+                ) : null}
+
+              </div>
+            </section>
+
+            <div className="space-y-[12px]">
+              <section className="rounded-[6px] border border-[#dedfe7] bg-[#fafafd] p-[16px]">
+                <div className="text-[14px] font-semibold text-[#20213a]">封面图片</div>
+                <div className="mt-[12px] grid grid-cols-1 gap-[16px] sm:grid-cols-[220px_minmax(0,1fr)]">
+                  <div className={`aspect-[16/9] overflow-hidden rounded-[5px] border bg-[#f3f4f8] ${errors.cover ? 'border-[#e34856]' : 'border-[#dfe1e9]'}`}>
+                    {draft.cover ? <img src={draft.cover} alt="文章封面" className="h-full w-full object-cover object-top" /> : <div className="flex h-full items-center justify-center text-[#9a9cab]"><ImagePlus className="h-[30px] w-[30px]" strokeWidth={1.5} /></div>}
+                  </div>
+                  <div className="flex flex-col items-start justify-center">
+                    <label className="inline-flex h-[36px] cursor-pointer items-center gap-[7px] rounded-[4px] border border-[#8b4fff] px-[13px] text-[12px] font-semibold text-[#8b4fff] hover:bg-[#f6f0ff]">
+                      <UploadCloud className="h-[15px] w-[15px]" />
+                      上传封面
+                      <input type="file" accept="image/*" className="hidden" onChange={uploadCover} />
+                    </label>
+                    <div className="mt-[9px] text-[11px] leading-[18px] text-[#85869a]">建议使用16:9横图，JPG、PNG或WebP格式。上传后将立即显示预览。</div>
+                    {errors.cover ? <div className="mt-[6px] text-[11px] font-medium text-[#e34856]">{errors.cover}</div> : null}
+                  </div>
+                </div>
+              </section>
+
+              <section className="rounded-[6px] border border-[#dedfe7] bg-[#fafafd] p-[16px]">
+                <div className="text-[14px] font-semibold text-[#20213a]">文章信息</div>
+                <div className="mt-[14px] grid gap-[18px]">
+                  <RecommendedArticleField label="文章标题" required hint={`${draft.title.length}/120`} error={errors.title}>
+                    <input value={draft.title} maxLength={120} onChange={(event) => updateDraft('title', event.target.value)} placeholder="Enter the article title in English" className={`h-[44px] w-full rounded-[4px] border bg-white px-[12px] text-[13px] text-[#20213a] outline-none focus:ring-2 focus:ring-[#8b4fff]/10 ${errors.title ? 'border-[#e34856]' : 'border-[#cfd1dc] focus:border-[#8b4fff]'}`} />
+                  </RecommendedArticleField>
+                  <RecommendedArticleField label="文章摘要" required hint={`${draft.summary.length}/220`} error={errors.summary}>
+                    <textarea value={draft.summary} maxLength={220} onChange={(event) => updateDraft('summary', event.target.value)} placeholder="Write a short English introduction for recommendation cards" className={`h-[96px] w-full resize-none rounded-[4px] border bg-white px-[12px] py-[10px] text-[13px] leading-[20px] text-[#20213a] outline-none focus:ring-2 focus:ring-[#8b4fff]/10 ${errors.summary ? 'border-[#e34856]' : 'border-[#cfd1dc] focus:border-[#8b4fff]'}`} />
+                  </RecommendedArticleField>
+                </div>
+              </section>
+
+              <section className="rounded-[6px] border border-[#dedfe7] bg-[#fafafd] p-[16px]">
+                <div className="mb-[8px] text-[13px] font-semibold text-[#34344d]">文章正文<span className="ml-[3px] text-[#e34856]">*</span></div>
+                <RecommendedArticleRichEditor value={draft.bodyHtml} onChange={(value) => updateDraft('bodyHtml', value)} error={errors.bodyHtml} />
+              </section>
+            </div>
+
+          </div>
+        </div>
+
+        <footer className="flex shrink-0 items-center justify-end gap-[10px] border-t border-[#e5e6ef] bg-[#fafafd] px-[22px] py-[14px]">
+          <ArticleActionButton icon={X} onClick={onClose}>取消</ArticleActionButton>
+          <PrimaryButton icon={Save} onClick={validateAndSave}>保存文章</PrimaryButton>
+        </footer>
+      </section>
+
+      {pendingHomeReplacement ? (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-[#252236]/45 px-[20px]"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) setPendingHomeReplacement(null)
+          }}
+        >
+          <section role="alertdialog" aria-modal="true" aria-labelledby="replace-home-recommendation-title" className="w-full max-w-[470px] overflow-hidden rounded-[6px] bg-white shadow-[0_18px_46px_rgba(28,29,42,0.32)]">
+            <div className="flex items-start gap-[12px] px-[20px] pb-[17px] pt-[20px]">
+              <span className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-full bg-[#fff3df] text-[#c47b07]">
+                <Star className="h-[18px] w-[18px]" fill="currentColor" />
+              </span>
+              <div className="min-w-0">
+                <h3 id="replace-home-recommendation-title" className="text-[15px] font-semibold text-[#20213a]">替换首页热门推荐</h3>
+                <p className="mt-[7px] text-[12px] leading-[20px] text-[#66677f]">当前首页热门推荐已配置为《{pendingHomeReplacement.title}》，确认后将替换为当前文章。</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-[9px] border-t border-[#e5e6ef] bg-[#fafafd] px-[20px] py-[13px]">
+              <ArticleActionButton icon={X} onClick={() => setPendingHomeReplacement(null)}>取消</ArticleActionButton>
+              <PrimaryButton icon={Star} onClick={confirmHomeReplacement}>确认替换</PrimaryButton>
+            </div>
+          </section>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function RecommendedArticleManagementPage() {
+  const [articles, setArticles] = useState(initialRecommendedArticles)
+  const [pageMode, setPageMode] = useState('list')
+  const [editingId, setEditingId] = useState(null)
+  const [keyword, setKeyword] = useState('')
+  const [positionFilter, setPositionFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [notice, setNotice] = useState('')
+  const [noticeTone, setNoticeTone] = useState('success')
+
+  const editingArticle = articles.find((item) => item.id === editingId) || createEmptyRecommendedArticle()
+  const visibleArticles = useMemo(() => articles
+    .filter((item) => {
+      const normalizedKeyword = keyword.trim().toLowerCase()
+      if (normalizedKeyword && !`${item.title} ${item.summary}`.toLowerCase().includes(normalizedKeyword)) return false
+      if (positionFilter === 'featured' && !item.positions.includes('featured')) return false
+      if (positionFilter === 'home' && !item.positions.includes('home')) return false
+      if (positionFilter === 'both' && item.positions.length !== 2) return false
+      if (statusFilter !== 'all' && item.status !== statusFilter) return false
+      return true
+    })
+    .sort((left, right) => left.sort - right.sort || right.updatedAt.localeCompare(left.updatedAt)), [articles, keyword, positionFilter, statusFilter])
+
+  const openCreate = () => {
+    setEditingId(null)
+    setPageMode('create')
+    setNotice('')
+    setNoticeTone('success')
+  }
+  const openEdit = (article) => {
+    setEditingId(article.id)
+    setPageMode('edit')
+    setNotice('')
+    setNoticeTone('success')
+  }
+  const saveArticle = (draft, { replaceHomeArticleId = null } = {}) => {
+    const updatedAt = '2026-08-10 18:45'
+    const currentArticleId = pageMode === 'edit' ? editingId : ''
+    const publishedFeaturedOthers = articles.filter((item) => item.id !== currentArticleId && item.status === 'published' && item.positions.includes('featured')).length
+    const publishedHomeOther = articles.find((item) => item.id !== currentArticleId && item.status === 'published' && item.positions.includes('home')) || null
+
+    // Keep the write boundary authoritative even when the modal state is stale.
+    if (draft.status === 'published' && draft.positions.includes('featured') && publishedFeaturedOthers >= 3) {
+      return { ok: false, field: 'positions', message: '特色推荐最多同时展示3篇，请先下架或取消其他文章的特色推荐。' }
+    }
+    if (draft.status === 'published' && draft.positions.includes('home') && publishedHomeOther && replaceHomeArticleId !== publishedHomeOther.id) {
+      return { ok: false, field: 'positions', message: `首页热门推荐已被《${publishedHomeOther.title}》占用，请确认替换后再保存。` }
+    }
+
+    const replaceExistingHome = (item) => replaceHomeArticleId && item.id === replaceHomeArticleId
+      ? { ...item, positions: item.positions.filter((position) => position !== 'home'), isHomeFeatured: false, updatedAt }
+      : item
+
+    if (pageMode === 'create') {
+      const nextNumber = Math.max(...articles.map((item) => Number(item.id.split('-')[1]) || 0)) + 1
+      const nextArticle = {
+        ...draft,
+        id: `ARTICLE-${String(nextNumber).padStart(3, '0')}`,
+        updatedAt,
+        isHomeFeatured: draft.status === 'published' && draft.positions.includes('home'),
+      }
+      setArticles((current) => [...current.map(replaceExistingHome), nextArticle])
+      setNotice(`文章“${nextArticle.title}”已创建。`)
+    } else {
+      setArticles((current) => current.map(replaceExistingHome).map((item) => {
+        if (item.id !== editingId) return item
+        return { ...draft, id: item.id, updatedAt, isHomeFeatured: draft.status === 'published' && draft.positions.includes('home') }
+      }))
+      setNotice(`文章“${draft.title}”已更新。`)
+    }
+    setNoticeTone('success')
+    setPageMode('list')
+    return { ok: true }
+  }
+  const toggleStatus = (article) => {
+    const nextStatus = article.status === 'published' ? 'offline' : 'published'
+    if (nextStatus === 'published') {
+      const publishedFeaturedOthers = articles.filter((item) => item.id !== article.id && item.status === 'published' && item.positions.includes('featured')).length
+      const publishedHomeOther = articles.find((item) => item.id !== article.id && item.status === 'published' && item.positions.includes('home'))
+      if (article.positions.includes('featured') && publishedFeaturedOthers >= 3) {
+        setNotice('特色推荐已达到3篇上限，请先下架或取消其他文章的特色推荐。')
+        setNoticeTone('error')
+        return
+      }
+      if (article.positions.includes('home') && publishedHomeOther) {
+        setNotice(`首页热门推荐已被《${publishedHomeOther.title}》占用，请先编辑当前文章并确认替换。`)
+        setNoticeTone('error')
+        return
+      }
+    }
+    setArticles((current) => current.map((item) => item.id === article.id
+      ? { ...item, status: nextStatus, isHomeFeatured: nextStatus === 'published' && item.positions.includes('home'), updatedAt: '2026-08-10 18:45' }
+      : item))
+    setNotice(`文章“${article.title}”已${nextStatus === 'published' ? '上架' : '下架'}。`)
+    setNoticeTone('success')
+  }
+  const resetFilters = () => {
+    setKeyword('')
+    setPositionFilter('all')
+    setStatusFilter('all')
+  }
+
+  return (
+    <>
+      <AdminShell fluid>
+        <Panel className="px-[18px] py-[21px]">
+        <div className="flex items-start justify-between gap-[20px]">
+          <PageTitle title="推荐文章管理" subtitle="统一管理客户端特色推荐文章及首页热门推荐卡片，当前仅维护英文内容。" />
+          <PrimaryButton icon={Plus} onClick={openCreate}>新增文章</PrimaryButton>
+        </div>
+      </Panel>
+
+      <Panel className="mt-[18px] overflow-hidden">
+        <div className="border-b border-[#e5e6ef] p-[16px]">
+          <div className="flex flex-wrap items-center gap-[10px]">
+            <label className="flex h-[40px] min-w-[330px] flex-1 items-center gap-[9px] rounded-[4px] border border-[#cfd1dc] bg-white px-[11px]">
+              <Search className="h-[15px] w-[15px] text-[#77788d]" />
+              <input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索文章标题或摘要" className="h-full min-w-0 flex-1 bg-transparent text-[12px] text-[#20213a] outline-none" />
+            </label>
+            <select value={positionFilter} onChange={(event) => setPositionFilter(event.target.value)} className="h-[40px] w-[180px] rounded-[4px] border border-[#cfd1dc] bg-white px-[11px] text-[12px] text-[#4c4c68] outline-none">
+              <option value="all">全部展示位置</option>
+              <option value="featured">特色推荐</option>
+              <option value="home">首页热门推荐</option>
+              <option value="both">两处展示</option>
+            </select>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-[40px] w-[150px] rounded-[4px] border border-[#cfd1dc] bg-white px-[11px] text-[12px] text-[#4c4c68] outline-none">
+              <option value="all">全部状态</option>
+              <option value="published">已发布</option>
+              <option value="offline">已下架</option>
+            </select>
+            <button type="button" onClick={resetFilters} className="inline-flex h-[40px] items-center gap-[6px] rounded-[4px] border border-[#cfd1dc] px-[12px] text-[12px] font-semibold text-[#55566f] hover:bg-[#f6f7fb]">
+              <RotateCcw className="h-[14px] w-[14px]" />
+              重置
+            </button>
+          </div>
+          {notice ? <div className={`mt-[10px] text-right text-[12px] font-semibold ${noticeTone === 'error' ? 'text-[#e34856]' : 'text-[#20a05a]'}`} aria-live="polite">{notice}</div> : null}
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-[1180px] w-full border-collapse text-left text-[13px] text-[#55556e]">
+            <thead>
+              <tr className="h-[50px] bg-[#f6f7fb] text-[12px] font-semibold text-[#22223d]">
+                <th className="w-[148px] px-[16px]">封面图</th>
+                <th className="w-[320px] px-[16px]">文章标题</th>
+                <th className="w-[160px] px-[16px]">展示位置</th>
+                <th className="w-[80px] px-[16px]">排序</th>
+                <th className="w-[100px] px-[16px]">状态</th>
+                <th className="w-[155px] px-[16px]">更新时间</th>
+                <th className="min-w-[250px] px-[16px]">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleArticles.map((article) => (
+                <tr key={article.id} className="h-[96px] border-b border-[#e7e8ef] bg-white hover:bg-[#fbfaff]">
+                  <td className="px-[16px]">
+                    <div className="h-[58px] w-[104px] overflow-hidden rounded-[4px] border border-[#e1e3eb] bg-[#f2f3f7]">
+                      <img src={article.cover} alt="" className="h-full w-full object-cover object-top" />
+                    </div>
+                  </td>
+                  <td className="px-[16px]">
+                    <div className="line-clamp-2 text-[13px] font-semibold leading-[19px] text-[#20213a]">{article.title}</div>
+                    <div className="mt-[4px] line-clamp-1 text-[11px] text-[#8b8c9d]">{article.summary}</div>
+                  </td>
+                  <td className="px-[16px]">
+                    <div className="flex flex-col items-start gap-[5px]">
+                      <StatusBadge tone={article.positions.length === 2 ? 'violet' : article.positions.includes('home') ? 'orange' : 'blue'}>{recommendedArticlePositionLabel(article.positions)}</StatusBadge>
+                      {article.isHomeFeatured ? <span className="inline-flex items-center gap-[4px] text-[11px] font-semibold text-[#c47b07]"><Star className="h-[11px] w-[11px]" fill="currentColor" />当前首页</span> : null}
+                    </div>
+                  </td>
+                  <td className="px-[16px] font-mono font-semibold text-[#20213a]">{article.positions.includes('featured') ? article.sort : '—'}</td>
+                  <td className="px-[16px]"><StatusBadge tone={article.status === 'published' ? 'green' : 'gray'}>{article.status === 'published' ? '已发布' : '已下架'}</StatusBadge></td>
+                  <td className="px-[16px] tabular-nums text-[#6f7084]">{article.updatedAt}</td>
+                  <td className="px-[16px]">
+                    <div className="flex flex-wrap gap-[6px]">
+                      <ArticleActionButton icon={Pencil} onClick={() => openEdit(article)}>编辑</ArticleActionButton>
+                      <ArticleActionButton icon={article.status === 'published' ? PauseCircle : Play} tone={article.status === 'published' ? 'red' : 'green'} onClick={() => toggleStatus(article)}>{article.status === 'published' ? '下架' : '上架'}</ArticleActionButton>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!visibleArticles.length ? (
+            <div className="flex min-h-[230px] flex-col items-center justify-center bg-white text-center">
+              <Newspaper className="h-[34px] w-[34px] text-[#b0b1bf]" strokeWidth={1.5} />
+              <div className="mt-[10px] text-[14px] font-semibold text-[#4c4c68]">暂无符合条件的文章</div>
+              <button type="button" onClick={resetFilters} className="mt-[12px] h-[32px] rounded-[4px] border border-[#8b4fff] px-[13px] text-[12px] font-semibold text-[#8b4fff]">重置筛选</button>
+            </div>
+          ) : null}
+        </div>
+        <div className="flex items-center justify-between border-t border-[#e5e6ef] px-[16px] py-[12px] text-[12px] text-[#77788d]">
+          <span>共 {visibleArticles.length} 篇文章</span>
+          <span>内容语言：English</span>
+        </div>
+        </Panel>
+      </AdminShell>
+      {pageMode !== 'list' ? (
+        <RecommendedArticleFormModal
+          mode={pageMode}
+          article={pageMode === 'create' ? createEmptyRecommendedArticle() : editingArticle}
+          articles={articles}
+          onClose={() => setPageMode('list')}
+          onSave={saveArticle}
+        />
+      ) : null}
+    </>
+  )
+}
+
 function FeeConfigPage() {
   const [configs, setConfigs] = useState(initialFeeConfigs)
   const [modalOpen, setModalOpen] = useState(false)
@@ -7498,9 +8180,14 @@ function FeeConfigPage() {
   )
 }
 
-export function BaasAdminReviewPrototype({ onBack }) {
-  const [activePage, setActivePage] = useState('opening-review')
+export function BaasAdminReviewPrototype({ onBack, defaultActivePage = 'opening-review' }) {
+  const [activePage, setActivePage] = useState(defaultActivePage)
   const [reviewMode, setReviewMode] = useState('list')
+
+  useEffect(() => {
+    setActivePage(defaultActivePage)
+    setReviewMode('list')
+  }, [defaultActivePage])
 
   const selectPage = (page) => {
     setActivePage(page)
@@ -7517,6 +8204,7 @@ export function BaasAdminReviewPrototype({ onBack }) {
       {activePage === 'fiat-assets' ? <FiatAssetManagementPage /> : null}
       {activePage === 'account-ledger' ? <AccountLedgerPage /> : null}
       {activePage === 'fee-config' ? <FeeConfigPage /> : null}
+      {activePage === 'recommended-articles' ? <RecommendedArticleManagementPage /> : null}
       <button
         type="button"
         className="fixed right-0 top-[180px] z-40 flex h-[36px] w-[36px] items-center justify-center rounded-l-full bg-[#8b4fff] text-white shadow-lg"

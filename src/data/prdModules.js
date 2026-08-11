@@ -141,6 +141,21 @@ export const prdModules = [
     moduleType: 'prototype',
     buttonLabel: '进入原型',
   },
+  {
+    id: 'recommended-articles-prototype',
+    title: '推荐文章管理',
+    subtitle: '特色推荐与首页热门推荐内容配置原型',
+    description:
+      '用于统一管理客户端特色推荐文章及首页热门推荐卡片，支持英文文章新增、编辑、上下架、展示位置配置和首页推荐设置。',
+    category: '后台配置',
+    status: 'Prototype',
+    phase: 'Prototype Draft',
+    route: '/admin/product-manual/recommended-articles-prototype',
+    tags: ['推荐文章', '内容管理', '特色推荐', '首页热门推荐', '管理端'],
+    source: 'Current Project',
+    moduleType: 'prototype',
+    buttonLabel: '进入原型',
+  },
 ]
 
 export const baasPrototypeEntries = [
