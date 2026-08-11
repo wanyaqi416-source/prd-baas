@@ -73,11 +73,11 @@ import {
   initialBrokerageApplications,
 } from '../data/securitiesBrokerageApplications'
 import { createSingaporeAccountRecord } from '../data/userAccountConfig'
+import {
+  createEmptyRecommendedArticle,
+  initialRecommendedArticles,
+} from '../data/recommendedArticles'
 import { CurrencyIcon } from '../components/baas/CurrencyIcon'
-import articleAccountCover from '../../client/account.png'
-import articleDashboardCover from '../../client/home.png'
-import articleInvestmentCover from '../../client/licai.png'
-import articleOtcCover from '../../client/duihuan.png'
 
 const pendingApplications = [
   {
@@ -1017,75 +1017,6 @@ const articlePositionOptions = [
     description: '展示于首页热门推荐区域，同一时间仅展示1篇',
   },
 ]
-
-const initialRecommendedArticles = [
-  {
-    id: 'ARTICLE-001',
-    cover: articleDashboardCover,
-    title: 'A Smarter Way to Manage Your Global Wealth',
-    summary: 'Bring accounts, assets and day-to-day financial decisions into one clear Fidere experience.',
-    bodyHtml: '<h2>One view for your global wealth</h2><p>Fidere brings your account balances, recent activity and investment opportunities together so you can make informed decisions with less friction.</p><ul><li>Monitor balances across supported accounts</li><li>Review recent transactions</li><li>Access curated opportunities</li></ul>',
-    buttonText: 'Learn More',
-    positions: ['featured', 'home'],
-    sort: 1,
-    status: 'published',
-    isHomeFeatured: true,
-    updatedAt: '2026-08-10 16:20',
-  },
-  {
-    id: 'ARTICLE-002',
-    cover: articleOtcCover,
-    title: 'Convert Assets Across Your Fidere Accounts',
-    summary: 'Explore a clearer way to exchange supported fiat and digital assets across your Fidere balances.',
-    bodyHtml: '<h2>Asset conversion, made clearer</h2><p>Select the assets you want to sell and receive, review the quote, and confirm the transaction in one focused flow.</p><p>Available assets and balances are shown based on your current holdings.</p>',
-    buttonText: 'Explore Conversion',
-    positions: ['featured'],
-    sort: 2,
-    status: 'published',
-    isHomeFeatured: false,
-    updatedAt: '2026-08-09 11:45',
-  },
-  {
-    id: 'ARTICLE-003',
-    cover: articleInvestmentCover,
-    title: 'Explore Curated Investment Opportunities',
-    summary: 'Discover selected products designed for different investment goals, time horizons and risk preferences.',
-    bodyHtml: '<h2>Opportunities selected for Fidere clients</h2><p>Browse available products, compare key terms and review risk information before making an investment decision.</p><ol><li>Review the product overview</li><li>Understand the risk level</li><li>Check minimum investment requirements</li></ol>',
-    buttonText: 'Explore Products',
-    positions: ['featured'],
-    sort: 3,
-    status: 'published',
-    isHomeFeatured: false,
-    updatedAt: '2026-08-08 09:10',
-  },
-  {
-    id: 'ARTICLE-004',
-    cover: articleAccountCover,
-    title: 'Understanding Your Multi-Account Experience',
-    summary: 'Learn how Fidere keeps balances and transactions clear across supported jurisdictional accounts.',
-    bodyHtml: '<h2>Your accounts, clearly separated</h2><p>Each jurisdictional account keeps its own supported currencies and transaction history while remaining accessible from one experience.</p>',
-    buttonText: 'Read Guide',
-    positions: ['featured'],
-    sort: 3,
-    status: 'offline',
-    isHomeFeatured: false,
-    updatedAt: '2026-08-06 18:30',
-  },
-]
-
-const createEmptyRecommendedArticle = () => ({
-  id: '',
-  cover: '',
-  title: '',
-  summary: '',
-  bodyHtml: '',
-  buttonText: 'Learn More',
-  positions: [],
-  sort: 1,
-  status: 'offline',
-  isHomeFeatured: false,
-  updatedAt: '',
-})
 
 const fiatTabs = ['总览', '客户资产', '流水查询', '入账认领', '出金审批', '资金互转', '对账中心']
 const markedFiatTabs = new Set(['总览', '客户资产', '流水查询', '入账认领', '出金审批', '资金互转'])
@@ -7645,7 +7576,7 @@ function RecommendedArticleFormModal({ mode, article, articles, onClose, onSave 
       return
     }
     if (position === 'featured' && featuredAtCapacity) return
-    if (position === 'home' && publishedHomeArticle && publishedHomeArticle.id !== article.id) {
+    if (position === 'home' && publishedHomeArticle && publishedHomeArticle.articleId !== article.articleId) {
       setPendingHomeReplacement(publishedHomeArticle)
       return
     }
@@ -7654,7 +7585,7 @@ function RecommendedArticleFormModal({ mode, article, articles, onClose, onSave 
   const confirmHomeReplacement = () => {
     if (!pendingHomeReplacement) return
     updateDraft('positions', [...new Set([...draft.positions, 'home'])])
-    setConfirmedHomeReplacementId(pendingHomeReplacement.id)
+    setConfirmedHomeReplacementId(pendingHomeReplacement.articleId)
     setPendingHomeReplacement(null)
   }
   const uploadCover = (event) => {
@@ -7849,8 +7780,7 @@ function RecommendedArticleFormModal({ mode, article, articles, onClose, onSave 
   )
 }
 
-function RecommendedArticleManagementPage() {
-  const [articles, setArticles] = useState(initialRecommendedArticles)
+function RecommendedArticleManagementPage({ articles, setArticles, onOpenClient }) {
   const [pageMode, setPageMode] = useState('list')
   const [editingId, setEditingId] = useState(null)
   const [keyword, setKeyword] = useState('')
@@ -7859,7 +7789,7 @@ function RecommendedArticleManagementPage() {
   const [notice, setNotice] = useState('')
   const [noticeTone, setNoticeTone] = useState('success')
 
-  const editingArticle = articles.find((item) => item.id === editingId) || createEmptyRecommendedArticle()
+  const editingArticle = articles.find((item) => item.articleId === editingId) || createEmptyRecommendedArticle()
   const visibleArticles = useMemo(() => articles
     .filter((item) => {
       const normalizedKeyword = keyword.trim().toLowerCase()
@@ -7879,7 +7809,7 @@ function RecommendedArticleManagementPage() {
     setNoticeTone('success')
   }
   const openEdit = (article) => {
-    setEditingId(article.id)
+    setEditingId(article.articleId)
     setPageMode('edit')
     setNotice('')
     setNoticeTone('success')
@@ -7887,26 +7817,26 @@ function RecommendedArticleManagementPage() {
   const saveArticle = (draft, { replaceHomeArticleId = null } = {}) => {
     const updatedAt = '2026-08-10 18:45'
     const currentArticleId = pageMode === 'edit' ? editingId : ''
-    const publishedFeaturedOthers = articles.filter((item) => item.id !== currentArticleId && item.status === 'published' && item.positions.includes('featured')).length
-    const publishedHomeOther = articles.find((item) => item.id !== currentArticleId && item.status === 'published' && item.positions.includes('home')) || null
+    const publishedFeaturedOthers = articles.filter((item) => item.articleId !== currentArticleId && item.status === 'published' && item.positions.includes('featured')).length
+    const publishedHomeOther = articles.find((item) => item.articleId !== currentArticleId && item.status === 'published' && item.positions.includes('home')) || null
 
     // Keep the write boundary authoritative even when the modal state is stale.
     if (draft.status === 'published' && draft.positions.includes('featured') && publishedFeaturedOthers >= 3) {
       return { ok: false, field: 'positions', message: '特色推荐最多同时展示3篇，请先下架或取消其他文章的特色推荐。' }
     }
-    if (draft.status === 'published' && draft.positions.includes('home') && publishedHomeOther && replaceHomeArticleId !== publishedHomeOther.id) {
+    if (draft.status === 'published' && draft.positions.includes('home') && publishedHomeOther && replaceHomeArticleId !== publishedHomeOther.articleId) {
       return { ok: false, field: 'positions', message: `首页热门推荐已被《${publishedHomeOther.title}》占用，请确认替换后再保存。` }
     }
 
-    const replaceExistingHome = (item) => replaceHomeArticleId && item.id === replaceHomeArticleId
+    const replaceExistingHome = (item) => replaceHomeArticleId && item.articleId === replaceHomeArticleId
       ? { ...item, positions: item.positions.filter((position) => position !== 'home'), isHomeFeatured: false, updatedAt }
       : item
 
     if (pageMode === 'create') {
-      const nextNumber = Math.max(...articles.map((item) => Number(item.id.split('-')[1]) || 0)) + 1
+      const nextNumber = Math.max(...articles.map((item) => Number(item.articleId.split('-')[1]) || 0)) + 1
       const nextArticle = {
         ...draft,
-        id: `ARTICLE-${String(nextNumber).padStart(3, '0')}`,
+        articleId: `ARTICLE-${String(nextNumber).padStart(3, '0')}`,
         updatedAt,
         isHomeFeatured: draft.status === 'published' && draft.positions.includes('home'),
       }
@@ -7914,8 +7844,8 @@ function RecommendedArticleManagementPage() {
       setNotice(`文章“${nextArticle.title}”已创建。`)
     } else {
       setArticles((current) => current.map(replaceExistingHome).map((item) => {
-        if (item.id !== editingId) return item
-        return { ...draft, id: item.id, updatedAt, isHomeFeatured: draft.status === 'published' && draft.positions.includes('home') }
+        if (item.articleId !== editingId) return item
+        return { ...draft, articleId: item.articleId, updatedAt, isHomeFeatured: draft.status === 'published' && draft.positions.includes('home') }
       }))
       setNotice(`文章“${draft.title}”已更新。`)
     }
@@ -7926,8 +7856,8 @@ function RecommendedArticleManagementPage() {
   const toggleStatus = (article) => {
     const nextStatus = article.status === 'published' ? 'offline' : 'published'
     if (nextStatus === 'published') {
-      const publishedFeaturedOthers = articles.filter((item) => item.id !== article.id && item.status === 'published' && item.positions.includes('featured')).length
-      const publishedHomeOther = articles.find((item) => item.id !== article.id && item.status === 'published' && item.positions.includes('home'))
+      const publishedFeaturedOthers = articles.filter((item) => item.articleId !== article.articleId && item.status === 'published' && item.positions.includes('featured')).length
+      const publishedHomeOther = articles.find((item) => item.articleId !== article.articleId && item.status === 'published' && item.positions.includes('home'))
       if (article.positions.includes('featured') && publishedFeaturedOthers >= 3) {
         setNotice('特色推荐已达到3篇上限，请先下架或取消其他文章的特色推荐。')
         setNoticeTone('error')
@@ -7939,7 +7869,7 @@ function RecommendedArticleManagementPage() {
         return
       }
     }
-    setArticles((current) => current.map((item) => item.id === article.id
+    setArticles((current) => current.map((item) => item.articleId === article.articleId
       ? { ...item, status: nextStatus, isHomeFeatured: nextStatus === 'published' && item.positions.includes('home'), updatedAt: '2026-08-10 18:45' }
       : item))
     setNotice('')
@@ -7957,7 +7887,10 @@ function RecommendedArticleManagementPage() {
         <Panel className="px-[18px] py-[21px]">
         <div className="flex items-start justify-between gap-[20px]">
           <PageTitle title="推荐文章管理" subtitle="统一管理客户端特色推荐文章及首页热门推荐卡片，当前仅维护英文内容。" />
-          <PrimaryButton icon={Plus} onClick={openCreate}>新增文章</PrimaryButton>
+          <div className="flex items-center gap-[8px]">
+            {onOpenClient ? <ArticleActionButton icon={ArrowUpRight} onClick={onOpenClient}>查看客户端</ArticleActionButton> : null}
+            <PrimaryButton icon={Plus} onClick={openCreate}>新增文章</PrimaryButton>
+          </div>
         </div>
       </Panel>
 
@@ -8002,7 +7935,7 @@ function RecommendedArticleManagementPage() {
             </thead>
             <tbody>
               {visibleArticles.map((article) => (
-                <tr key={article.id} className="h-[96px] border-b border-[#e7e8ef] bg-white hover:bg-[#fbfaff]">
+                <tr key={article.articleId} className="h-[96px] border-b border-[#e7e8ef] bg-white hover:bg-[#fbfaff]">
                   <td className="px-[16px]">
                     <div className="h-[58px] w-[104px] overflow-hidden rounded-[4px] border border-[#e1e3eb] bg-[#f2f3f7]">
                       <img src={article.cover} alt="" className="h-full w-full object-cover object-top" />
@@ -8180,9 +8113,18 @@ function FeeConfigPage() {
   )
 }
 
-export function BaasAdminReviewPrototype({ onBack, defaultActivePage = 'opening-review' }) {
+export function BaasAdminReviewPrototype({
+  onBack,
+  defaultActivePage = 'opening-review',
+  recommendedArticles,
+  onChangeRecommendedArticles,
+  onOpenRecommendedClient,
+}) {
   const [activePage, setActivePage] = useState(defaultActivePage)
   const [reviewMode, setReviewMode] = useState('list')
+  const [localRecommendedArticles, setLocalRecommendedArticles] = useState(initialRecommendedArticles)
+  const resolvedRecommendedArticles = recommendedArticles || localRecommendedArticles
+  const setResolvedRecommendedArticles = onChangeRecommendedArticles || setLocalRecommendedArticles
 
   useEffect(() => {
     setActivePage(defaultActivePage)
@@ -8204,7 +8146,13 @@ export function BaasAdminReviewPrototype({ onBack, defaultActivePage = 'opening-
       {activePage === 'fiat-assets' ? <FiatAssetManagementPage /> : null}
       {activePage === 'account-ledger' ? <AccountLedgerPage /> : null}
       {activePage === 'fee-config' ? <FeeConfigPage /> : null}
-      {activePage === 'recommended-articles' ? <RecommendedArticleManagementPage /> : null}
+      {activePage === 'recommended-articles' ? (
+        <RecommendedArticleManagementPage
+          articles={resolvedRecommendedArticles}
+          setArticles={setResolvedRecommendedArticles}
+          onOpenClient={onOpenRecommendedClient}
+        />
+      ) : null}
       <button
         type="button"
         className="fixed right-0 top-[180px] z-40 flex h-[36px] w-[36px] items-center justify-center rounded-l-full bg-[#8b4fff] text-white shadow-lg"

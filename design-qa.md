@@ -31,3 +31,24 @@
 - P3: none
 
 final result: passed
+
+## Client Recommendation Article Interaction
+
+- Prototype home: `/admin/product-manual/recommended-articles-prototype/client`
+- Fund page: `/admin/product-manual/recommended-articles-prototype/client/funds`
+- Article detail: `/admin/product-manual/recommended-articles-prototype/client/articles/:articleId`
+- Verified viewport: `1280px`; document width `1265px`, no horizontal overflow.
+
+### Interaction Verification
+
+- The admin list and client recommendation surfaces share one article state keyed by unique `articleId`.
+- The homepage hot recommendation renders the published article assigned to `home`.
+- The fund page renders up to three published `featured` articles in configured sort order.
+- Clicking the homepage card, fund card, or visible CTA copy opens the shared detail route for that `articleId`.
+- `ARTICLE-001` opens the same detail URL from both homepage and fund recommendation positions.
+- The detail page renders the configured cover image, English title, summary, and rich-text body.
+- Direct access to unpublished `ARTICLE-004` shows an unavailable state instead of article content.
+- Unpublishing a featured article in admin immediately removes it from the fund page and updates the count from `3 / 3` to `2 / 3` without duplicating article pages.
+- Browser console contains no application errors; only Vite connection and React DevTools informational messages were present.
+
+final result: passed

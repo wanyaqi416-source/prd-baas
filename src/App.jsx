@@ -34,6 +34,7 @@ import { BaasSystemReformPage } from './pages/BaasSystemReformPage'
 import { ProductManualHome } from './pages/ProductManualHome'
 import { PrdInvestPage } from './pages/PrdInvestPage'
 import { OtcBankAccountPrototype } from './pages/OtcBankAccountPrototype'
+import { RecommendedArticlesClientPrototype } from './pages/RecommendedArticlesClientPrototype'
 import {
   SecuritiesBrokerageServicePrototype,
   SecuritiesAccountClientPrototype,
@@ -46,6 +47,7 @@ import { initialAccountTypeConfigs } from './data/accountTypeConfig'
 import { initialBrokerageConfigs } from './data/brokerageConfig'
 import { initialBrokerageApplications } from './data/securitiesBrokerageApplications'
 import { initialUserAccountConfigs } from './data/userAccountConfig'
+import { initialRecommendedArticles } from './data/recommendedArticles'
 
 function useCurrentPath() {
   const [path, setPath] = useState(window.location.pathname)
@@ -119,6 +121,7 @@ function App() {
   const [accountCurrencyConfigs, setAccountCurrencyConfigs] = useState(initialAccountCurrencyConfigs)
   const [accountTypeConfigs, setAccountTypeConfigs] = useState(initialAccountTypeConfigs)
   const [userAccountConfigs, setUserAccountConfigs] = useState(initialUserAccountConfigs)
+  const [recommendedArticles, setRecommendedArticles] = useState(initialRecommendedArticles)
 
   const updateBrokerageApplication = (applicationId, patch) => {
     setBrokerageApplications((current) => current.map((application) => (
@@ -420,11 +423,48 @@ function App() {
     )
   }
 
+  if (path === '/admin/product-manual/recommended-articles-prototype/client') {
+    return (
+      <RecommendedArticlesClientPrototype
+        articles={recommendedArticles}
+        onBack={() => navigate('/')}
+        onNavigate={navigate}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/recommended-articles-prototype/client/funds') {
+    return (
+      <RecommendedArticlesClientPrototype
+        articles={recommendedArticles}
+        page="funds"
+        onBack={() => navigate('/')}
+        onNavigate={navigate}
+      />
+    )
+  }
+
+  if (path.startsWith('/admin/product-manual/recommended-articles-prototype/client/articles/')) {
+    const articleId = decodeURIComponent(path.split('/').filter(Boolean).at(-1) || '')
+    return (
+      <RecommendedArticlesClientPrototype
+        articles={recommendedArticles}
+        page="article"
+        articleId={articleId}
+        onBack={() => navigate('/')}
+        onNavigate={navigate}
+      />
+    )
+  }
+
   if (path === '/admin/product-manual/recommended-articles-prototype') {
     return (
       <BaasAdminReviewPrototype
         onBack={() => navigate('/')}
         defaultActivePage="recommended-articles"
+        recommendedArticles={recommendedArticles}
+        onChangeRecommendedArticles={setRecommendedArticles}
+        onOpenRecommendedClient={() => navigate('/admin/product-manual/recommended-articles-prototype/client')}
       />
     )
   }
