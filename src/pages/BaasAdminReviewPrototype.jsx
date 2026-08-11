@@ -7942,7 +7942,7 @@ function RecommendedArticleManagementPage() {
     setArticles((current) => current.map((item) => item.id === article.id
       ? { ...item, status: nextStatus, isHomeFeatured: nextStatus === 'published' && item.positions.includes('home'), updatedAt: '2026-08-10 18:45' }
       : item))
-    setNotice(`文章“${article.title}”已${nextStatus === 'published' ? '上架' : '下架'}。`)
+    setNotice('')
     setNoticeTone('success')
   }
   const resetFilters = () => {
