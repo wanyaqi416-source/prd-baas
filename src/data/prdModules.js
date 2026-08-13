@@ -112,6 +112,21 @@ export const prdModules = [
     buttonLabel: '进入原型',
   },
   {
+    id: 'wealth-multi-account-prototype',
+    title: '理财多账户',
+    subtitle: '投资基金客户端与理财产品管理端双入口原型',
+    description:
+      '统一承载理财多账户客户端与管理端入口：客户端为根据理财截图重做的投资基金页面原型，管理端为理财产品、认购审核、赎回审核页面。',
+    category: '原型',
+    status: 'Prototype',
+    phase: 'Prototype Draft',
+    route: '/admin/product-manual/wealth-multi-account-prototype',
+    tags: ['理财多账户', '基金', '理财产品', '认购审核', '赎回审核', '管理端'],
+    source: 'Current Project',
+    moduleType: 'prototype',
+    buttonLabel: '进入原型',
+  },
+  {
     id: 'otc-bank-account-prototype',
     title: '不同的银行账户体系下做OTC与转账给其他用户原型',
     subtitle: '多银行账户资产兑换与信托用户互转原型',

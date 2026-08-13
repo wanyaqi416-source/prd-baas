@@ -34,6 +34,8 @@ import { BaasSystemReformPage } from './pages/BaasSystemReformPage'
 import { ProductManualHome } from './pages/ProductManualHome'
 import { PrdInvestPage } from './pages/PrdInvestPage'
 import { OtcBankAccountPrototype } from './pages/OtcBankAccountPrototype'
+import { WealthMultiAccountPrototype } from './pages/WealthMultiAccountPrototype'
+import { WealthProductAdminPrototype } from './pages/WealthProductAdminPrototype'
 import { RecommendedArticlesClientPrototype } from './pages/RecommendedArticlesClientPrototype'
 import {
   SecuritiesBrokerageServicePrototype,
@@ -366,6 +368,35 @@ function App() {
     )
   }
 
+  if (path === '/admin/product-manual/wealth-multi-account-prototype') {
+    return (
+      <AccountManagementPrototypeHome
+        onBack={() => navigate('/')}
+        onNavigate={navigate}
+        title="理财多账户"
+        description="分别进入投资基金客户端原型，以及理财产品、认购审核、赎回审核管理端原型。"
+        baseRoute="/admin/product-manual/wealth-multi-account-prototype"
+        featureBadge="理财多账户"
+        clientEntry={{
+          title: '客户端',
+          description: '进入基于理财页面截图重做的投资基金客户端原型，包含概览、产品目录、申购、持仓、赎回和每日收益。',
+          buttonLabel: '进入客户端',
+          route: '/admin/product-manual/wealth-multi-account-prototype/client',
+        }}
+        adminEntry={{
+          title: '管理端',
+          description: '进入根据理财产品管理端截图整理的产品列表、产品详情、认购审核与赎回审核页面。',
+          buttonLabel: '进入管理端',
+          route: '/admin/product-manual/wealth-multi-account-prototype/admin-review',
+        }}
+      />
+    )
+  }
+
+  if (path === '/admin/product-manual/wealth-multi-account-prototype/client') {
+    return <WealthMultiAccountPrototype onBack={() => navigate('/admin/product-manual/wealth-multi-account-prototype')} />
+  }
+
   if (path === '/admin/product-manual/otc-bank-account-prototype/client') {
     return (
       <OtcBankAccountPrototype
@@ -398,6 +429,10 @@ function App() {
         onJurisdictionStatusesChange={setOtcJurisdictionStatuses}
       />
     )
+  }
+
+  if (path === '/admin/product-manual/wealth-multi-account-prototype/admin-review') {
+    return <WealthProductAdminPrototype onBack={() => navigate('/admin/product-manual/wealth-multi-account-prototype')} />
   }
 
   if (path === '/admin/product-manual/account-ledger-prototype') {
