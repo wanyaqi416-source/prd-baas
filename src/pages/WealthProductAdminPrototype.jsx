@@ -378,13 +378,56 @@ const initialRedemptionOrders = [
     settlementAmount: '999 USDT_ERC20',
     settlementTime: '-',
     settlementStatus: '待人工处理',
-    exceptionReason: '原指定到账账户已禁用',
+    exceptionReason: '内部账本写入失败',
+    exceptionSource: '内部账本',
+    exceptionTime: '2026-05-13 14:16:48',
+    originalSettlementTxId: 'SETTLE-20260513-0026',
     appliedAt: '2026-05-13 14:08',
     approvedAt: '2026-05-13 14:16',
     approver: '超级管理员',
-    remark: '原指定账户异常，待人工处理',
+    remark: '审核通过后内部账本入账失败，待人工处理',
     statusGroup: 'manual',
     status: '待人工处理',
+  },
+  {
+    id: '21',
+    customer: 'okyqui42@rulersonline.com',
+    email: 'okyqui42@rulersonline.com',
+    product: 'GLDB USD 1-Month Fixed Deposit',
+    principal: '10,000.00 USD',
+    income: '180.00 USD',
+    redeemAmount: '10,180.00 USD',
+    fee: '18.00 USD',
+    actualAmount: '10,162.00 USD',
+    holdingAmount: '10,180.00 USD',
+    designatedAccountType: '美国账户',
+    designatedAccountNo: '••••5678',
+    designatedAccount: '美国账户 · ••••5678',
+    designatedCurrency: 'USD',
+    actualSettlementAccount: '-',
+    actualSettlementCurrency: 'USD',
+    settlementAmount: '10,162.00 USD',
+    settlementTime: '-',
+    settlementStatus: '待人工处理',
+    exceptionReason: '结算结果待核实',
+    exceptionSource: '内部账本',
+    exceptionTime: '2026-05-13 15:18:24',
+    originalSettlementTxId: 'SETTLE-20260513-0021',
+    appliedAt: '2026-05-13 15:05',
+    approvedAt: '2026-05-13 15:12',
+    approver: '超级管理员',
+    remark: '审核通过后结算结果未知，待人工核实处理',
+    statusGroup: 'manual',
+    status: '待人工处理',
+    manualAttemptRecords: [
+      {
+        account: '新加坡账户 · ••••0950',
+        operator: '超级管理员',
+        operatedAt: '2026-05-13 15:26:40',
+        failureReason: '内部账本写入失败',
+        note: '首次人工重试未完成入账，继续保留待人工处理。',
+      },
+    ],
   },
   {
     id: '25',
@@ -407,6 +450,8 @@ const initialRedemptionOrders = [
     settlementTime: '-',
     settlementStatus: '未结算',
     exceptionReason: '',
+    reviewAccountAvailable: false,
+    reviewInvalidReason: '客户指定结算账户当前不可用',
     appliedAt: '2026-05-12 18:38',
     approvedAt: '-',
     approver: '-',
@@ -518,7 +563,7 @@ const metricsByTab = {
   redemptions: [
     { label: '待审批', value: '1', icon: Clock3 },
     { label: '今日赎回', value: '0', trend: '0%', icon: WalletCards },
-    { label: '待人工处理', value: '1', icon: AlertTriangle },
+    { label: '待人工处理', value: '2', icon: AlertTriangle },
     { label: '已通过', value: '18', icon: CheckCircle2 },
   ],
 }
@@ -551,17 +596,15 @@ const productDetailTabs = [
 ]
 
 const manualSettlementAccounts = [
-  { id: 'acct-sg-0950', label: '新加坡账户 · ••••0950', type: '新加坡账户', currency: 'USDT_ERC20', status: '激活' },
-  { id: 'acct-us-5678', label: '美国账户 · ••••5678', type: '美国账户', currency: 'USDT_ERC20', status: '激活' },
+  { id: 'acct-sg-0950', label: '新加坡账户 · ••••0950', type: '新加坡账户', currency: 'USDT_ERC20', owner: 'current-customer', status: '激活', canReceive: true },
+  { id: 'acct-us-5678', label: '美国账户 · ••••5678', type: '美国账户', currency: 'USDT_ERC20', owner: 'current-customer', status: '激活', canReceive: true },
+  { id: 'acct-sg-usd-0950', label: '新加坡账户 · ••••0950', type: '新加坡账户', currency: 'USD', owner: 'current-customer', status: '激活', canReceive: true },
+  { id: 'acct-us-usd-5678', label: '美国账户 · ••••5678', type: '美国账户', currency: 'USD', owner: 'current-customer', status: '激活', canReceive: true },
 ]
 
 const businessRulesByTab = {
   products: [
     '产品配置不新增支持香港/新加坡/美国/巴林账户等写死字段。',
-    '付款账户统一读取账户类型配置中的“支持理财付款”能力。',
-    '账户需激活、支持理财付款、支持投资币种，才可作为付款账户。',
-    '新增账户类型只配置账户能力，不改理财产品代码。',
-    '认购接口需做幂等、重复订单、重复扣款、产品额度并发校验。',
   ],
   subscriptions: [
     '付款账户是认购订单级字段，每笔认购独立记录真实资金来源。',
@@ -570,12 +613,18 @@ const businessRulesByTab = {
     '认购失败、取消、拒绝后，资金必须原路退回本笔付款账户。',
   ],
   redemptions: [
-    '赎回管理使用单层状态 Tab：全部、待审核、已通过、已拒绝、待人工处理。',
-    '客户提交赎回后进入待审核；审核拒绝后进入已拒绝，不执行结算。',
-    '审核通过后系统直接执行结算，正常完成后进入已通过。',
-    '审核通过后如账户禁用、关闭、币种不可用或无法入账，进入待人工处理。',
-    '待人工处理由运营手动选择客户其他激活且支持结算币种的账户重新处理，成功后状态变为已通过。',
-    '短暂技术处理态仅作为系统内部状态，不作为运营筛选 Tab 展示。',
+    '1. 客户到期后主动发起赎回，并选择本次结算账户。',
+    '2. 客户选择及提交赎回时，系统均校验结算账户有效性。',
+    '3. 运营点击通过时，系统再次校验客户指定结算账户。',
+    '4. 审核前发现结算账户不可用时，不允许通过，由运营拒绝申请，客户重新选择有效账户后再次发起赎回。',
+    '5. 审核通过后，FIDERE 系统通过内部账本直接将实际到账金额入账至客户指定账户。',
+    '6. 只有内部账本实际执行入账失败时，订单才进入待人工处理。',
+    '7. 待人工处理异常原因由后端根据内部账本执行结果自动生成，运营不得修改系统异常原因。',
+    '8. 运营可选择客户其他激活且支持对应币种的账户重新执行结算，并必须填写处理备注。',
+    '9. 人工处理前必须确认原结算交易未成功，避免重复入账。',
+    '10. 已通过表示审核完成且内部账本已经成功入账。',
+    '11. 系统不得自动切换客户结算账户，人工变更账户必须保留完整操作记录。',
+    '12. 短暂技术处理中状态仅作为系统内部状态，不作为运营筛选 Tab 展示。',
   ],
   detail: [
     '抽屉仅展示业务数据，不放右侧业务规则，避免撑宽详情弹层。',
@@ -1046,7 +1095,7 @@ function ReviewManagementView({ kind, activeStatus, onChangeStatus, orders, onOp
         {isSubscription ? (
           <SubscriptionTable rows={rows} onOpen={onOpen} />
         ) : (
-          <RedemptionTable rows={rows} onOpen={onOpen} />
+          <RedemptionTable rows={rows} activeStatus={activeStatus} onOpen={onOpen} />
         )}
       </div>
     </>
@@ -1058,9 +1107,60 @@ function getCurrentSettlementAccount(order) {
 }
 
 function getAccountDisplay(accountType, accountNo, accountLabel) {
+  if (accountLabel && accountLabel !== '-') return accountLabel
+  if (accountType && accountNo) return `${accountType} · ${accountNo}`
   if (accountType) return accountType
-  if (!accountLabel || accountLabel === '-') return accountLabel || '-'
-  return accountLabel.split('·')[0].trim()
+  return accountLabel || '-'
+}
+
+function normalizeAmountLabel(value) {
+  const text = String(value || '-').trim()
+  const currencyFirst = text.match(/^([A-Z][A-Z0-9_]*|\$|US\$|HK\$)\s+(.+)$/)
+  if (currencyFirst) return `${currencyFirst[2]} ${currencyFirst[1]}`
+  return text
+}
+
+function formatPositiveAmount(value) {
+  const text = normalizeAmountLabel(value)
+  return text === '-' ? '-' : `+${text}`
+}
+
+function getSubscriptionListPaymentAccount(order) {
+  return `${order.paymentAccountType} / ${order.paymentCurrency}`
+}
+
+function getSubscriptionDetailPaymentAccount(order) {
+  return `${order.paymentAccountType} / ${order.paymentCurrency}`
+}
+
+function getSettlementListAccount(order) {
+  return getAccountDisplay('', '', getCurrentSettlementAccount(order))
+}
+
+function getSettlementDetailAccount(order) {
+  return getAccountDisplay('', '', getCurrentSettlementAccount(order))
+}
+
+function getRedemptionListAmount(order) {
+  if (order.statusGroup === 'approved') {
+    return {
+      value: formatPositiveAmount(order.actualAmount),
+      className: 'text-[#15a65a]',
+    }
+  }
+  return {
+    value: normalizeAmountLabel(order.redeemAmount),
+    className: 'text-[#272842]',
+  }
+}
+
+function getManualSettlementEligibleAccounts(order) {
+  return manualSettlementAccounts.filter((account) => (
+    account.owner === 'current-customer'
+    && account.status === '激活'
+    && account.currency === order.designatedCurrency
+    && account.canReceive
+  ))
 }
 
 function SubscriptionTable({ rows, onOpen }) {
@@ -1090,7 +1190,7 @@ function SubscriptionTable({ rows, onOpen }) {
             <td className="px-[18px] font-semibold">{order.product}</td>
             <td className="px-[18px]"><span className="rounded-full bg-[#edf4ff] px-[10px] py-[4px] text-[13px] font-semibold text-[#2f6fec]">{order.type}</span></td>
             <td className="min-w-[160px] px-[18px]">
-              <p className="font-semibold">{getAccountDisplay(order.paymentAccountType, order.paymentAccountNo, order.paymentAccount)}</p>
+              <p className="font-semibold">{getSubscriptionListPaymentAccount(order, rows)}</p>
             </td>
             <td className="px-[18px] font-semibold">{order.amount}</td>
             <td className="px-[18px]">{order.appliedAt}</td>
@@ -1107,51 +1207,56 @@ function SubscriptionTable({ rows, onOpen }) {
   )
 }
 
-function RedemptionTable({ rows, onOpen }) {
+function RedemptionTable({ rows, activeStatus, onOpen }) {
+  const isManualView = activeStatus === 'manual'
+
   return (
-    <table className="w-full min-w-[1380px] border-collapse text-left text-[14px]">
+    <table className="w-full min-w-[1240px] border-collapse text-left text-[14px]">
       <thead>
         <tr className="h-[56px] bg-[#f4f5fb] text-[#20213b]">
           <th className="px-[16px] font-medium">赎回编号</th>
           <th className="px-[16px] font-medium">客户信息</th>
           <th className="px-[16px] font-medium">产品</th>
-          <th className="px-[16px] font-medium">当前结算账户</th>
-          <th className="px-[16px] font-medium">赎回金额</th>
-          <th className="px-[16px] font-medium">持有金额</th>
-          <th className="px-[16px] font-medium">申请时间</th>
-          <th className="px-[16px] font-medium">审批时间</th>
-          <th className="px-[16px] font-medium">审批人</th>
-          <th className="px-[16px] font-medium">审批备注</th>
+          <th className="px-[16px] font-medium">{isManualView ? '客户原结算账户' : '结算账户'}</th>
+          <th className="px-[16px] font-medium">{isManualView ? '实际应到账金额' : '赎回金额'}</th>
+          {isManualView ? <th className="px-[16px] font-medium">异常原因</th> : <th className="px-[16px] font-medium">申请时间</th>}
+          {isManualView ? <th className="px-[16px] font-medium">异常时间</th> : <th className="px-[16px] font-medium">审批时间</th>}
+          {isManualView ? null : <th className="px-[16px] font-medium">审批人</th>}
           <th className="px-[16px] text-center font-medium">状态</th>
           <th className="px-[16px] text-center font-medium">操作</th>
         </tr>
       </thead>
       <tbody>
-        {rows.map((order) => (
-          <tr key={order.id} className="h-[70px] border-b border-[#e5e7ef] text-[#272842]">
-            <td className="px-[16px] font-mono text-[13px]">{order.id}</td>
-            <td className="px-[16px]">
-              <p className="font-semibold">{order.customer}</p>
-              <p className="mt-[4px] text-[12px] text-[#74798c]">{order.email}</p>
-            </td>
-            <td className="px-[16px] font-semibold">{order.product}</td>
-            <td className="min-w-[170px] px-[16px]">
-              <p className="font-semibold">{getAccountDisplay('', '', getCurrentSettlementAccount(order))}</p>
-            </td>
-            <td className="px-[16px] font-semibold text-[#ef4444]">{order.redeemAmount}</td>
-            <td className="px-[16px]">{order.holdingAmount}</td>
-            <td className="px-[16px]">{order.appliedAt}</td>
-            <td className="px-[16px]">{order.approvedAt}</td>
-            <td className="px-[16px]">{order.approver}</td>
-            <td className="px-[16px]">{order.remark}</td>
-            <td className="px-[16px] text-center"><StatusBadge status={order.status} /></td>
-            <td className="px-[16px] text-center">
-              <IconButton label="查看赎回详情" onClick={() => onOpen(order)}>
-                <Eye className="h-[18px] w-[18px]" strokeWidth={2.3} />
-              </IconButton>
-            </td>
-          </tr>
-        ))}
+        {rows.map((order) => {
+          const amount = getRedemptionListAmount(order)
+          return (
+            <tr key={order.id} className="h-[70px] border-b border-[#e5e7ef] text-[#272842]">
+              <td className="px-[16px] font-mono text-[13px]">{order.id}</td>
+              <td className="px-[16px]">
+                <p className="font-semibold">{order.customer}</p>
+                <p className="mt-[4px] text-[12px] text-[#74798c]">{order.email}</p>
+              </td>
+              <td className="px-[16px] font-semibold">{order.product}</td>
+              <td className="min-w-[170px] px-[16px]">
+                <p className="font-semibold">{isManualView ? getAccountDisplay('', '', order.designatedAccount) : getSettlementListAccount(order)}</p>
+              </td>
+              <td className={`px-[16px] font-semibold ${isManualView ? 'text-[#272842]' : amount.className}`}>{isManualView ? normalizeAmountLabel(order.actualAmount) : amount.value}</td>
+              {isManualView ? <td className="px-[16px] text-[#ef4444]">{order.exceptionReason || '内部账本入账失败'}</td> : <td className="px-[16px]">{order.appliedAt}</td>}
+              {isManualView ? <td className="px-[16px]">{order.exceptionTime || order.approvedAt}</td> : <td className="px-[16px]">{order.approvedAt}</td>}
+              {isManualView ? null : <td className="px-[16px]">{order.approver}</td>}
+              <td className="px-[16px] text-center"><StatusBadge status={order.status} /></td>
+              <td className="px-[16px] text-center">
+                {isManualView ? (
+                  <button type="button" onClick={() => onOpen(order)} className="h-[30px] rounded-[6px] bg-[#8b4fff] px-[12px] text-[13px] font-semibold text-white hover:bg-[#7b3ffc]">处理</button>
+                ) : (
+                  <IconButton label="查看赎回详情" onClick={() => onOpen(order)}>
+                    <Eye className="h-[18px] w-[18px]" strokeWidth={2.3} />
+                  </IconButton>
+                )}
+              </td>
+            </tr>
+          )
+        })}
       </tbody>
     </table>
   )
@@ -1245,6 +1350,7 @@ function SubscriptionDrawer({ order, onClose, onDecision }) {
   if (!order) return null
   const isPending = order.statusGroup === 'pending'
   const hasRefund = order.refundStatus && order.refundStatus !== '-'
+  const isRejected = order.statusGroup === 'rejected' || order.status === '已拒绝'
 
   return (
     <DrawerShell
@@ -1271,13 +1377,21 @@ function SubscriptionDrawer({ order, onClose, onDecision }) {
         <DetailField label="订单号" value={order.id} copyable />
         <DetailField label="客户" value={order.email} />
         <DetailField label="认购类型" value={order.type} />
-        <DetailField label="付款账户" value={`${getAccountDisplay(order.paymentAccountType, order.paymentAccountNo, order.paymentAccount)} / ${order.paymentCurrency}`} />
+        <DetailField label="付款账户" value={getSubscriptionDetailPaymentAccount(order)} />
         <DetailField label="申请时间" value={order.appliedAt} />
         <DetailField label="审批时间" value={order.approvedAt} />
         <DetailField label="风险等级" value={order.risk} />
         {hasRefund ? <DetailField label="退款状态" value={order.refundStatus} /> : null}
-        {order.rejectReason ? <DetailField label="拒绝原因" value={order.rejectReason} tone="danger" /> : null}
       </DetailSection>
+
+      {isRejected ? (
+        <DetailSection title="审核结果" icon={ShieldCheck}>
+          <DetailField label="状态" value="已拒绝" tone="danger" />
+          <DetailField label="拒绝原因" value={order.rejectReason || '资料不完整'} tone="danger" />
+          <DetailField label="审核人" value={order.approver || '超级管理员'} />
+          <DetailField label="审核时间" value={order.approvedAt} />
+        </DetailSection>
+      ) : null}
 
       {isPending ? (
         <RejectReasonField value={rejectReason} onChange={setRejectReason} placeholder="如需拒绝该认购申请，请填写拒绝原因。" />
@@ -1286,16 +1400,26 @@ function SubscriptionDrawer({ order, onClose, onDecision }) {
   )
 }
 
-function RedemptionDrawer({ order, onClose, onDecision, onManualSettlement }) {
-  const [rejectReason, setRejectReason] = useState(order?.rejectReason || order?.remark || '')
+function RedemptionDrawer({ order, onClose, onDecision, onManualSettlement, prefillRejectReason }) {
+  const initialRejectReason = order?.rejectReason || (order?.remark && order.remark !== '-' ? order.remark : '') || prefillRejectReason || ''
+  const [rejectReason, setRejectReason] = useState(initialRejectReason)
 
   useEffect(() => {
-    setRejectReason(order?.rejectReason || order?.remark || '')
-  }, [order?.id, order?.rejectReason, order?.remark])
+    setRejectReason(order?.rejectReason || (order?.remark && order.remark !== '-' ? order.remark : '') || prefillRejectReason || '')
+  }, [order?.id, order?.rejectReason, order?.remark, prefillRejectReason])
 
   if (!order) return null
   const isPending = order.statusGroup === 'pending'
   const needsManualSettlement = order.statusGroup === 'manual' || order.status === '待人工处理'
+  const isRejected = order.statusGroup === 'rejected'
+  const hasManualSettlementRecord = Boolean(order.manualSettlementRecord)
+  const showManualSettlementRecord = hasManualSettlementRecord
+    && order.manualSettlementRecord.originalAccount !== order.manualSettlementRecord.actualAccount
+  const showNormalSettlement = !needsManualSettlement && !isRejected && !showManualSettlementRecord
+  const manualAttempts = order.manualAttemptRecords || []
+  const drawerAmount = order.statusGroup === 'approved'
+    ? { value: formatPositiveAmount(order.actualAmount), label: '实际到账', className: 'text-[#15a65a]' }
+    : { value: normalizeAmountLabel(order.redeemAmount), label: '赎回金额', className: 'text-[#24243d]' }
 
   return (
     <DrawerShell
@@ -1312,18 +1436,20 @@ function RedemptionDrawer({ order, onClose, onDecision, onManualSettlement }) {
     >
       <OrderHero order={order} kind="redemption" />
       <div className="mt-[18px] rounded-[10px] bg-[#fff1f1] px-[18px] py-[20px] text-center">
-        <p className="text-[28px] font-semibold leading-none text-[#ef4444]">{order.redeemAmount}</p>
-        <p className="mt-[8px] text-[13px] text-[#a76363]">赎回金额</p>
+        <p className={`text-[28px] font-semibold leading-none ${drawerAmount.className}`}>{drawerAmount.value}</p>
+        <p className="mt-[8px] text-[13px] text-[#5d916f]">{drawerAmount.label}</p>
       </div>
 
       <DetailSection title="订单信息" icon={FileText}>
         <DetailField label="订单号" value={order.id} copyable />
         <DetailField label="客户" value={order.email} />
+        <DetailField label="产品" value={order.product} />
         <DetailField label="申请时间" value={order.appliedAt} />
         <DetailField label="审批时间" value={order.approvedAt} />
         <DetailField label="审批人" value={order.approver} />
-        <DetailField label="审批备注" value={order.remark} />
-        {order.rejectReason ? <DetailField label="拒绝原因" value={order.rejectReason} tone="danger" /> : null}
+        {needsManualSettlement ? <DetailField label="审核结果" value="业务审核已通过" /> : null}
+        {isPending ? <DetailField label="客户指定结算账户" value={getAccountDisplay('', '', order.designatedAccount)} /> : null}
+        {!isRejected && order.remark && order.remark !== '-' ? <DetailField label="审批备注" value={order.remark} /> : null}
       </DetailSection>
 
       {isPending ? (
@@ -1331,26 +1457,68 @@ function RedemptionDrawer({ order, onClose, onDecision, onManualSettlement }) {
       ) : null}
 
       <DetailSection title="赎回资金" icon={Banknote}>
-        <DetailField label="本金" value={order.principal} />
-        <DetailField label="收益" value={order.income} />
+        {needsManualSettlement || isPending ? <DetailField label="本金" value={order.principal} /> : null}
+        {needsManualSettlement || isPending ? <DetailField label="收益" value={order.income} /> : null}
+        <DetailField label="赎回总额" value={order.redeemAmount} />
         <DetailField label="手续费" value={order.fee} />
-        <DetailField label="实际到账" value={order.actualAmount} tone="blue" />
+        <DetailField label={needsManualSettlement ? '实际应到账金额' : '实际到账'} value={order.actualAmount} tone="blue" />
       </DetailSection>
 
-      <DetailSection title="结算信息" icon={WalletCards}>
-        <DetailField label="客户指定账户" value={getAccountDisplay(order.designatedAccountType, order.designatedAccountNo, order.designatedAccount)} />
-        <DetailField label="实际到账金额" value={order.actualAmount} tone="blue" />
-        <DetailField label="结算时间" value={order.settlementTime} />
-        {order.exceptionReason ? <DetailField label="异常原因" value={order.exceptionReason} tone="danger" /> : null}
-      </DetailSection>
+      {showNormalSettlement ? (
+        <DetailSection title="结算信息" icon={WalletCards}>
+          <DetailField label="结算账户" value={getSettlementDetailAccount(order)} />
+          <DetailField label="结算时间" value={order.settlementTime} />
+        </DetailSection>
+      ) : null}
 
-      {order.manualSettlementRecord ? (
-        <DetailSection title="人工修改记录" icon={Edit3}>
-          <DetailField label="原客户指定账户" value={getAccountDisplay(order.designatedAccountType, order.designatedAccountNo, order.manualSettlementRecord.originalAccount)} />
+      {needsManualSettlement ? (
+        <DetailSection title="原结算信息" icon={WalletCards}>
+          <DetailField label="客户原结算账户" value={getAccountDisplay('', '', order.designatedAccount)} />
+          <DetailField label="结算币种" value={order.designatedCurrency} />
+          <DetailField label="原结算交易编号" value={order.originalSettlementTxId || '-'} />
+        </DetailSection>
+      ) : null}
+
+      {showManualSettlementRecord ? (
+        <DetailSection title="结算信息" icon={WalletCards}>
+          <DetailField label="客户原结算账户" value={getAccountDisplay('', '', order.manualSettlementRecord.originalAccount)} />
           <DetailField label="实际结算账户" value={getAccountDisplay('', '', order.manualSettlementRecord.actualAccount)} />
-          <DetailField label="变更原因" value={order.manualSettlementRecord.reason} />
-          <DetailField label="操作人" value={order.manualSettlementRecord.operator} />
-          <DetailField label="操作时间" value={order.manualSettlementRecord.operatedAt} />
+          <DetailField label="处理备注" value={order.manualSettlementRecord.reason || '-'} />
+          <DetailField label="操作人" value={order.manualSettlementRecord.operator || '-'} />
+          <DetailField label="操作时间" value={order.manualSettlementRecord.operatedAt || '-'} />
+          <DetailField label="最终结算时间" value={order.manualSettlementRecord.finalSettlementTime || order.settlementTime} />
+          <DetailField label="最终账变流水号" value={order.manualSettlementRecord.finalLedgerId || '-'} />
+          <DetailField label="最终结算结果" value={order.manualSettlementRecord.finalSettlementResult || '成功'} />
+        </DetailSection>
+      ) : null}
+
+      {needsManualSettlement || showManualSettlementRecord ? (
+        <DetailSection title="结算异常" icon={AlertTriangle}>
+          <DetailField label="标准化异常原因" value={order.manualSettlementRecord?.exceptionReason || order.exceptionReason || '内部账本入账失败'} tone="danger" />
+          <DetailField label="异常时间" value={order.exceptionTime || order.approvedAt} />
+          {needsManualSettlement ? <DetailField label="当前状态" value="待人工处理" /> : null}
+        </DetailSection>
+      ) : null}
+
+      {manualAttempts.length ? (
+        <DetailSection title="人工处理记录" icon={FileText}>
+          {manualAttempts.map((attempt, index) => (
+            <DetailField
+              key={`${attempt.operatedAt}-${attempt.account}`}
+              label={`第 ${index + 1} 次处理`}
+              value={`${getAccountDisplay('', '', attempt.account)} / ${attempt.failureReason} / ${attempt.operator} / ${attempt.operatedAt} / ${attempt.note}`}
+              tone="danger"
+            />
+          ))}
+        </DetailSection>
+      ) : null}
+
+      {isRejected ? (
+        <DetailSection title="审核结果" icon={AlertTriangle}>
+          <DetailField label="状态" value="已拒绝" tone="danger" />
+          <DetailField label="拒绝原因" value={order.rejectReason || order.remark || '-'} tone="danger" />
+          <DetailField label="审核人" value={order.approver} />
+          <DetailField label="审核时间" value={order.approvedAt} />
         </DetailSection>
       ) : null}
 
@@ -1361,7 +1529,7 @@ function RedemptionDrawer({ order, onClose, onDecision, onManualSettlement }) {
           className="mt-[18px] flex h-[42px] w-full items-center justify-center gap-[8px] rounded-[6px] bg-[#8b4fff] text-[14px] font-semibold text-white shadow-[0_5px_12px_rgba(139,79,255,0.35)] hover:bg-[#7b3ffc]"
         >
           <WalletCards className="h-[17px] w-[17px]" />
-          选择新的结算账户
+          结算异常处理
         </button>
       ) : null}
     </DrawerShell>
@@ -1370,15 +1538,16 @@ function RedemptionDrawer({ order, onClose, onDecision, onManualSettlement }) {
 
 function ManualSettlementModal({ order, selectedAccountId, note, onSelectAccount, onChangeNote, onClose, onConfirm }) {
   if (!order) return null
-  const selectedAccount = manualSettlementAccounts.find((account) => account.id === selectedAccountId)
+  const eligibleAccounts = getManualSettlementEligibleAccounts(order)
+  const selectedAccount = eligibleAccounts.find((account) => account.id === selectedAccountId)
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#111827]/45 px-4">
       <section className="w-full max-w-[620px] rounded-[8px] bg-white shadow-[0_22px_60px_rgba(15,23,42,0.25)]">
         <header className="flex items-center justify-between border-b border-[#e6e8f0] px-[22px] py-[18px]">
           <div>
-            <h2 className="text-[20px] font-semibold text-[#24243d]">选择新的结算账户</h2>
-            <p className="mt-[5px] text-[13px] text-[#7a7f91]">原指定账户异常时，由运营人工选择客户其他有效账户。</p>
+            <h2 className="text-[20px] font-semibold text-[#24243d]">结算异常处理</h2>
+            <p className="mt-[5px] text-[13px] text-[#7a7f91]">本次赎回内部账本自动入账失败，请核实后选择有效账户重新执行结算。</p>
           </div>
           <button type="button" aria-label="关闭人工结算弹窗" onClick={onClose} className="flex h-[34px] w-[34px] items-center justify-center rounded-full text-[#6b7280] hover:bg-[#f1f2f7]">
             <X className="h-[20px] w-[20px]" />
@@ -1388,52 +1557,60 @@ function ManualSettlementModal({ order, selectedAccountId, note, onSelectAccount
         <div className="space-y-[16px] px-[22px] py-[18px]">
           <div className="grid grid-cols-2 gap-[12px]">
             <DetailField label="赎回订单" value={order.id} />
-            <DetailField label="结算金额" value={order.settlementAmount} />
-            <DetailField label="客户原指定到账账户" value={getAccountDisplay(order.designatedAccountType, order.designatedAccountNo, order.designatedAccount)} tone="danger" />
-            <DetailField label="异常原因" value={order.exceptionReason || '账户不可用'} tone="danger" />
+            <DetailField label="客户" value={order.email} />
+            <DetailField label="产品" value={order.product} />
+            <DetailField label="实际应到账金额" value={order.actualAmount} />
+            <DetailField label="客户原结算账户" value={getAccountDisplay('', '', order.designatedAccount)} />
+            <DetailField label="后端生成的异常原因" value={order.exceptionReason || '内部账本入账失败'} tone="danger" />
+            <DetailField label="异常发生时间" value={order.exceptionTime || order.approvedAt} />
           </div>
 
           <div>
-            <h3 className="mb-[10px] text-[15px] font-semibold text-[#24243d]">请选择新的结算账户</h3>
+            <h3 className="mb-[10px] text-[15px] font-semibold text-[#24243d]">请选择实际结算账户</h3>
             <div className="space-y-[9px]">
-              {manualSettlementAccounts.map((account) => (
-                <label
-                  key={account.id}
-                  className={cn(
-                    'flex cursor-pointer items-center justify-between rounded-[6px] border px-[14px] py-[12px] transition',
-                    selectedAccountId === account.id ? 'border-[#8b4fff] bg-[#fbf9ff]' : 'border-[#e2e4ec] bg-white hover:border-[#c9bbff]',
-                  )}
-                >
-                  <span className="flex items-center gap-[10px]">
-                    <input
-                      type="radio"
-                      name="manualSettlementAccount"
-                      checked={selectedAccountId === account.id}
-                      onChange={() => onSelectAccount(account.id)}
-                      className="h-[16px] w-[16px] accent-[#8b4fff]"
-                    />
-                    <span>
-                      <span className="block text-[14px] font-semibold text-[#24243d]">{getAccountDisplay(account.type, '', account.label)}</span>
-                      <span className="mt-[3px] block text-[12px] text-[#777d90]">{account.currency}</span>
+              {eligibleAccounts.length ? eligibleAccounts.map((account) => (
+                  <label
+                    key={account.id}
+                    className={cn(
+                      'flex cursor-pointer items-center justify-between rounded-[6px] border px-[14px] py-[12px] transition',
+                      selectedAccountId === account.id ? 'border-[#8b4fff] bg-[#fbf9ff]' : 'border-[#e2e4ec] bg-white hover:border-[#c9bbff]',
+                    )}
+                  >
+                    <span className="flex items-center gap-[10px]">
+                      <input
+                        type="radio"
+                        name="manualSettlementAccount"
+                        checked={selectedAccountId === account.id}
+                        onChange={() => onSelectAccount(account.id)}
+                        className="h-[16px] w-[16px] accent-[#8b4fff]"
+                      />
+                      <span>
+                        <span className="block text-[14px] font-semibold text-[#24243d]">{getAccountDisplay(account.type, '', account.label)}</span>
+                        <span className="mt-[3px] block text-[12px] text-[#777d90]">{account.currency}</span>
+                      </span>
                     </span>
-                  </span>
-                </label>
-              ))}
+                  </label>
+                )) : (
+                  <div className="rounded-[6px] border border-dashed border-[#d6d8e3] bg-[#f8f9fc] px-[14px] py-[22px] text-center">
+                    <p className="font-semibold text-[#24243d]">暂无可用结算账户</p>
+                    <p className="mt-[6px] text-[13px] text-[#777d90]">当前客户没有激活且支持该结算币种入账的账户。</p>
+                  </div>
+                )}
             </div>
           </div>
 
           <label className="block">
-            <span className="text-[14px] font-semibold text-[#24243d]">处理原因 / 操作备注</span>
+            <span className="text-[14px] font-semibold text-[#24243d]">处理备注 *</span>
             <textarea
               value={note}
               onChange={(event) => onChangeNote(event.target.value)}
               className="mt-[8px] min-h-[92px] w-full resize-none rounded-[6px] border border-[#d6d8e3] px-[12px] py-[10px] text-[14px] outline-none focus:border-[#8b4fff] focus:ring-2 focus:ring-[#8b4fff]/10"
-              placeholder="客户原指定香港账户已禁用，经人工处理改为客户有效的新加坡账户结算。"
+              placeholder="内部账本自动入账失败，核实原交易未成功后，改用客户有效的新加坡账户重新结算。"
             />
           </label>
 
           <div className="rounded-[6px] bg-[#fff8ed] px-[12px] py-[10px] text-[13px] leading-5 text-[#9a5b00]">
-            人工结算不会覆盖客户原指定账户；后台需同时保留原账户、新账户、操作人、操作时间、异常原因和处理备注。
+            人工处理不会覆盖客户原始赎回指令；执行前必须确认原账本交易未成功，并保留原账户、实际账户、异常原因、处理备注、操作人、操作时间、最终账变流水号和最终结算结果。
           </div>
         </div>
 
@@ -1445,8 +1622,63 @@ function ManualSettlementModal({ order, selectedAccountId, note, onSelectAccount
             disabled={!selectedAccount || !note.trim()}
             className="h-[38px] rounded-[6px] bg-[#8b4fff] px-[18px] text-[14px] font-semibold text-white shadow-[0_5px_12px_rgba(139,79,255,0.28)] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            确认修改并结算
+            确认并执行结算
           </button>
+        </footer>
+      </section>
+    </div>
+  )
+}
+
+function ManualSettlementConfirmModal({ order, account, onCancel, onConfirm }) {
+  if (!order || !account) return null
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#111827]/50 px-4">
+      <section className="w-full max-w-[520px] rounded-[8px] bg-white shadow-[0_22px_60px_rgba(15,23,42,0.28)]">
+        <header className="border-b border-[#e6e8f0] px-[22px] py-[18px]">
+          <h2 className="text-[20px] font-semibold text-[#24243d]">确认执行人工结算？</h2>
+          <p className="mt-[6px] text-[13px] leading-5 text-[#777d90]">确认后将重新执行内部账本资金入账，操作结果及账户变更记录将永久保留。</p>
+        </header>
+        <div className="grid gap-[12px] px-[22px] py-[18px]">
+          <DetailField label="客户原结算账户" value={getAccountDisplay('', '', order.designatedAccount)} />
+          <DetailField label="实际结算账户" value={getAccountDisplay(account.type, '', account.label)} />
+          <DetailField label="实际应到账金额" value={order.actualAmount} tone="blue" />
+        </div>
+        <footer className="flex justify-end gap-[10px] border-t border-[#e6e8f0] px-[22px] py-[16px]">
+          <button type="button" onClick={onCancel} className="h-[38px] rounded-[6px] border border-[#d6d8e3] px-[18px] text-[14px] font-semibold text-[#555b70] hover:bg-[#f6f7fb]">取消</button>
+          <button type="button" onClick={onConfirm} className="h-[38px] rounded-[6px] bg-[#8b4fff] px-[18px] text-[14px] font-semibold text-white shadow-[0_5px_12px_rgba(139,79,255,0.28)] hover:bg-[#7b3ffc]">确认执行</button>
+        </footer>
+      </section>
+    </div>
+  )
+}
+
+function SettlementAccountUnavailableModal({ order, onCancel, onGoReject }) {
+  if (!order) return null
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#111827]/50 px-4">
+      <section className="w-full max-w-[540px] rounded-[8px] bg-white shadow-[0_22px_60px_rgba(15,23,42,0.28)]">
+        <header className="flex items-start gap-[12px] border-b border-[#e6e8f0] px-[22px] py-[18px]">
+          <span className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-[#fff2f2] text-[#ef4444]">
+            <AlertTriangle className="h-[20px] w-[20px]" />
+          </span>
+          <div>
+            <h2 className="text-[20px] font-semibold text-[#24243d]">结算账户不可用</h2>
+            <p className="mt-[6px] text-[13px] leading-5 text-[#777d90]">
+              客户指定的结算账户当前不可用，无法完成本次赎回。请拒绝该申请，由客户重新选择有效账户后再次发起赎回。
+            </p>
+          </div>
+        </header>
+        <div className="grid gap-[12px] px-[22px] py-[18px]">
+          <DetailField label="赎回订单" value={order.id} />
+          <DetailField label="客户指定结算账户" value={getAccountDisplay('', '', order.designatedAccount)} />
+          <DetailField label="校验结果" value={order.reviewInvalidReason || '客户指定结算账户当前不可用'} tone="danger" />
+        </div>
+        <footer className="flex justify-end gap-[10px] border-t border-[#e6e8f0] px-[22px] py-[16px]">
+          <button type="button" onClick={onCancel} className="h-[38px] rounded-[6px] border border-[#d6d8e3] px-[18px] text-[14px] font-semibold text-[#555b70] hover:bg-[#f6f7fb]">取消</button>
+          <button type="button" onClick={onGoReject} className="h-[38px] rounded-[6px] bg-[#ef4444] px-[18px] text-[14px] font-semibold text-white hover:bg-[#dc2626]">前往拒绝</button>
         </footer>
       </section>
     </div>
@@ -1464,7 +1696,10 @@ export function WealthProductAdminPrototype({ onBack }) {
   const [drawer, setDrawer] = useState(null)
   const [manualSettlementOrder, setManualSettlementOrder] = useState(null)
   const [manualSettlementAccountId, setManualSettlementAccountId] = useState('acct-sg-0950')
-  const [manualSettlementNote, setManualSettlementNote] = useState('客户原指定香港账户已禁用，经人工处理改为客户有效的新加坡账户结算。')
+  const [manualSettlementNote, setManualSettlementNote] = useState('内部账本自动入账失败，核实原交易未成功后，改用客户有效的新加坡账户重新结算。')
+  const [manualSettlementConfirmAccount, setManualSettlementConfirmAccount] = useState(null)
+  const [accountUnavailableOrder, setAccountUnavailableOrder] = useState(null)
+  const [prefillRejectReason, setPrefillRejectReason] = useState(null)
   const metrics = metricsByTab[activeMainTab] || metricsByTab.products
 
   const activeProduct = useMemo(() => selectedProduct || products[0], [selectedProduct])
@@ -1475,6 +1710,9 @@ export function WealthProductAdminPrototype({ onBack }) {
     setProductDetailTab('overview')
     setDrawer(null)
     setManualSettlementOrder(null)
+    setManualSettlementConfirmAccount(null)
+    setAccountUnavailableOrder(null)
+    setPrefillRejectReason(null)
   }
 
   const updateSubscriptionDecision = (id, decision, reason = '') => {
@@ -1500,9 +1738,14 @@ export function WealthProductAdminPrototype({ onBack }) {
   }
 
   const updateRedemptionDecision = (id, decision, reason = '') => {
+    const currentOrder = redemptionOrders.find((order) => order.id === id)
+    if (decision === 'approved' && currentOrder?.reviewAccountAvailable === false) {
+      setAccountUnavailableOrder(currentOrder)
+      return
+    }
     const status = decision === 'approved' ? '已通过' : '已拒绝'
     const statusGroup = decision === 'approved' ? 'approved' : 'rejected'
-    const normalizedReason = reason.trim() || '结算账户校验未通过'
+    const normalizedReason = reason.trim() || '赎回审批未通过'
     setRedemptionOrders((orders) => orders.map((order) => (
       order.id === id
         ? {
@@ -1513,19 +1756,25 @@ export function WealthProductAdminPrototype({ onBack }) {
             approver: '超级管理员',
             remark: decision === 'rejected' ? normalizedReason : '-',
             settlementStatus: decision === 'approved' ? '已结算' : '未结算',
-            exceptionReason: decision === 'rejected' ? '赎回审批拒绝，未进入结算' : order.exceptionReason,
+            actualSettlementAccount: decision === 'approved' ? getAccountDisplay('', '', order.designatedAccount) : '-',
+            actualSettlementCurrency: decision === 'approved' ? order.designatedCurrency : order.actualSettlementCurrency,
+            settlementTime: decision === 'approved' ? '2026-08-13 16:21:30' : '-',
+            exceptionReason: decision === 'rejected' ? '' : order.exceptionReason,
             rejectReason: decision === 'rejected' ? normalizedReason : order.rejectReason,
           }
         : order
     )))
     setRedemptionStatus(statusGroup)
+    setPrefillRejectReason(null)
     setDrawer(null)
   }
 
   const openManualSettlement = (order) => {
+    const eligibleAccounts = getManualSettlementEligibleAccounts(order)
     setManualSettlementOrder(order)
-    setManualSettlementAccountId('acct-sg-0950')
-    setManualSettlementNote('客户原指定香港账户已禁用，经人工处理改为客户有效的新加坡账户结算。')
+    setManualSettlementAccountId(eligibleAccounts[0]?.id || '')
+    setManualSettlementNote('内部账本自动入账失败，核实原交易未成功后，改用客户有效的新加坡账户重新结算。')
+    setManualSettlementConfirmAccount(null)
   }
 
   const confirmManualSettlement = (account) => {
@@ -1533,18 +1782,21 @@ export function WealthProductAdminPrototype({ onBack }) {
     const operatedAt = '2026-08-13 16:28:00'
     const operator = '超级管理员'
     const manualSettlementRecord = {
-      originalAccount: manualSettlementOrder.designatedAccount,
-      actualAccount: account.label,
+      originalAccount: getAccountDisplay('', '', manualSettlementOrder.designatedAccount),
+      actualAccount: getAccountDisplay(account.type, '', account.label),
       operator,
       operatedAt,
-      exceptionReason: manualSettlementOrder.exceptionReason || '账户不可用',
+      exceptionReason: manualSettlementOrder.exceptionReason || '内部账本入账失败',
       reason: manualSettlementNote,
+      finalSettlementTime: operatedAt,
+      finalLedgerId: `LEDGER-${manualSettlementOrder.id}-MANUAL`,
+      finalSettlementResult: '成功',
     }
     setRedemptionOrders((orders) => orders.map((order) => (
       order.id === manualSettlementOrder.id
         ? {
             ...order,
-            actualSettlementAccount: account.label,
+            actualSettlementAccount: getAccountDisplay(account.type, '', account.label),
             actualSettlementCurrency: account.currency,
             settlementStatus: '已结算',
             settlementTime: operatedAt,
@@ -1553,11 +1805,11 @@ export function WealthProductAdminPrototype({ onBack }) {
             approver: order.approver === '-' ? operator : order.approver,
             approvedAt: order.approvedAt === '-' ? '2026-08-13 16:20' : order.approvedAt,
             remark: manualSettlementNote,
-            exceptionReason: `${order.exceptionReason}；人工结算已处理`,
+            exceptionReason: order.exceptionReason,
             manualSettlementRecord: {
               ...manualSettlementRecord,
-              originalAccount: order.designatedAccount,
-              exceptionReason: order.exceptionReason || '账户不可用',
+              originalAccount: getAccountDisplay('', '', order.designatedAccount),
+              exceptionReason: order.exceptionReason || '内部账本入账失败',
             },
           }
         : order
@@ -1568,7 +1820,7 @@ export function WealthProductAdminPrototype({ onBack }) {
             type: 'redemption',
             order: {
               ...manualSettlementOrder,
-              actualSettlementAccount: account.label,
+              actualSettlementAccount: getAccountDisplay(account.type, '', account.label),
               actualSettlementCurrency: account.currency,
               settlementStatus: '已结算',
               settlementTime: operatedAt,
@@ -1577,13 +1829,14 @@ export function WealthProductAdminPrototype({ onBack }) {
               approver: manualSettlementOrder.approver === '-' ? operator : manualSettlementOrder.approver,
               approvedAt: manualSettlementOrder.approvedAt === '-' ? '2026-08-13 16:20' : manualSettlementOrder.approvedAt,
               remark: manualSettlementNote,
-              exceptionReason: `${manualSettlementOrder.exceptionReason}；人工结算已处理`,
+              exceptionReason: manualSettlementOrder.exceptionReason,
               manualSettlementRecord,
             },
           }
         : current
     ))
     setManualSettlementOrder(null)
+    setManualSettlementConfirmAccount(null)
   }
 
   const rulesForActiveTab = selectedProduct ? businessRulesByTab.products : businessRulesByTab[activeMainTab] || businessRulesByTab.products
@@ -1642,7 +1895,13 @@ export function WealthProductAdminPrototype({ onBack }) {
         <SubscriptionDrawer order={drawer.order} onClose={() => setDrawer(null)} onDecision={updateSubscriptionDecision} />
       ) : null}
       {drawer?.type === 'redemption' ? (
-        <RedemptionDrawer order={drawer.order} onClose={() => setDrawer(null)} onDecision={updateRedemptionDecision} onManualSettlement={openManualSettlement} />
+        <RedemptionDrawer
+          order={drawer.order}
+          onClose={() => setDrawer(null)}
+          onDecision={updateRedemptionDecision}
+          onManualSettlement={openManualSettlement}
+          prefillRejectReason={prefillRejectReason?.id === drawer.order.id ? prefillRejectReason.reason : ''}
+        />
       ) : null}
       <ManualSettlementModal
         order={manualSettlementOrder}
@@ -1650,8 +1909,26 @@ export function WealthProductAdminPrototype({ onBack }) {
         note={manualSettlementNote}
         onSelectAccount={setManualSettlementAccountId}
         onChangeNote={setManualSettlementNote}
-        onClose={() => setManualSettlementOrder(null)}
-        onConfirm={confirmManualSettlement}
+        onClose={() => {
+          setManualSettlementOrder(null)
+          setManualSettlementConfirmAccount(null)
+        }}
+        onConfirm={setManualSettlementConfirmAccount}
+      />
+      <ManualSettlementConfirmModal
+        order={manualSettlementOrder}
+        account={manualSettlementConfirmAccount}
+        onCancel={() => setManualSettlementConfirmAccount(null)}
+        onConfirm={() => confirmManualSettlement(manualSettlementConfirmAccount)}
+      />
+      <SettlementAccountUnavailableModal
+        order={accountUnavailableOrder}
+        onCancel={() => setAccountUnavailableOrder(null)}
+        onGoReject={() => {
+          const reason = '客户指定结算账户不可用，请重新选择有效账户后再次发起赎回。'
+          setPrefillRejectReason({ id: accountUnavailableOrder.id, reason })
+          setAccountUnavailableOrder(null)
+        }}
       />
     </main>
   )

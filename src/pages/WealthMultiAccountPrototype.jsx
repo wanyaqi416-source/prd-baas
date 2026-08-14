@@ -14,6 +14,7 @@ import {
   Landmark,
   LineChart,
   ListFilter,
+  MousePointerClick,
   Percent,
   Plus,
   ShieldAlert,
@@ -243,7 +244,93 @@ const initialOrders = [
   },
 ]
 
+const redemptionHistoryOrders = [
+  {
+    id: 'RED-20260611-00067',
+    redeemId: '67',
+    productName: '港币',
+    type: '赎回',
+    status: '已通过',
+    date: '2026-06-11',
+    time: '14:45:10',
+    currency: 'HKD',
+    redemptionAmount: 199.92,
+    fee: 0.19,
+    actualReceipt: 199.73,
+    settlementAccountId: 'hk-1234',
+    settlementCurrency: 'HKD',
+  },
+  {
+    id: 'RED-20260812-00031',
+    redeemId: '31',
+    productName: 'GLDB USD 1-Month Fixed Deposit',
+    type: '赎回',
+    status: '待审核',
+    date: '2026-08-12',
+    time: '17:20:08',
+    currency: 'USD',
+    redemptionAmount: 10320,
+    fee: 20,
+    actualReceipt: 10300,
+    settlementAccountId: 'sg-0950',
+    settlementCurrency: 'USD',
+  },
+  {
+    id: 'RED-20260811-00026',
+    redeemId: '26',
+    productName: 'GLDB USD 1-Month Fixed Deposit',
+    type: '赎回',
+    status: '待人工处理',
+    date: '2026-08-11',
+    time: '15:12:45',
+    currency: 'USD',
+    redemptionAmount: 6800,
+    fee: 6.8,
+    actualReceipt: 6793.2,
+    settlementAccountId: 'hk-1234',
+    settlementCurrency: 'USD',
+  },
+  {
+    id: 'RED-20260809-00023',
+    redeemId: '23',
+    productName: 'GLDB USD 1-Month Fixed Deposit',
+    type: '赎回',
+    status: '已通过',
+    date: '2026-08-09',
+    time: '11:28:12',
+    completedDate: '2026-08-09',
+    currency: 'USD',
+    redemptionAmount: 10320,
+    fee: 20,
+    actualReceipt: 10300,
+    settlementAccountId: 'sg-0950',
+    settlementCurrency: 'USD',
+    originalSettlementAccountLabel: '美国账户 · ••••5678',
+    actualSettlementAccountLabel: '新加坡账户 · ••••0950',
+  },
+  {
+    id: 'RED-20260810-00024',
+    redeemId: '24',
+    productName: '美元',
+    type: '赎回',
+    status: '已拒绝',
+    date: '2026-08-10',
+    time: '09:37:22',
+    currency: 'USD',
+    redemptionAmount: 120,
+    fee: 0,
+    actualReceipt: 120,
+    settlementAccountId: 'us-5678',
+    settlementCurrency: 'USD',
+    rejectReason: '客户指定结算账户不可用，请重新选择有效账户后再次发起赎回。',
+  },
+]
+
 const fundTabs = ['概览', '产品目录', '我的投资', '交易历史']
+
+function ClickHint({ className = 'text-blue-500' }) {
+  return <MousePointerClick className={`h-3.5 w-3.5 ${className}`} />
+}
 
 function formatUsd(value) {
   return `${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
@@ -255,6 +342,12 @@ function formatCurrencyAmount(currency, value) {
 
 function getAccountLabel(account) {
   return account ? account.name : '-'
+}
+
+function getAccountTraceLabel(account) {
+  if (!account) return '-'
+  const lastFour = String(account.number || '').slice(-4)
+  return lastFour ? `${account.name} · ••••${lastFour}` : account.name
 }
 
 function getAccountDisplayName(accountLabel) {
@@ -309,6 +402,56 @@ function getOrderDebit(order) {
   return Number(order?.actualDebit ?? Number(order?.amount || 0) + getOrderFee(order))
 }
 
+function getRedemptionAmount(order) {
+  return Number(order?.redemptionAmount ?? order?.redeemAmount ?? order?.amount ?? 0)
+}
+
+function getRedemptionFee(order) {
+  return Number(order?.fee ?? 0)
+}
+
+function getRedemptionActualReceipt(order) {
+  return Number(order?.actualReceipt ?? Math.max(getRedemptionAmount(order) - getRedemptionFee(order), 0))
+}
+
+function getHistorySettlementAccountName(order) {
+  const account = findAccount(order.settlementAccountId)
+  return order.actualSettlementAccountLabel || (account ? getAccountTraceLabel(account) : order.settlementAccountLabel || '-')
+}
+
+function getClientRedemptionStatus(status) {
+  if (status === '待审核') return '审核中'
+  if (status === '已通过') return '已完成'
+  if (status === '待人工处理') return '处理中'
+  return status
+}
+
+function getHistoryDisplayStatus(order) {
+  return order.type === '赎回' ? getClientRedemptionStatus(order.status) : order.status
+}
+
+function getHistoryAmountMeta(order) {
+  if (order.type === '赎回') {
+    const settled = order.status === '已通过'
+    const amount = settled ? getRedemptionActualReceipt(order) : getRedemptionAmount(order)
+    return {
+      text: `${settled ? '+' : ''}${amount.toFixed(2)} ${order.currency}`,
+      className: settled ? 'text-emerald-600' : order.status === '已拒绝' ? 'text-slate-500' : 'text-slate-700',
+    }
+  }
+
+  return {
+    text: `-${Number(order.amount || 0).toFixed(2)} ${order.currency}`,
+    className: 'text-red-600',
+  }
+}
+
+function getHistoryStatusVariant(status) {
+  if (status === '已通过' || status === '已完成' || status === '持有中') return 'success'
+  if (status === '已拒绝') return 'danger'
+  return 'warning'
+}
+
 function getDailyYield(product, amount) {
   return (Number(amount || 0) * Number(product?.annualYield || 0)) / 100 / 365
 }
@@ -353,6 +496,7 @@ function buildHoldings(orders) {
 }
 
 const accountModelBusinessRules = [
+  '0. 页面中的黄色高亮仅用于原型演示本次新增/调整字段，正式开发不要按黄色底样式落地。',
   '1. 付款账户为认购订单级，每笔首次认购或追加认购都独立记录实际付款账户。',
   '2. 结算账户为赎回订单级，每笔到期订单发起赎回时分别选择本次结算账户。',
   '3. 不存在默认结算账户或持仓统一结算账户，认购阶段无需提前选择结算账户。',
@@ -361,7 +505,7 @@ const accountModelBusinessRules = [
   '6. 固定期限理财到期后才显示赎回按钮，不支持提前赎回。',
   '7. 认购失败、取消或后台拒绝时，资金必须原路退回该笔认购实际付款账户。',
   '8. 赎回结算账户提交时需要实时校验，异常时提示重新选择有效账户。',
-  '9. 赎回提交并安全验证后账户异常，不得系统自动切换账户，进入待人工结算。',
+  '9. 审核通过后由 FIDERE 内部账本直接入账；如入账执行异常，客户端仅展示处理中，不暴露内部账本错误码或系统异常。',
   '10. 所有资金来源和去向必须通过持仓 ID、认购订单 ID、赎回订单 ID 完整追溯。',
 ]
 
@@ -381,15 +525,18 @@ const redeemBusinessRules = [
   '客户必须在确认赎回弹窗中为本次赎回指令选择结算账户。',
   '结算账户属于赎回订单级，不读取默认账户，也不读取持仓统一账户。',
   '付款账户与本次赎回结算账户可以不同，不同到期订单也可以选择不同结算账户。',
-  '选择结算账户并点击确认后进入 2FA 或安全密钥验证，验证通过后正式生成赎回指令。',
-  '赎回提交后账户异常进入管理端待人工结算，并保留原指定账户、实际账户、操作人、时间与原因。',
+  '点击确认赎回时服务端需重新校验结算账户，再进入 2FA 或安全密钥验证，验证通过后正式生成赎回申请。',
+  '客户端需防重复点击；服务端需做请求幂等、订单状态校验和重复结算校验。',
+  '管理端待人工处理状态在客户端统一展示为处理中，并隐藏内部账本错误码、系统异常堆栈和后台处理备注。',
   ...accountModelBusinessRules,
 ]
 
 const arrivalAccountRules = [
-  '只展示当前客户本人、激活、支持当前赎回币种且可以正常入账的账户。',
-  '本次选择仅记录到当前赎回指令，不影响其他认购订单或后续赎回。',
-  '提交赎回前必须实时校验结算账户可用性；不可用时需要重新选择。',
+  '仅展示客户本人激活且支持当前结算币种的账户。',
+  '客户提交前系统会再次校验账户状态。',
+  '不可用账户不能创建赎回申请。',
+  '每笔到期订单可分别选择本次结算账户。',
+  '付款账户与本次赎回结算账户可以不同。',
 ]
 
 function BusinessRulesPanel({ rules, title = '业务规则' }) {
@@ -440,7 +587,7 @@ function AccountSelectionModal({ title, accounts, currency, selectedAccountId, o
                   <span className="block font-semibold text-slate-900">{getAccountLabel(account)}</span>
                   <span className="mt-1 block text-sm text-slate-500">{currency}</span>
                 </span>
-                {selectedAccountId === account.id ? <CheckCircle2 className="h-5 w-5 text-blue-600" /> : null}
+                {selectedAccountId === account.id ? <CheckCircle2 className="h-5 w-5 text-blue-600" /> : <ClickHint />}
               </button>
             ))}
           </div>
@@ -454,6 +601,7 @@ function AccountSelectionModal({ title, accounts, currency, selectedAccountId, o
 function SettlementAccountModal({ currency, selectedAccountId, onConfirm, onClose, title = '选择结算账户' }) {
   const accounts = getSettlementAccounts(currency)
   const [nextAccountId, setNextAccountId] = useState(selectedAccountId || '')
+  const hasAccounts = accounts.length > 0
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 px-4 py-8">
@@ -471,28 +619,35 @@ function SettlementAccountModal({ currency, selectedAccountId, onConfirm, onClos
           <div>
             <p className="text-sm font-semibold text-slate-800">请选择结算账户：</p>
             <div className="mt-3 space-y-3">
-              {accounts.map((account) => (
-                <label
-                  key={account.id}
-                  className={`flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors ${
-                    nextAccountId === account.id ? 'border-blue-500 bg-blue-50/70' : 'border-slate-200 bg-white hover:border-blue-200'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    checked={nextAccountId === account.id}
-                    onChange={() => setNextAccountId(account.id)}
-                    className="h-4 w-4 accent-blue-600"
-                  />
-                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
-                    <Landmark className="h-5 w-5" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-semibold text-slate-900">{getAccountLabel(account)}</span>
-                    <span className="mt-1 block text-sm text-slate-500">{currency}</span>
-                  </span>
-                </label>
-              ))}
+              {hasAccounts ? accounts.map((account) => (
+                  <label
+                    key={account.id}
+                    className={`flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors ${
+                      nextAccountId === account.id ? 'border-blue-500 bg-blue-50/70' : 'border-slate-200 bg-white hover:border-blue-200'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      checked={nextAccountId === account.id}
+                      onChange={() => setNextAccountId(account.id)}
+                      className="h-4 w-4 accent-blue-600"
+                    />
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                      <Landmark className="h-5 w-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold text-slate-900">{getAccountTraceLabel(account)}</span>
+                      <span className="mt-1 block text-sm text-slate-500">{currency}</span>
+                    </span>
+                    {nextAccountId === account.id ? <CheckCircle2 className="h-5 w-5 text-blue-600" /> : <ClickHint />}
+                  </label>
+                )) : (
+                  <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
+                    <p className="font-semibold text-slate-800">暂无可用结算账户</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">当前没有支持该币种且可正常入账的账户。</p>
+                    <p className="mt-3 rounded-md bg-white px-3 py-2 text-xs text-red-600">无法提交赎回，也不会进入安全验证。</p>
+                  </div>
+                )}
             </div>
             <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
               本次选择的结算账户仅记录到当前赎回指令，提交前会实时校验账户状态和币种入账能力。
@@ -503,7 +658,7 @@ function SettlementAccountModal({ currency, selectedAccountId, onConfirm, onClos
               </Button>
               <Button
                 type="button"
-                disabled={!nextAccountId}
+                disabled={!nextAccountId || !hasAccounts}
                 onClick={() => onConfirm(nextAccountId)}
                 className="h-10 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
@@ -569,7 +724,7 @@ function FundProductCard({ product, onDetail, onSubscribe }) {
           产品介绍 <ArrowUpRight className="h-4 w-4" />
         </button>
         <Button type="button" size="sm" onClick={() => onSubscribe(product)} className="rounded-lg bg-blue-600 text-white hover:bg-blue-700">
-          申购
+          <ClickHint className="text-white/90" /> 申购
         </Button>
       </div>
     </article>
@@ -591,7 +746,10 @@ function SecondaryTabs({ activeTab, onChange }) {
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
             }`}
           >
-            {tab}
+            <span className="inline-flex items-center gap-1">
+              {tab}
+              <ClickHint className={activeTab === tab ? 'text-white/85' : 'text-blue-500'} />
+            </span>
           </button>
         ))}
       </div>
@@ -904,7 +1062,7 @@ function SubscribePage({
           </p>
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-xl border border-amber-300 bg-amber-50 p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
               <WalletCards className="h-5 w-5" />
@@ -1052,10 +1210,10 @@ function LegacyHoldingsPage({ orders, onDetail, onSubscribe, onTabChange }) {
               </div>
               <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-5 py-3">
                 <button type="button" onClick={() => onDetail(product)} className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600">
-                  <ChevronDown className="h-4 w-4" /> 持仓详情
+                  <ChevronDown className="h-4 w-4" /> 持仓详情 <ClickHint />
                 </button>
                 <Button type="button" variant="outline" size="sm" onClick={() => onSubscribe(product)} className="rounded-lg text-blue-600">
-                  <Plus className="h-4 w-4" /> 添加认购
+                  <Plus className="h-4 w-4" /> 添加认购 <ClickHint />
                 </Button>
               </div>
             </div>
@@ -1134,13 +1292,29 @@ function DailyIncomeModal({ order, onClose }) {
   )
 }
 
-function RedeemModal({ order, onClose }) {
+function RedeemModal({ order, onClose, onConfirm }) {
   const [settlementAccountId, setSettlementAccountId] = useState('')
   const [settlementModalOpen, setSettlementModalOpen] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const fee = Math.max(getOrderValue(order) * 0.001, 0.19)
   const actualReceipt = Math.max(getOrderValue(order) - fee, 0)
   const settlementAccount = findAccount(settlementAccountId)
   const accountAvailable = settlementAccount && canUseForSettlement(settlementAccount, order.currency)
+  const handleConfirm = () => {
+    if (!accountAvailable) {
+      setSubmitError('当前结算账户不可用，请重新选择有效账户。')
+      return
+    }
+    setSubmitError('')
+    setSubmitting(true)
+    onConfirm?.({
+      settlementAccountId,
+      settlementCurrency: order.currency,
+      fee,
+      actualReceipt,
+    })
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-8">
@@ -1174,16 +1348,17 @@ function RedeemModal({ order, onClose }) {
                 <div>
                   <p className="text-sm text-slate-500">结算账户 *</p>
                   <p className={`mt-1 font-semibold ${settlementAccount ? 'text-slate-900' : 'text-blue-700'}`}>
-                    {settlementAccount ? `${getAccountLabel(settlementAccount)} ${order.currency}` : '请选择本次赎回资金到账账户'}
+                    {settlementAccount ? `${getAccountTraceLabel(settlementAccount)} / ${order.currency}` : '请选择本次赎回资金到账账户'}
                   </p>
                 </div>
                 <button type="button" onClick={() => setSettlementModalOpen(true)} className="shrink-0 text-sm font-semibold text-blue-600 hover:text-blue-800">
-                  {settlementAccount ? '重新选择' : '选择'} <ChevronRight className="inline h-4 w-4" />
+                  {settlementAccount ? '重新选择' : '选择'} <ClickHint className="inline text-blue-500" /> <ChevronRight className="inline h-4 w-4" />
                 </button>
               </div>
-              <p className="mt-2 text-xs text-slate-500">本次选择仅用于当前赎回指令，不影响其他到期订单。</p>
+              <p className="mt-2 text-xs text-slate-500">本金及收益扣除手续费后，将结算至本次选择的账户。</p>
               {!settlementAccount ? <p className="mt-2 text-sm font-semibold text-blue-600">请选择结算账户后继续。</p> : null}
               {settlementAccount && !accountAvailable ? <p className="mt-2 text-sm font-semibold text-red-600">当前结算账户不可用，请重新选择有效账户。</p> : null}
+              {submitError ? <p className="mt-2 text-sm font-semibold text-red-600">{submitError}</p> : null}
             </div>
           </div>
           <p className="mt-4 flex items-start gap-2 border-b border-slate-200 pb-5 text-sm leading-6 text-slate-500">
@@ -1194,8 +1369,13 @@ function RedeemModal({ order, onClose }) {
             <Button type="button" variant="outline" onClick={onClose} className="h-10 rounded-lg border-blue-600 text-blue-600">
               取消
             </Button>
-            <Button type="button" disabled={!accountAvailable} onClick={onClose} className="h-10 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300">
-              确认赎回
+            <Button
+              type="button"
+              disabled={!accountAvailable || submitting}
+              onClick={handleConfirm}
+              className="h-10 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              {submitting ? '提交中...' : '确认赎回'}
             </Button>
           </div>
         </div>
@@ -1224,6 +1404,7 @@ function HoldingDetailPanel({ holding, onDailyIncome, onRedeem }) {
           <thead className="bg-slate-50 text-xs font-medium text-slate-500">
             <tr className="border-b border-slate-200">
               <th className="px-6 py-3">订单编号</th>
+              <th className="px-6 py-3 text-amber-800">付款账户</th>
               <th className="px-6 py-3">投资金额</th>
               <th className="px-6 py-3">认购类型</th>
               <th className="px-6 py-3">购买日期</th>
@@ -1239,13 +1420,12 @@ function HoldingDetailPanel({ holding, onDailyIncome, onRedeem }) {
                 <td className="px-6 py-4">
                   <div className="font-semibold text-slate-700">{order.displayId || '1'}</div>
                   <div className="mt-1 font-mono text-xs text-blue-600">{order.id}</div>
-                  <div className="mt-1 text-xs text-slate-500">付款账户：{getOrderPaymentAccountName(order)}</div>
-                  <div className="mt-1 text-xs text-slate-500">付款币种：{order.paymentCurrency || order.currency}</div>
+                </td>
+                <td className="px-6 py-4">
+                  <span className="inline-flex rounded-md border border-amber-300 bg-amber-100 px-2 py-1 font-semibold text-amber-900">{getOrderPaymentAccountName(order)}</span>
                 </td>
                 <td className="px-6 py-4">
                   <div className="font-semibold text-slate-900">{order.amount} {order.currency}</div>
-                  <div className="mt-1 text-xs text-slate-500">手续费 {getOrderFee(order).toFixed(2)} {order.currency}</div>
-                  <div className="mt-1 text-xs text-slate-500">实际扣款 {getOrderDebit(order).toFixed(2)} {order.currency}</div>
                 </td>
                 <td className="px-6 py-4 text-slate-600">{order.subscriptionType || order.type}</td>
                 <td className="px-6 py-4 text-slate-600">{order.purchaseDate || order.date}</td>
@@ -1259,11 +1439,11 @@ function HoldingDetailPanel({ holding, onDailyIncome, onRedeem }) {
                 <td className="px-6 py-4">
                   <div className="flex justify-end gap-6 whitespace-nowrap">
                     <button type="button" onClick={() => onDailyIncome(order)} className="inline-flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-800">
-                      <LineChart className="h-4 w-4" /> 查看每日收益
+                      <LineChart className="h-4 w-4" /> 查看每日收益 <ClickHint />
                     </button>
                     {order.status === '已到期' ? (
                       <button type="button" onClick={() => onRedeem(order)} className="inline-flex items-center gap-1 font-semibold text-red-500 hover:text-red-600">
-                        <ArrowUpRight className="h-4 w-4" /> 赎回
+                        <ArrowUpRight className="h-4 w-4" /> 赎回 <ClickHint className="text-red-400" />
                       </button>
                     ) : null}
                   </div>
@@ -1424,7 +1604,7 @@ function HoldingProductDetailPage({ holding, onBack, onSubscribe }) {
   )
 }
 
-function HoldingsPage({ holdings, onSubscribe, onHoldingDetail }) {
+function HoldingsPage({ holdings, onSubscribe, onHoldingDetail, onRedeemSubmitted }) {
   const defaultExpandedId = holdings.find((holding) => holding.status === '已到期')?.id || holdings[0]?.id
   const [expandedId, setExpandedId] = useState(defaultExpandedId)
   const [dailyIncomeOrder, setDailyIncomeOrder] = useState(null)
@@ -1483,10 +1663,10 @@ function HoldingsPage({ holdings, onSubscribe, onHoldingDetail }) {
                     onClick={() => setExpandedId(expanded ? '' : holding.id)}
                     className="inline-flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-blue-700"
                   >
-                    持仓详情 <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                    持仓详情 <ClickHint /> <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
                   </button>
                   <Button type="button" variant="outline" size="sm" onClick={() => onSubscribe(product, { mode: 'additional', holdingId: holding.id })} className="rounded-lg border-blue-600 text-blue-600">
-                    <Plus className="h-4 w-4" /> 追加认购
+                    <Plus className="h-4 w-4" /> 追加认购 <ClickHint />
                   </Button>
                 </div>
 
@@ -1510,13 +1690,137 @@ function HoldingsPage({ holdings, onSubscribe, onHoldingDetail }) {
           key={redeemRequest.order.id}
           order={redeemRequest.order}
           onClose={() => setRedeemRequest(null)}
+          onConfirm={(payload) => {
+            onRedeemSubmitted?.({
+              ...payload,
+              sourceOrder: redeemRequest.order,
+            })
+            setRedeemRequest(null)
+          }}
         />
       ) : null}
     </section>
   )
 }
 
+function DetailSection({ title, rows }) {
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+      <dl className="mt-4 space-y-3 text-sm">
+        {rows.map(([label, value]) => {
+          const highlighted = label === '付款账户' || label === '结算账户'
+          return (
+          <div key={label} className={`flex items-center justify-between gap-6 ${highlighted ? 'rounded-lg border border-amber-300 bg-amber-100 px-3 py-2' : ''}`}>
+            <dt className={highlighted ? 'font-semibold text-amber-900' : 'text-slate-500'}>{label}</dt>
+            <dd className={`text-right font-semibold ${highlighted ? 'text-amber-900' : 'text-slate-900'}`}>{value}</dd>
+          </div>
+          )
+        })}
+      </dl>
+    </section>
+  )
+}
+
+function TransactionHistoryDetail({ order, onBack }) {
+  const isRedeem = order.type === '赎回'
+  const amountMeta = getHistoryAmountMeta(order)
+  const displayStatus = getHistoryDisplayStatus(order)
+  const product = getOrderProduct(order)
+  const originalSettlementAccount = order.originalSettlementAccountLabel || '-'
+  const actualSettlementAccount = order.actualSettlementAccountLabel || '-'
+  const manualAccountChanged = isRedeem
+    && order.originalSettlementAccountLabel
+    && order.actualSettlementAccountLabel
+    && originalSettlementAccount !== actualSettlementAccount
+  const detailRows = [
+    ['订单编号', order.id],
+    ['创建日期', order.date],
+    ['完成日期', order.status === '已通过' ? (order.completedDate || order.date) : '-'],
+    ['状态', displayStatus],
+  ]
+  const productRows = [
+    ['产品名称', order.productName],
+    ['产品币种', order.currency],
+    ['产品类型', product?.type || '-'],
+    ['年化收益率', product?.annualYield ? `${product.annualYield.toFixed(4)}%` : '-'],
+    ['投资期限', order.maturityDate || order.term || '-'],
+  ]
+  const tradeRows = isRedeem
+    ? [
+        ['交易类型', '赎回'],
+        ['赎回金额', `${getRedemptionAmount(order).toFixed(2)} ${order.currency}`],
+        ['手续费', `${getRedemptionFee(order).toFixed(2)} ${order.currency}`],
+        ['实际到账', `${getRedemptionActualReceipt(order).toFixed(2)} ${order.currency}`],
+        ...(manualAccountChanged
+          ? [
+              ['客户原指定结算账户', originalSettlementAccount],
+              ['实际结算账户', actualSettlementAccount],
+            ]
+          : [['结算账户', getHistorySettlementAccountName(order)]]),
+        ['结算币种', order.settlementCurrency || order.currency],
+      ]
+    : [
+        ['交易类型', order.subscriptionType || '首次认购'],
+        ['投资金额', `${Number(order.amount || 0).toFixed(2)} ${order.currency}`],
+        ['实际扣款', `${getOrderDebit(order).toFixed(2)} ${order.currency}`],
+        ['付款账户', getOrderPaymentAccountName(order)],
+      ]
+  const feeRows = isRedeem
+    ? []
+    : [['手续费', `${getOrderFee(order).toFixed(2)} ${order.currency}`]]
+
+  return (
+    <div className="space-y-4">
+      <button type="button" onClick={onBack} className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-700">
+        <ChevronLeft className="h-4 w-4" /> 返回交易 <ClickHint />
+      </button>
+
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <header className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+              <LineChart className="h-5 w-5" />
+            </span>
+            <div>
+              <h1 className="text-lg font-semibold text-slate-900">理财-{isRedeem ? '赎回' : '申购'} 详情</h1>
+              <p className="mt-1 text-xs text-slate-500">{order.date} {order.time}</p>
+            </div>
+          </div>
+          <Badge variant={getHistoryStatusVariant(displayStatus)}>{displayStatus}</Badge>
+        </header>
+        <div className="mx-auto max-w-[720px] px-6 py-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-lime-50 text-[#18bd00]">
+              <CheckCircle2 className="h-6 w-6" />
+            </span>
+            <p className="mt-4 text-sm text-slate-500">{displayStatus}</p>
+            <p className={`mt-2 text-3xl font-semibold tracking-normal ${amountMeta.className}`}>{amountMeta.text}</p>
+            <p className="mt-2 text-sm text-slate-500">手续费：{(isRedeem ? getRedemptionFee(order) : getOrderFee(order)).toFixed(2)} {order.currency}</p>
+            {displayStatus === '处理中' ? <p className="mt-3 text-sm font-semibold text-amber-700">本次赎回正在处理中，请耐心等待。</p> : null}
+          </div>
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-[720px] space-y-4">
+        <DetailSection title="详情" rows={detailRows} />
+        <DetailSection title="产品信息" rows={productRows} />
+        <DetailSection title={isRedeem ? '赎回信息' : '申购信息'} rows={tradeRows} />
+        {feeRows.length ? <DetailSection title="收益信息" rows={feeRows} /> : null}
+        {isRedeem && order.rejectReason ? <DetailSection title="拒绝原因" rows={[['拒绝原因', order.rejectReason]]} /> : null}
+      </div>
+    </div>
+  )
+}
+
 function HistoryPage({ orders }) {
+  const [activeHistoryType, setActiveHistoryType] = useState('赎回')
+  const historyRows = activeHistoryType === '赎回'
+    ? redemptionHistoryOrders
+    : activeHistoryType === '申购'
+      ? orders.filter((order) => order.type === '申购')
+      : []
+
   return (
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-end">
@@ -1528,16 +1832,31 @@ function HistoryPage({ orders }) {
           <ListFilter className="h-4 w-4" />
           <select className="bg-transparent outline-none">
             <option>状态</option>
-            <option>待审核</option>
-            <option>持有中</option>
+            <option>审核中</option>
+            <option>已完成</option>
+            <option>已拒绝</option>
+            <option>处理中</option>
           </select>
         </label>
       </div>
 
       <div className="mt-4 flex gap-6 border-b border-slate-200 text-sm font-semibold text-slate-600">
-        {['申购', '赎回', '收益'].map((item, index) => (
-          <button key={item} type="button" className={`pb-3 ${index === 0 ? 'border-b-2 border-blue-600 text-blue-600' : ''}`}>{item}</button>
-        ))}
+        {['申购', '赎回', '收益'].map((item) => {
+          const showClickHint = item !== '收益'
+          return (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setActiveHistoryType(item)}
+              className={`pb-3 ${activeHistoryType === item ? 'border-b-2 border-blue-600 text-blue-600' : ''}`}
+            >
+              <span className="inline-flex items-center gap-1">
+                {item}
+                {showClickHint ? <ClickHint className={activeHistoryType === item ? 'text-blue-600' : 'text-blue-500'} /> : null}
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       <div className="mt-4 overflow-x-auto">
@@ -1546,30 +1865,121 @@ function HistoryPage({ orders }) {
             <tr>
               <th className="px-4 py-3">日期 & 编号</th>
               <th className="px-4 py-3">产品</th>
-              <th className="px-4 py-3">付款账户</th>
+              {activeHistoryType === '申购' ? <th className="px-4 py-3 text-amber-800">付款账户</th> : null}
+              <th className="px-4 py-3">类型</th>
+              <th className="px-4 py-3">金额</th>
+              {activeHistoryType === '赎回' ? <th className="px-4 py-3 text-amber-800">结算账户</th> : null}
+              {activeHistoryType === '赎回' ? <th className="px-4 py-3">手续费</th> : null}
+              <th className="px-4 py-3">状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            {historyRows.map((order) => {
+              const amountMeta = getHistoryAmountMeta(order)
+              const displayStatus = getHistoryDisplayStatus(order)
+              return (
+                <tr
+                  key={order.id}
+                  className="border-t border-slate-100"
+                >
+                  <td className="px-4 py-4">
+                    <div className="font-semibold text-slate-800">{order.date} {order.time}</div>
+                    <div className="mt-1 font-mono text-xs text-slate-400">{order.id}</div>
+                  </td>
+                  <td className="px-4 py-4 font-semibold text-slate-800">{order.productName}</td>
+                  {activeHistoryType === '申购' ? (
+                    <td className="px-4 py-4">
+                      <span className="inline-flex rounded-md border border-amber-300 bg-amber-100 px-2 py-1 font-semibold text-amber-900">{getOrderPaymentAccountName(order)}</span>
+                    </td>
+                  ) : null}
+                  <td className="px-4 py-4"><Badge className="border-blue-100 bg-blue-50 text-blue-700">{order.type}</Badge></td>
+                  <td className={`px-4 py-4 font-semibold ${amountMeta.className}`}>{amountMeta.text}</td>
+                  {activeHistoryType === '赎回' ? (
+                    <td className="px-4 py-4">
+                      <span className="inline-flex rounded-md border border-amber-300 bg-amber-100 px-2 py-1 font-semibold text-amber-900">{getHistorySettlementAccountName(order)}</span>
+                    </td>
+                  ) : null}
+                  {activeHistoryType === '赎回' ? <td className="px-4 py-4 text-slate-600">{getRedemptionFee(order).toFixed(2)} {order.currency}</td> : null}
+                  <td className="px-4 py-4"><Badge variant={getHistoryStatusVariant(displayStatus)}>{displayStatus}</Badge></td>
+                </tr>
+              )
+            })}
+            {historyRows.length === 0 ? (
+              <tr className="border-t border-slate-100">
+                <td colSpan={activeHistoryType === '赎回' ? 7 : activeHistoryType === '申购' ? 6 : 5} className="px-4 py-8 text-center text-sm text-slate-500">暂无{activeHistoryType}记录</td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-4 text-sm text-slate-500">显示 {historyRows.length} 条交易记录</p>
+    </section>
+  )
+}
+
+function TopTradePage({ orders, redemptions, selectedOrder, onSelectOrder, onBackDetail }) {
+  const topTradeRows = [
+    orders.find((order) => order.type === '申购'),
+    redemptions[0],
+  ].filter(Boolean)
+
+  if (selectedOrder) {
+    return <TransactionHistoryDetail order={selectedOrder} onBack={onBackDetail} />
+  }
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-end">
+        <div>
+          <h1 className="text-xl font-semibold text-slate-900">交易</h1>
+          <p className="mt-1 text-sm text-slate-500">查看最近一笔申购和最近一笔赎回的资金追溯详情</p>
+        </div>
+        <Badge className="border-blue-100 bg-blue-50 text-blue-700">顶部交易入口</Badge>
+      </div>
+
+      <div className="mt-4 overflow-x-auto">
+        <table className="min-w-[860px] w-full border-collapse text-left text-sm">
+          <thead className="text-xs font-semibold text-slate-500">
+            <tr>
+              <th className="px-4 py-3">日期 & 编号</th>
+              <th className="px-4 py-3">产品</th>
               <th className="px-4 py-3">类型</th>
               <th className="px-4 py-3">金额</th>
               <th className="px-4 py-3">状态</th>
             </tr>
           </thead>
           <tbody>
-            {orders.map((order) => (
-              <tr key={order.id} className="border-t border-slate-100">
-                <td className="px-4 py-4">
-                  <div className="font-semibold text-slate-800">{order.date} {order.time}</div>
-                  <div className="mt-1 font-mono text-xs text-slate-400">{order.id}</div>
-                </td>
-                <td className="px-4 py-4 font-semibold text-slate-800">{order.productName}</td>
-                <td className="px-4 py-4 text-slate-600">{getOrderPaymentAccountName(order)}</td>
-                <td className="px-4 py-4"><Badge className="border-blue-100 bg-blue-50 text-blue-700">{order.type}</Badge></td>
-                <td className="px-4 py-4 font-semibold text-red-600">-{order.amount.toFixed(2)} {order.currency}</td>
-                <td className="px-4 py-4"><Badge variant={order.status === '持有中' ? 'success' : 'warning'}>{order.status}</Badge></td>
+            {topTradeRows.map((order) => {
+              const amountMeta = getHistoryAmountMeta(order)
+              const displayStatus = getHistoryDisplayStatus(order)
+              return (
+                <tr
+                  key={order.id}
+                  onClick={() => onSelectOrder?.(order)}
+                  className="cursor-pointer border-t border-slate-100 hover:bg-blue-50/40"
+                >
+                  <td className="px-4 py-4">
+                    <div className="font-semibold text-slate-800">{order.date} {order.time}</div>
+                    <div className="mt-1 inline-flex items-center gap-1 font-mono text-xs text-slate-400">
+                      {order.id} <ClickHint />
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 font-semibold text-slate-800">{order.productName}</td>
+                  <td className="px-4 py-4"><Badge className="border-blue-100 bg-blue-50 text-blue-700">{order.type}</Badge></td>
+                  <td className={`px-4 py-4 font-semibold ${amountMeta.className}`}>{amountMeta.text}</td>
+                  <td className="px-4 py-4"><Badge variant={getHistoryStatusVariant(displayStatus)}>{displayStatus}</Badge></td>
+                </tr>
+              )
+            })}
+            {topTradeRows.length === 0 ? (
+              <tr className="border-t border-slate-100">
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-500">暂无交易记录</td>
               </tr>
-            ))}
+            ) : null}
           </tbody>
         </table>
       </div>
-      <p className="mt-4 text-sm text-slate-500">显示 {orders.length} 条交易记录</p>
+      <p className="mt-4 text-sm text-slate-500">显示 {topTradeRows.length} 条交易记录</p>
     </section>
   )
 }
@@ -1609,7 +2019,7 @@ function AccountsPage({ onOpenFunds }) {
               ))}
             </div>
             <Button type="button" size="sm" onClick={onOpenFunds} className="mt-5 w-full rounded-lg bg-blue-600 text-white hover:bg-blue-700">
-              进入基金
+              <ClickHint className="text-white/90" /> 进入基金
             </Button>
           </article>
         ))}
@@ -1626,6 +2036,8 @@ export function WealthMultiAccountPrototype({ onBack }) {
   const [subscribingProduct, setSubscribingProduct] = useState(null)
   const [subscriptionContext, setSubscriptionContext] = useState({ mode: 'initial', holdingId: '' })
   const [orders, setOrders] = useState(() => initialOrders)
+  const [redemptions, setRedemptions] = useState(() => redemptionHistoryOrders)
+  const [historyDetailOrder, setHistoryDetailOrder] = useState(null)
   const holdings = useMemo(() => buildHoldings(orders), [orders])
   const activeSelectedHolding = selectedHoldingOrder
     ? holdings.find((holding) => holding.id === selectedHoldingOrder.id) || selectedHoldingOrder
@@ -1639,6 +2051,7 @@ export function WealthMultiAccountPrototype({ onBack }) {
         setSelectedProduct(null)
         setSelectedHoldingOrder(null)
         setSubscribingProduct(null)
+        setHistoryDetailOrder(null)
       },
     },
   ], [])
@@ -1647,6 +2060,7 @@ export function WealthMultiAccountPrototype({ onBack }) {
     setSelectedProduct(product)
     setSelectedHoldingOrder(null)
     setSubscribingProduct(null)
+    setHistoryDetailOrder(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -1654,6 +2068,7 @@ export function WealthMultiAccountPrototype({ onBack }) {
     setSelectedHoldingOrder(order)
     setSelectedProduct(null)
     setSubscribingProduct(null)
+    setHistoryDetailOrder(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -1665,7 +2080,13 @@ export function WealthMultiAccountPrototype({ onBack }) {
     })
     setSelectedProduct(null)
     setSelectedHoldingOrder(null)
+    setHistoryDetailOrder(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const changeFundTab = (tab) => {
+    setActiveTab(tab)
+    setHistoryDetailOrder(null)
   }
 
   const submitOrder = ({
@@ -1717,8 +2138,47 @@ export function WealthMultiAccountPrototype({ onBack }) {
     setSubscriptionContext({ mode: 'initial', holdingId: '' })
     setSelectedProduct(null)
     setSelectedHoldingOrder(null)
-    setActiveArea('fund')
-    setActiveTab('我的投资')
+    setHistoryDetailOrder(nextOrder)
+    setActiveArea('transactions')
+    setActiveTab('交易历史')
+  }
+
+  const submitRedemption = ({
+    sourceOrder,
+    settlementAccountId,
+    settlementCurrency,
+    fee,
+    actualReceipt,
+  }) => {
+    const now = new Date()
+    const pad = (value) => String(value).padStart(2, '0')
+    const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+    const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+    const nextRedemption = {
+      id: `RED-${date.replaceAll('-', '')}-${Math.random().toString(16).slice(2, 8)}`,
+      redeemId: sourceOrder.displayId || sourceOrder.id,
+      productId: sourceOrder.productId,
+      productName: sourceOrder.productName,
+      type: '赎回',
+      status: '待审核',
+      date,
+      time,
+      currency: sourceOrder.currency,
+      redemptionAmount: getOrderValue(sourceOrder),
+      fee,
+      actualReceipt,
+      settlementAccountId,
+      settlementCurrency,
+    }
+
+    setRedemptions((current) => [nextRedemption, ...current])
+    setHistoryDetailOrder(nextRedemption)
+    setSelectedProduct(null)
+    setSelectedHoldingOrder(null)
+    setSubscribingProduct(null)
+    setActiveArea('transactions')
+    setActiveTab('交易历史')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const selectNav = (label) => {
@@ -1727,6 +2187,7 @@ export function WealthMultiAccountPrototype({ onBack }) {
       setSelectedProduct(null)
       setSelectedHoldingOrder(null)
       setSubscribingProduct(null)
+      setHistoryDetailOrder(null)
       return
     }
     if (label === '账户') {
@@ -1734,14 +2195,15 @@ export function WealthMultiAccountPrototype({ onBack }) {
       setSelectedProduct(null)
       setSelectedHoldingOrder(null)
       setSubscribingProduct(null)
+      setHistoryDetailOrder(null)
       return
     }
     if (label === '交易') {
-      setActiveArea('fund')
-      setActiveTab('交易历史')
+      setActiveArea('transactions')
       setSelectedProduct(null)
       setSelectedHoldingOrder(null)
       setSubscribingProduct(null)
+      setHistoryDetailOrder(null)
     }
   }
 
@@ -1773,22 +2235,22 @@ export function WealthMultiAccountPrototype({ onBack }) {
       return <CatalogPage onDetail={openDetail} onSubscribe={openSubscribe} />
     }
     if (activeTab === '我的投资') {
-      return <HoldingsPage holdings={holdings} onSubscribe={openSubscribe} onHoldingDetail={openHoldingDetail} />
+      return <HoldingsPage holdings={holdings} onSubscribe={openSubscribe} onHoldingDetail={openHoldingDetail} onRedeemSubmitted={submitRedemption} />
     }
     if (activeTab === '交易历史') {
       return <HistoryPage orders={orders} />
     }
-    return <OverviewPage orders={orders} onTabChange={setActiveTab} onDetail={openDetail} onSubscribe={openSubscribe} />
+    return <OverviewPage orders={orders} onTabChange={changeFundTab} onDetail={openDetail} onSubscribe={openSubscribe} />
   }
 
   return (
     <div className="min-h-screen bg-[#f4f6fb] text-slate-950">
       <ClientTopNav
         onBack={onBack}
-        activeNavLabel={activeArea === 'fund' ? '投资' : '账户'}
+        activeNavLabel={activeArea === 'transactions' ? '交易' : activeArea === 'fund' ? '投资' : '账户'}
         investmentMenu={investmentMenu}
         onNavSelect={selectNav}
-        clickableNavLabels={['仪表板', '账户', '交易']}
+        clickableNavLabels={['投资', '交易']}
       />
 
       <main className="mx-auto max-w-[1380px] space-y-5 px-5 py-6">
@@ -1796,11 +2258,20 @@ export function WealthMultiAccountPrototype({ onBack }) {
           <AccountsPage onOpenFunds={() => {
             setActiveArea('fund')
             setActiveTab('产品目录')
+            setHistoryDetailOrder(null)
           }}
+          />
+        ) : activeArea === 'transactions' ? (
+          <TopTradePage
+            orders={orders}
+            redemptions={redemptions}
+            selectedOrder={historyDetailOrder}
+            onSelectOrder={setHistoryDetailOrder}
+            onBackDetail={() => setHistoryDetailOrder(null)}
           />
         ) : (
           <>
-            {subscribingProduct || selectedProduct || selectedHoldingOrder ? null : <SecondaryTabs activeTab={activeTab} onChange={setActiveTab} />}
+            {subscribingProduct || selectedProduct || selectedHoldingOrder ? null : <SecondaryTabs activeTab={activeTab} onChange={changeFundTab} />}
             {renderFundContent()}
           </>
         )}

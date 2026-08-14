@@ -498,6 +498,14 @@ export function ClientTopNav({
                     >
                       <Icon className="h-4 w-4" />
                       {label}
+                      {showClickHint ? (
+                        <span
+                          title="可点击切换页面"
+                          className={active ? 'text-white/80' : 'text-blue-500'}
+                        >
+                          <MousePointerClick className="h-3 w-3" />
+                        </span>
+                      ) : null}
                     </button>
                     {investmentMenuOpen ? (
                       <div className="absolute left-0 top-[42px] z-40 min-w-[132px] rounded-xl border border-slate-200 bg-white p-1 text-sm shadow-xl">
@@ -509,9 +517,10 @@ export function ClientTopNav({
                               setInvestmentMenuOpen(false)
                               item.onClick?.()
                             }}
-                            className="block h-9 w-full rounded-lg px-3 text-left font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                            className="flex h-9 w-full items-center justify-between rounded-lg px-3 text-left font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-950"
                           >
-                            {item.label}
+                            <span>{item.label}</span>
+                            <MousePointerClick className="h-3 w-3 text-blue-500" />
                           </button>
                         ))}
                       </div>
