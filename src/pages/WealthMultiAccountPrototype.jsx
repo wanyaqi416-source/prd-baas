@@ -257,8 +257,9 @@ const redemptionHistoryOrders = [
     redemptionAmount: 199.92,
     fee: 0.19,
     actualReceipt: 199.73,
-    settlementAccountId: 'hk-1234',
-    settlementCurrency: 'HKD',
+    paymentAccountId: 'sg-0950',
+    paymentAccountLabel: '新加坡账户 · ••••0950',
+    returnCurrency: 'HKD',
   },
   {
     id: 'RED-20260812-00031',
@@ -272,23 +273,9 @@ const redemptionHistoryOrders = [
     redemptionAmount: 10320,
     fee: 20,
     actualReceipt: 10300,
-    settlementAccountId: 'sg-0950',
-    settlementCurrency: 'USD',
-  },
-  {
-    id: 'RED-20260811-00026',
-    redeemId: '26',
-    productName: 'GLDB USD 1-Month Fixed Deposit',
-    type: '赎回',
-    status: '待人工处理',
-    date: '2026-08-11',
-    time: '15:12:45',
-    currency: 'USD',
-    redemptionAmount: 6800,
-    fee: 6.8,
-    actualReceipt: 6793.2,
-    settlementAccountId: 'hk-1234',
-    settlementCurrency: 'USD',
+    paymentAccountId: 'sg-0950',
+    paymentAccountLabel: '新加坡账户 · ••••0950',
+    returnCurrency: 'USD',
   },
   {
     id: 'RED-20260809-00023',
@@ -303,10 +290,9 @@ const redemptionHistoryOrders = [
     redemptionAmount: 10320,
     fee: 20,
     actualReceipt: 10300,
-    settlementAccountId: 'sg-0950',
-    settlementCurrency: 'USD',
-    originalSettlementAccountLabel: '美国账户 · ••••5678',
-    actualSettlementAccountLabel: '新加坡账户 · ••••0950',
+    paymentAccountId: 'us-5678',
+    paymentAccountLabel: '美国账户 · ••••5678',
+    returnCurrency: 'USD',
   },
   {
     id: 'RED-20260810-00024',
@@ -320,9 +306,10 @@ const redemptionHistoryOrders = [
     redemptionAmount: 120,
     fee: 0,
     actualReceipt: 120,
-    settlementAccountId: 'us-5678',
-    settlementCurrency: 'USD',
-    rejectReason: '客户指定结算账户不可用，请重新选择有效账户后再次发起赎回。',
+    paymentAccountId: 'us-5678',
+    paymentAccountLabel: '美国账户 · ••••5678',
+    returnCurrency: 'USD',
+    rejectReason: '赎回审核未通过，资金未入账。',
   },
 ]
 
@@ -346,8 +333,7 @@ function getAccountLabel(account) {
 
 function getAccountTraceLabel(account) {
   if (!account) return '-'
-  const lastFour = String(account.number || '').slice(-4)
-  return lastFour ? `${account.name} · ••••${lastFour}` : account.name
+  return account.name
 }
 
 function getAccountDisplayName(accountLabel) {
@@ -374,20 +360,8 @@ function canUseForPayment(account, currency) {
     && account.supportedCurrencies.includes(currency)
 }
 
-function canUseForSettlement(account, currency) {
-  return account?.owner === 'current-customer'
-    && account.status === 'active'
-    && account.capabilities.includes('wealthSettlement')
-    && account.receivableCurrencies.includes(currency)
-    && account.canReceive
-}
-
 function getPaymentAccounts(currency) {
   return fundingAccounts.filter((account) => canUseForPayment(account, currency))
-}
-
-function getSettlementAccounts(currency) {
-  return fundingAccounts.filter((account) => canUseForSettlement(account, currency))
 }
 
 function getSubscriptionFee(amount) {
@@ -414,15 +388,14 @@ function getRedemptionActualReceipt(order) {
   return Number(order?.actualReceipt ?? Math.max(getRedemptionAmount(order) - getRedemptionFee(order), 0))
 }
 
-function getHistorySettlementAccountName(order) {
-  const account = findAccount(order.settlementAccountId)
-  return order.actualSettlementAccountLabel || (account ? getAccountTraceLabel(account) : order.settlementAccountLabel || '-')
+function getRedemptionReturnAccountName(order) {
+  const account = findAccount(order.paymentAccountId)
+  return getAccountDisplayName(order.paymentAccountLabel || (account ? getAccountTraceLabel(account) : order.accountName))
 }
 
 function getClientRedemptionStatus(status) {
   if (status === '待审核') return '审核中'
   if (status === '已通过') return '已完成'
-  if (status === '待人工处理') return '处理中'
   return status
 }
 
@@ -498,14 +471,14 @@ function buildHoldings(orders) {
 const accountModelBusinessRules = [
   '0. 页面中的黄色高亮仅用于原型演示本次新增/调整字段，正式开发不要按黄色底样式落地。',
   '1. 付款账户为认购订单级，每笔首次认购或追加认购都独立记录实际付款账户。',
-  '2. 结算账户为赎回订单级，每笔到期订单发起赎回时分别选择本次结算账户。',
-  '3. 不存在默认结算账户或持仓统一结算账户，认购阶段无需提前选择结算账户。',
+  '2. 赎回资金原路返回该笔认购订单的原付款账户，不再选择回款账户。',
+  '3. 不存在默认回款账户、持仓统一回款账户或赎回时临时选择账户。',
   '4. 不同认购订单可以来自不同付款账户，每次只能选择一个付款账户，不支持拼余额。',
-  '5. 不同到期订单可以分别指定不同结算账户，付款账户与结算账户可以不同。',
+  '5. 不同到期订单分别回到各自认购订单记录的原付款账户。',
   '6. 固定期限理财到期后才显示赎回按钮，不支持提前赎回。',
   '7. 认购失败、取消或后台拒绝时，资金必须原路退回该笔认购实际付款账户。',
-  '8. 赎回结算账户提交时需要实时校验，异常时提示重新选择有效账户。',
-  '9. 审核通过后由 FIDERE 内部账本直接入账；如入账执行异常，客户端仅展示处理中，不暴露内部账本错误码或系统异常。',
+  '8. 赎回审核通过后，FIDERE 内部账本将实际到账金额入账至原付款账户。',
+  '9. 若原付款账户不可入账，应由运营拒绝或联系客户处理，不设计人工改账户处理流程。',
   '10. 所有资金来源和去向必须通过持仓 ID、认购订单 ID、赎回订单 ID 完整追溯。',
 ]
 
@@ -513,7 +486,7 @@ const subscribeBusinessRules = [
   '付款账户读取系统通用账户能力：当前客户本人、账户激活、支持理财付款、支持当前产品投资币种。',
   '不针对香港、新加坡、美国、巴林账户写死逻辑；后续新增账户类型只配置账户能力。',
   '手续费采用外扣，投资本金与手续费从本次选择的付款账户扣除。',
-  '认购阶段不展示也不选择结算账户；产品到期后由客户针对具体订单点击赎回再选择。',
+  '认购阶段记录付款账户；产品到期赎回时资金返回该笔订单原付款账户。',
   '客户勾选服务条款与风险披露时，需要留存客户 ID、订单 ID、条款版本、风险披露版本、确认时间与电子确认结果。',
   ...accountModelBusinessRules,
 ]
@@ -522,21 +495,19 @@ const holdingsBusinessRules = accountModelBusinessRules
 
 const redeemBusinessRules = [
   '固定期限理财到期后才显示赎回按钮，不设计提前赎回流程。',
-  '客户必须在确认赎回弹窗中为本次赎回指令选择结算账户。',
-  '结算账户属于赎回订单级，不读取默认账户，也不读取持仓统一账户。',
-  '付款账户与本次赎回结算账户可以不同，不同到期订单也可以选择不同结算账户。',
-  '点击确认赎回时服务端需重新校验结算账户，再进入 2FA 或安全密钥验证，验证通过后正式生成赎回申请。',
-  '客户端需防重复点击；服务端需做请求幂等、订单状态校验和重复结算校验。',
-  '管理端待人工处理状态在客户端统一展示为处理中，并隐藏内部账本错误码、系统异常堆栈和后台处理备注。',
+  '赎回资金返回本笔认购订单的原付款账户，不允许客户重新选择回款账户。',
+  '确认赎回前展示原付款账户、赎回金额、手续费和实际到账金额。',
+  '点击确认赎回后进入 2FA 或安全密钥验证，验证通过后正式生成赎回申请。',
+  '客户端需防重复点击；服务端需做请求幂等、订单状态校验和重复入账校验。',
+  '管理端不再设置人工改账户处理模块；审核不通过时客户重新发起赎回。',
   ...accountModelBusinessRules,
 ]
 
 const arrivalAccountRules = [
-  '仅展示客户本人激活且支持当前结算币种的账户。',
-  '客户提交前系统会再次校验账户状态。',
-  '不可用账户不能创建赎回申请。',
-  '每笔到期订单可分别选择本次结算账户。',
-  '付款账户与本次赎回结算账户可以不同。',
+  '赎回回款账户固定为本笔订单原付款账户。',
+  '客户无需选择回款账户。',
+  '提交前系统校验原付款账户是否可正常入账。',
+  '原付款账户不可用时，不生成赎回申请或由运营拒绝处理。',
 ]
 
 function BusinessRulesPanel({ rules, title = '业务规则' }) {
@@ -592,81 +563,6 @@ function AccountSelectionModal({ title, accounts, currency, selectedAccountId, o
             ))}
           </div>
           <BusinessRulesPanel rules={rules || arrivalAccountRules} />
-        </div>
-      </section>
-    </div>
-  )
-}
-
-function SettlementAccountModal({ currency, selectedAccountId, onConfirm, onClose, title = '选择结算账户' }) {
-  const accounts = getSettlementAccounts(currency)
-  const [nextAccountId, setNextAccountId] = useState(selectedAccountId || '')
-  const hasAccounts = accounts.length > 0
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 px-4 py-8">
-      <section className="w-full max-w-[860px] overflow-hidden rounded-xl bg-white shadow-2xl">
-        <header className="flex items-start justify-between border-b border-slate-200 px-5 py-4">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-            <p className="mt-1 text-sm text-slate-500">请选择本次赎回资金到账账户。</p>
-          </div>
-          <button type="button" onClick={onClose} aria-label={`关闭${title}`} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-5 w-5" />
-          </button>
-        </header>
-        <div className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-          <div>
-            <p className="text-sm font-semibold text-slate-800">请选择结算账户：</p>
-            <div className="mt-3 space-y-3">
-              {hasAccounts ? accounts.map((account) => (
-                  <label
-                    key={account.id}
-                    className={`flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors ${
-                      nextAccountId === account.id ? 'border-blue-500 bg-blue-50/70' : 'border-slate-200 bg-white hover:border-blue-200'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      checked={nextAccountId === account.id}
-                      onChange={() => setNextAccountId(account.id)}
-                      className="h-4 w-4 accent-blue-600"
-                    />
-                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
-                      <Landmark className="h-5 w-5" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-semibold text-slate-900">{getAccountTraceLabel(account)}</span>
-                      <span className="mt-1 block text-sm text-slate-500">{currency}</span>
-                    </span>
-                    {nextAccountId === account.id ? <CheckCircle2 className="h-5 w-5 text-blue-600" /> : <ClickHint />}
-                  </label>
-                )) : (
-                  <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
-                    <p className="font-semibold text-slate-800">暂无可用结算账户</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-500">当前没有支持该币种且可正常入账的账户。</p>
-                    <p className="mt-3 rounded-md bg-white px-3 py-2 text-xs text-red-600">无法提交赎回，也不会进入安全验证。</p>
-                  </div>
-                )}
-            </div>
-            <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
-              本次选择的结算账户仅记录到当前赎回指令，提交前会实时校验账户状态和币种入账能力。
-            </p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <Button type="button" variant="outline" onClick={onClose} className="h-10 rounded-lg border-blue-600 text-blue-600">
-                取消
-              </Button>
-              <Button
-                type="button"
-                disabled={!nextAccountId || !hasAccounts}
-                onClick={() => onConfirm(nextAccountId)}
-                className="h-10 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-              >
-                确认选择
-              </Button>
-            </div>
-          </div>
-          <BusinessRulesPanel rules={arrivalAccountRules} />
         </div>
       </section>
     </div>
@@ -1293,24 +1189,17 @@ function DailyIncomeModal({ order, onClose }) {
 }
 
 function RedeemModal({ order, onClose, onConfirm }) {
-  const [settlementAccountId, setSettlementAccountId] = useState('')
-  const [settlementModalOpen, setSettlementModalOpen] = useState(false)
-  const [submitError, setSubmitError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const fee = Math.max(getOrderValue(order) * 0.001, 0.19)
   const actualReceipt = Math.max(getOrderValue(order) - fee, 0)
-  const settlementAccount = findAccount(settlementAccountId)
-  const accountAvailable = settlementAccount && canUseForSettlement(settlementAccount, order.currency)
+  const paymentAccount = findAccount(order.paymentAccountId)
+  const returnAccount = getAccountDisplayName(order.paymentAccountLabel || getAccountTraceLabel(paymentAccount))
   const handleConfirm = () => {
-    if (!accountAvailable) {
-      setSubmitError('当前结算账户不可用，请重新选择有效账户。')
-      return
-    }
-    setSubmitError('')
     setSubmitting(true)
     onConfirm?.({
-      settlementAccountId,
-      settlementCurrency: order.currency,
+      paymentAccountId: order.paymentAccountId,
+      paymentAccountLabel: returnAccount,
+      returnCurrency: order.currency,
       fee,
       actualReceipt,
     })
@@ -1346,19 +1235,14 @@ function RedeemModal({ order, onClose, onConfirm }) {
             <div className="mt-4 rounded-lg border border-blue-100 bg-white/70 px-3 py-3">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm text-slate-500">结算账户 *</p>
-                  <p className={`mt-1 font-semibold ${settlementAccount ? 'text-slate-900' : 'text-blue-700'}`}>
-                    {settlementAccount ? `${getAccountTraceLabel(settlementAccount)} / ${order.currency}` : '请选择本次赎回资金到账账户'}
+                  <p className="text-sm text-slate-500">原付款账户</p>
+                  <p className="mt-1 font-semibold text-slate-900">
+                    {returnAccount} / {order.currency}
                   </p>
                 </div>
-                <button type="button" onClick={() => setSettlementModalOpen(true)} className="shrink-0 text-sm font-semibold text-blue-600 hover:text-blue-800">
-                  {settlementAccount ? '重新选择' : '选择'} <ClickHint className="inline text-blue-500" /> <ChevronRight className="inline h-4 w-4" />
-                </button>
+                <Badge className="border-blue-100 bg-blue-50 text-blue-700">自动返回</Badge>
               </div>
-              <p className="mt-2 text-xs text-slate-500">本金及收益扣除手续费后，将结算至本次选择的账户。</p>
-              {!settlementAccount ? <p className="mt-2 text-sm font-semibold text-blue-600">请选择结算账户后继续。</p> : null}
-              {settlementAccount && !accountAvailable ? <p className="mt-2 text-sm font-semibold text-red-600">当前结算账户不可用，请重新选择有效账户。</p> : null}
-              {submitError ? <p className="mt-2 text-sm font-semibold text-red-600">{submitError}</p> : null}
+              <p className="mt-2 text-xs text-slate-500">本金及收益扣除手续费后，将原路返回该笔认购订单的原付款账户。</p>
             </div>
           </div>
           <p className="mt-4 flex items-start gap-2 border-b border-slate-200 pb-5 text-sm leading-6 text-slate-500">
@@ -1371,7 +1255,7 @@ function RedeemModal({ order, onClose, onConfirm }) {
             </Button>
             <Button
               type="button"
-              disabled={!accountAvailable || submitting}
+              disabled={submitting}
               onClick={handleConfirm}
               className="h-10 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
@@ -1381,17 +1265,6 @@ function RedeemModal({ order, onClose, onConfirm }) {
         </div>
       </section>
 
-      {settlementModalOpen ? (
-        <SettlementAccountModal
-          currency={order.currency}
-          selectedAccountId={settlementAccountId}
-          onConfirm={(nextAccountId) => {
-            setSettlementAccountId(nextAccountId)
-            setSettlementModalOpen(false)
-          }}
-          onClose={() => setSettlementModalOpen(false)}
-        />
-      ) : null}
     </div>
   )
 }
@@ -1455,7 +1328,7 @@ function HoldingDetailPanel({ holding, onDailyIncome, onRedeem }) {
       </div>
       <div className="flex flex-wrap items-center gap-x-8 gap-y-2 bg-white px-6 py-3 text-xs text-slate-500">
         <span>订单数：{holding.orders.length}</span>
-        <span>每笔订单独立记录付款账户；到期后点击赎回再选择本次结算账户。</span>
+        <span>每笔订单独立记录付款账户；到期赎回资金返回对应订单原付款账户。</span>
       </div>
     </div>
   )
@@ -1709,7 +1582,7 @@ function DetailSection({ title, rows }) {
       <h2 className="text-base font-semibold text-slate-900">{title}</h2>
       <dl className="mt-4 space-y-3 text-sm">
         {rows.map(([label, value]) => {
-          const highlighted = label === '付款账户' || label === '结算账户'
+          const highlighted = label === '付款账户' || label === '原付款账户'
           return (
           <div key={label} className={`flex items-center justify-between gap-6 ${highlighted ? 'rounded-lg border border-amber-300 bg-amber-100 px-3 py-2' : ''}`}>
             <dt className={highlighted ? 'font-semibold text-amber-900' : 'text-slate-500'}>{label}</dt>
@@ -1727,12 +1600,6 @@ function TransactionHistoryDetail({ order, onBack }) {
   const amountMeta = getHistoryAmountMeta(order)
   const displayStatus = getHistoryDisplayStatus(order)
   const product = getOrderProduct(order)
-  const originalSettlementAccount = order.originalSettlementAccountLabel || '-'
-  const actualSettlementAccount = order.actualSettlementAccountLabel || '-'
-  const manualAccountChanged = isRedeem
-    && order.originalSettlementAccountLabel
-    && order.actualSettlementAccountLabel
-    && originalSettlementAccount !== actualSettlementAccount
   const detailRows = [
     ['订单编号', order.id],
     ['创建日期', order.date],
@@ -1752,13 +1619,8 @@ function TransactionHistoryDetail({ order, onBack }) {
         ['赎回金额', `${getRedemptionAmount(order).toFixed(2)} ${order.currency}`],
         ['手续费', `${getRedemptionFee(order).toFixed(2)} ${order.currency}`],
         ['实际到账', `${getRedemptionActualReceipt(order).toFixed(2)} ${order.currency}`],
-        ...(manualAccountChanged
-          ? [
-              ['客户原指定结算账户', originalSettlementAccount],
-              ['实际结算账户', actualSettlementAccount],
-            ]
-          : [['结算账户', getHistorySettlementAccountName(order)]]),
-        ['结算币种', order.settlementCurrency || order.currency],
+        ['原付款账户', getRedemptionReturnAccountName(order)],
+        ['回款币种', order.returnCurrency || order.currency],
       ]
     : [
         ['交易类型', order.subscriptionType || '首次认购'],
@@ -1797,7 +1659,6 @@ function TransactionHistoryDetail({ order, onBack }) {
             <p className="mt-4 text-sm text-slate-500">{displayStatus}</p>
             <p className={`mt-2 text-3xl font-semibold tracking-normal ${amountMeta.className}`}>{amountMeta.text}</p>
             <p className="mt-2 text-sm text-slate-500">手续费：{(isRedeem ? getRedemptionFee(order) : getOrderFee(order)).toFixed(2)} {order.currency}</p>
-            {displayStatus === '处理中' ? <p className="mt-3 text-sm font-semibold text-amber-700">本次赎回正在处理中，请耐心等待。</p> : null}
           </div>
         </div>
       </section>
@@ -1835,7 +1696,6 @@ function HistoryPage({ orders }) {
             <option>审核中</option>
             <option>已完成</option>
             <option>已拒绝</option>
-            <option>处理中</option>
           </select>
         </label>
       </div>
@@ -1868,7 +1728,7 @@ function HistoryPage({ orders }) {
               {activeHistoryType === '申购' ? <th className="px-4 py-3 text-amber-800">付款账户</th> : null}
               <th className="px-4 py-3">类型</th>
               <th className="px-4 py-3">金额</th>
-              {activeHistoryType === '赎回' ? <th className="px-4 py-3 text-amber-800">结算账户</th> : null}
+              {activeHistoryType === '赎回' ? <th className="px-4 py-3 text-amber-800">原付款账户</th> : null}
               {activeHistoryType === '赎回' ? <th className="px-4 py-3">手续费</th> : null}
               <th className="px-4 py-3">状态</th>
             </tr>
@@ -1896,7 +1756,7 @@ function HistoryPage({ orders }) {
                   <td className={`px-4 py-4 font-semibold ${amountMeta.className}`}>{amountMeta.text}</td>
                   {activeHistoryType === '赎回' ? (
                     <td className="px-4 py-4">
-                      <span className="inline-flex rounded-md border border-amber-300 bg-amber-100 px-2 py-1 font-semibold text-amber-900">{getHistorySettlementAccountName(order)}</span>
+                      <span className="inline-flex rounded-md border border-amber-300 bg-amber-100 px-2 py-1 font-semibold text-amber-900">{getRedemptionReturnAccountName(order)}</span>
                     </td>
                   ) : null}
                   {activeHistoryType === '赎回' ? <td className="px-4 py-4 text-slate-600">{getRedemptionFee(order).toFixed(2)} {order.currency}</td> : null}
@@ -2145,8 +2005,9 @@ export function WealthMultiAccountPrototype({ onBack }) {
 
   const submitRedemption = ({
     sourceOrder,
-    settlementAccountId,
-    settlementCurrency,
+    paymentAccountId,
+    paymentAccountLabel,
+    returnCurrency,
     fee,
     actualReceipt,
   }) => {
@@ -2167,8 +2028,9 @@ export function WealthMultiAccountPrototype({ onBack }) {
       redemptionAmount: getOrderValue(sourceOrder),
       fee,
       actualReceipt,
-      settlementAccountId,
-      settlementCurrency,
+      paymentAccountId,
+      paymentAccountLabel,
+      returnCurrency,
     }
 
     setRedemptions((current) => [nextRedemption, ...current])
